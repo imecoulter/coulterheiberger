@@ -11,12 +11,17 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
+    "check": "astro check",
+    "perf": "lhci autorun",
     "deploy": "astro build && wrangler deploy"
   },
   "dependencies": {
     "astro": "^7.2.0"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@lhci/cli": "^0.15.1",
+    "typescript": "^6.0.3",
     "wrangler": "^4.120.1"
   }
 }

@@ -3,16 +3,18 @@ name: Deploy
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 # Never let two deploys race; a superseded push is not worth shipping.
 concurrency:
-  group: deploy-main
+  group: deploy-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   deploy:
-    name: Build and deploy to Cloudflare
+    name: Verify and deploy
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -29,10 +31,19 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Type check
+        run: npm run check
+
       - name: Build
         run: npm run build
 
+      # Gates the deploy on the ADR-0002 budget. Config: lighthouserc.cjs
+      - name: Performance budget
+        run: npm run perf
+
+      # Pull requests verify only. Deploys happen from main.
       - name: Deploy
+        if: github.event_name != 'pull_request'
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
