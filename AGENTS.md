@@ -6,7 +6,7 @@ Read `CONTEXT.md` for the project's vocabulary before writing anything that name
 
 ## Stack
 
-Astro 6, static output, deployed to Cloudflare Workers static assets. No SSR, no adapter. See [ADR-0001](./docs/adr/0001-astro-static-on-cloudflare-workers.md) — including the rejected alternatives, so they don't get re-proposed.
+Astro 7, static output, deployed to Cloudflare Workers static assets. No SSR, no adapter. See [ADR-0001](./docs/adr/0001-astro-static-on-cloudflare-workers.md) — including the rejected alternatives, so they don't get re-proposed.
 
 - Canonical domain `coulterheiberger.com`; `coulterjheiberger.com` 301s to it. Domains, DNS, and email routing are managed in Cloudflare, not in this repo.
 - Public contact address: `ime@coulterheiberger.com`.
@@ -24,6 +24,13 @@ These are not style preferences. Violating one is a defect. Full rationale in [A
 - Performance budget: LCP Path ≤ 500 KB and LCP < 2.5s on throttled 4G; JS on non-Exhibit routes ≤ 50 KB. Post-LCP Media is uncapped but must stream and must never block interaction.
 
 If a task appears to require breaking one of these, stop and say so rather than working around it.
+
+## Development
+
+- `npm run build` — static build to `dist/`. `npm run deploy` — build then `wrangler deploy`.
+- Start the dev server in background mode: `astro dev --background`. Manage it with `astro dev stop`, `astro dev status`, `astro dev logs`. Do not run `astro dev` in the foreground; it will block.
+
+Astro docs: https://docs.astro.build — consult before working on [routing](https://docs.astro.build/en/guides/routing/), [components](https://docs.astro.build/en/basics/astro-components/), [framework components](https://docs.astro.build/en/guides/framework-components/), [content collections](https://docs.astro.build/en/guides/content-collections/), or [styling](https://docs.astro.build/en/guides/styling/).
 
 ## Agent skills
 

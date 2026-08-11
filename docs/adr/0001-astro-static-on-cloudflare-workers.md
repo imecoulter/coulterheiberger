@@ -3,9 +3,9 @@ status: accepted
 date: 2026-08-10
 ---
 
-# Astro 6 static output, deployed to Cloudflare Workers static assets
+# Astro static output, deployed to Cloudflare Workers static assets
 
-The site is an image-heavy architectural visualization portfolio, built agentically with Claude Code, hosted on Cloudflare where the domains, DNS, and email routing already live. We chose **Astro 6 with static output**, deployed to **Cloudflare Workers static assets**, with **React declared as the island framework of record but not installed until an [Exhibit](../../CONTEXT.md) requires it**. Astro wins on the three things that actually matter for this site — native build-time image optimization, Vite-native tooling for heavy 3D libraries, and near-zero JavaScript on content routes — and it is now maintained by our host.
+The site is an image-heavy architectural visualization portfolio, built agentically with Claude Code, hosted on Cloudflare where the domains, DNS, and email routing already live. We chose **Astro with static output** (7.2 at time of scaffolding; 7.0 shipped 22 June 2026), deployed to **Cloudflare Workers static assets**, with **React declared as the island framework of record but not installed until an [Exhibit](../../CONTEXT.md) requires it**. Astro wins on the three things that actually matter for this site — native build-time image optimization, Vite-native tooling for heavy 3D libraries, and near-zero JavaScript on content routes — and it is now maintained by our host.
 
 ## Considered Options
 
@@ -26,7 +26,7 @@ There is a second, agentic cost. Next's static export is a subset mode of a fram
 
 ## Consequences
 
-- **Cesium, if it ever ships, is cheap to integrate.** The maintained plugins that copy `Assets/`, `Workers/`, `ThirdParty/`, `Widgets/` and set `CESIUM_BASE_URL` are Vite plugins, which Astro inherits. Realistic dist footprint with Cesium included is ~11 MB — which is why it is confined to a gated Exhibit under ADR-0002, not a library-level choice.
+- **Cesium, if it ever ships, is cheap to integrate.** The maintained plugins that copy `Assets/`, `Workers/`, `ThirdParty/`, `Widgets/` and set `CESIUM_BASE_URL` are Vite plugins, which Astro inherits. Note that Astro 7 moved to Vite 8 with the Rolldown bundler — verify plugin compatibility at the point of adoption rather than assuming it. Realistic dist footprint with Cesium included is ~11 MB — which is why it is confined to a gated Exhibit under ADR-0002, not a library-level choice.
 - **Astro was acquired by Cloudflare on 16 January 2026** and remains MIT-licensed, open source, and platform-agnostic. Framework and host being one vendor is an alignment benefit here, and a concentration risk worth naming: if Cloudflare's stewardship degrades the project, both halves of this decision are affected at once.
 - **React is a declared commitment, not an installed dependency.** The ADR designates React as the island framework so R3F, Drei, and Resium stay available and no future agent introduces Vue or Svelte islands ad hoc. `astro add react` when the first Exhibit lands.
 - **No SSR, no adapter, no server.** Anything genuinely dynamic later becomes an explicit Worker route, decided on its own merits.

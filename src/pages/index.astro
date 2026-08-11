@@ -1,0 +1,96 @@
+---
+const email = 'ime@coulterheiberger.com';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Coulter Heiberger — Architectural Visualization</title>
+    <meta
+      name="description"
+      content="Architectural visualization by Coulter Heiberger. Portfolio in progress."
+    />
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <main>
+      <h1>Coulter Heiberger</h1>
+      <p class="role">Architectural Visualization</p>
+      <p class="note">Portfolio in progress.</p>
+      <p class="contact"><a href={`mailto:${email}`}>{email}</a></p>
+    </main>
+  </body>
+</html>
+
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #0e0e10;
+    --fg: #f4f4f5;
+    --muted: #8b8b93;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #fafaf9;
+      --fg: #18181b;
+      --muted: #6b6b74;
+    }
+  }
+
+  html {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: 2rem;
+  }
+
+  main {
+    max-width: 34rem;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2rem, 8vw, 3.25rem);
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+  }
+
+  .role {
+    margin: 0.5rem 0 0;
+    font-size: clamp(1rem, 3.5vw, 1.25rem);
+    color: var(--muted);
+    letter-spacing: -0.01em;
+  }
+
+  .note {
+    margin: 2.5rem 0 0;
+    color: var(--muted);
+  }
+
+  .contact {
+    margin: 0.25rem 0 0;
+  }
+
+  a {
+    color: inherit;
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+  }
+
+  a:hover {
+    color: var(--muted);
+  }
+</style>

@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "coulterheiberger-com",
+  "compatibility_date": "2026-08-10",
+  // Static assets only — no Worker script. See docs/adr/0001-astro-static-on-cloudflare-workers.md
+  "assets": {
+    "directory": "./dist",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
