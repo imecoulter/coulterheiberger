@@ -19,7 +19,7 @@ module.exports = {
     assert: {
       assertions: {
         // ADR-0002: LCP < 2.5s on throttled 4G mobile.
-        'largest-contentful-paint': ['error', { maxNumericValue: 1 }],
+        'largest-contentful-paint': ['error', { maxNumericValue: 2500 }],
 
         // ADR-0002: JS on non-Exhibit routes <= 50 KB.
         'resource-summary:script:size': ['error', { maxNumericValue: 51200 }],
