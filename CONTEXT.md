@@ -18,6 +18,10 @@ _Avoid_: background, hero, ambience, chrome
 Visual output produced offline in a 3D authoring toolchain and shipped as images or video — including multi-frame sequences driven by scroll. The Ambient Layer is built from these.
 _Avoid_: static asset, image, still, pre-render
 
+**Master**:
+The source-resolution output of a 3D authoring toolchain, from which a Rendered Asset is made. Kept outside the repository; never shipped and never committed.
+_Avoid_: original, raw, full-res, source image
+
 **Gate**:
 An explicit user action required before an Exhibit loads. Distinguishes a deliberate opt-in from an automatic load.
 _Avoid_: trigger, lazy load, interaction
