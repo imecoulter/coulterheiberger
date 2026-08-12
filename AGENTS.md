@@ -29,6 +29,7 @@ If a task appears to require breaking one of these, stop and say so rather than 
 
 ## Development
 
+- Routes, the Project schema, and collection structure are specified in [docs/content-architecture.md](./docs/content-architecture.md). Do not add a frontmatter field without a page that renders it.
 - `npm run build` — static build to `dist/`. `npm run deploy` — build then `wrangler deploy`.
 - Start the dev server in background mode: `astro dev --background`. Manage it with `astro dev stop`, `astro dev status`, `astro dev logs`. Do not run `astro dev` in the foreground; it will block.
 

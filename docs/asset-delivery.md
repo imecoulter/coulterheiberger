@@ -74,8 +74,10 @@ Repo weight lands at roughly 1.2–2.0 MB per committed asset depending on rende
 
 ### Naming and roles
 
-Filenames never reach the public — Astro content-hashes every emitted variant. So names serve you, in the
-folder and in the MDX, and nothing else.
+**Filenames do reach the public.** Astro hashes every emitted variant but *retains the source basename*:
+`north-dusk.jpg` ships as `/_astro/north-dusk.DkllZt7p_ZqBTNd.jpg`, and that name appears in every `srcset`
+entry (verified by build on astro 7.2.0). So a master's filename is public. Nothing in the ritual changes —
+just don't name a master `client-hated-this-one.png`.
 
 - The command slugifies the master's filename: `Hero_North_Dusk.png` → `hero-north-dusk.jpg`.
 - **Roles and order live in frontmatter, never in filenames.** No `hero.jpg`, no `01.jpg`.
