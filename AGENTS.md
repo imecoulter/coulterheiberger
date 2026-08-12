@@ -22,6 +22,7 @@ These are not style preferences. Violating one is a defect. Full rationale in [A
 - The LCP element is never a 3D canvas.
 - Every Exhibit ships a mobile poster with tap-to-load. Consider mobile and desktop on every visual decision.
 - Performance budget: LCP Path ≤ 500 KB and LCP < 2.5s on throttled 4G; JS on non-Exhibit routes ≤ 50 KB. Post-LCP Media is uncapped but must stream and must never block interaction.
+- Source-resolution Rendered Assets never enter git. Only the web-resolution exports committed under `src`/`public` are tracked. This is what makes the repo's image bytes identical to the site's image bytes — the property that keeps repo visibility a non-issue for IP (see [issue #7](https://github.com/imecoulter/coulterheiberger-com/issues/7)).
 
 If a task appears to require breaking one of these, stop and say so rather than working around it.
 
