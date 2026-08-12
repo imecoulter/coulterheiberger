@@ -19,6 +19,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v5
@@ -47,3 +48,37 @@ jobs:
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      # Fork PRs get no repository secrets, so CLOUDFLARE_API_TOKEN is empty —
+      # skip rather than fail the check. Uploads a version only; never promoted
+      # to the production custom domain. See issue #9.
+      - name: Preview deploy
+        if: github.event_name == 'pull_request'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          WRANGLER_OUTPUT_FILE_PATH: ${{ github.workspace }}/wrangler-output.json
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "No CLOUDFLARE_API_TOKEN (fork PR) — skipping preview deploy."
+            exit 0
+          fi
+          npx wrangler versions upload \
+            --preview-alias "pr-${{ github.event.pull_request.number }}" \
+            --message "PR #${{ github.event.pull_request.number }}"
+
+      - name: Comment preview URL
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ ! -f wrangler-output.json ]; then
+            echo "No preview to comment (skipped or failed upload)."
+            exit 0
+          fi
+          url=$(jq -r 'select(.type == "version-upload") | .preview_alias_url' wrangler-output.json | tail -n1)
+          if [ -z "$url" ] || [ "$url" = "null" ]; then
+            echo "No preview URL in wrangler output."
+            exit 0
+          fi
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --body "Preview: $url" --edit-last --create-if-none

@@ -3,6 +3,13 @@
   "name": "coulterheiberger-com",
   "account_id": "246c2210da4b82bbc1e633c858c63571",
   "compatibility_date": "2026-08-10",
+  // Bare *.workers.dev route stays off — production is the custom domain only.
+  // Preview URLs are a separate toggle and work independently of workers_dev;
+  // proved via direct API against the account's coulterjheiberger.workers.dev
+  // subdomain (issue #9). Every *.workers.dev response also gets an automatic
+  // X-Robots-Tag: noindex from Cloudflare.
+  "workers_dev": false,
+  "preview_urls": true,
   // Static assets only — no Worker script. See docs/adr/0001-astro-static-on-cloudflare-workers.md
   "assets": {
     "directory": "./dist",
