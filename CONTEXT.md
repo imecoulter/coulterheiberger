@@ -32,6 +32,10 @@ _Avoid_: trigger, lazy load, interaction
 A single piece of architectural visualization work presented on the site. A Project may include Rendered Assets and may — but usually does not — include an Exhibit.
 _Avoid_: work, piece, case study, entry
 
+**Credit**:
+A Project's provenance: where the work was done and for whom. Covers commissioned work made at a studio, work made for that studio's own client, and speculative work made for neither. Stated on every Project, without exception.
+_Avoid_: client, studio, attribution, credits
+
 **Build Log**:
 Writing published on the site about the construction of the site itself. Part of the portfolio, not separate from it.
 _Avoid_: blog, journal, notes, devlog
