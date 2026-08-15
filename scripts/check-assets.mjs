@@ -41,7 +41,16 @@ function sniff(head, length) {
   if (at(0, 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)) return 'PNG';
   if (at(0, 0x47, 0x49, 0x46, 0x38)) return 'GIF';
   if (at(0, 0x52, 0x49, 0x46, 0x46) && at(8, 0x57, 0x45, 0x42, 0x50)) return 'WebP';
-  if (at(4, 0x66, 0x74, 0x79, 0x70)) return 'AVIF/HEIF';
+  // ISO-BMFF. The brand at offset 8 matters: `ftyp` alone also matches MP4 and
+  // MOV, and ADR-0002 expects video in the Ambient Layer — flagging a scroll
+  // sequence as "not JPEG" would be a confusing way to block legitimate work.
+  if (at(4, 0x66, 0x74, 0x79, 0x70) && length >= 12) {
+    const brand = head.toString('latin1', 8, 12);
+    if (['avif', 'avis', 'heic', 'heix', 'heim', 'heis', 'mif1', 'msf1'].includes(brand)) {
+      return 'AVIF/HEIF';
+    }
+    return null;
+  }
   if (at(0, 0x49, 0x49, 0x2a, 0x00) || at(0, 0x4d, 0x4d, 0x00, 0x2a)) return 'TIFF';
   if (at(0, 0x42, 0x4d)) return 'BMP';
   return null;
