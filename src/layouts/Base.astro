@@ -21,8 +21,53 @@ const { title, description } = Astro.props;
     {/* Site-wide until launch. Removing this line is the launch switch — see
         docs/content-architecture.md. */}
     <meta name="robots" content="noindex" />
+    {/* Registration is opt-in via [data-anim] and gated on this script, so with
+        scripting off the marked elements would stay hidden. The selector is
+        :root-qualified to outrank base.css's equal-specificity [data-anim]
+        rules regardless of where Astro injects the stylesheet. */}
+    <noscript>
+      <style>
+        :root [data-anim] {
+          opacity: 1;
+          transform: none;
+          clip-path: none;
+        }
+      </style>
+    </noscript>
   </head>
   <body>
     <slot />
+    <script>
+      // Registration — the only JavaScript on the site. It adds .is-in once per
+      // element and stops watching; the moves themselves are CSS in base.css.
+      //
+      // Inline on purpose. Issue #12 measured this at 195 B gzip with ZERO
+      // extra requests: Astro inlines a script that imports nothing. Every
+      // library candidate emitted an _astro/*.js file instead, which under the
+      // perf gate's devtools throttling costs 562.5ms of latency before
+      // anything it reveals can paint — and lands on the LCP Path besides.
+      //
+      // No reduced-motion check here. base.css declares the hidden state only
+      // under (prefers-reduced-motion: no-preference), so under `reduce` this
+      // adds a class that changes nothing. Registration is the enhancement;
+      // the plain document is the baseline.
+      const io = new IntersectionObserver(
+        (entries) => {
+          let i = 0;
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            const el = entry.target as HTMLElement;
+            // Staggered in groups of four at 60ms (docs/design-direction.md).
+            el.style.setProperty('--d', `${(i % 4) * 60}ms`);
+            el.classList.add('is-in');
+            io.unobserve(el);
+            i++;
+          }
+        },
+        { rootMargin: '0px 0px -12% 0px' },
+      );
+
+      for (const el of document.querySelectorAll('[data-anim]')) io.observe(el);
+    </script>
   </body>
 </html>

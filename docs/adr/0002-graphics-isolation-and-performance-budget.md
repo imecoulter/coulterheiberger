@@ -25,12 +25,24 @@ Enforced in CI (Lighthouse CI, failing the build on regression). These are start
 | --- | --- |
 | **LCP Path** — everything needed to paint hero content | ≤ 500 KB; LCP < 2.5s on throttled 4G mobile |
 | **JS on non-Exhibit routes** | ≤ 50 KB |
-| **Post-LCP Media** — rest of a scroll sequence, below-fold video | Uncapped total; must stream lazily, must never block interaction, must honour `prefers-reduced-motion` and `Save-Data` |
+| **Post-LCP Media** — rest of a scroll sequence, below-fold video | Uncapped total; must stream lazily, must never block interaction, must honour `prefers-reduced-motion`, and must be structurally `Save-Data`-safe (see below) |
 | **Exhibits** | Uncapped; gated and route-scoped |
 
 The LCP element is never a 3D canvas. It is a poster image or a static hero render.
 
 **Every byte figure here is over the wire, after compression** — not uncompressed source size. Left unstated originally; settled in [issue #13](https://github.com/imecoulter/coulterheiberger-com/issues/13). Three reasons, and they agree: the budget exists to bound time-to-paint on a throttled link, and time is a function of what crosses the wire, not of what the bytes expand to; the JS row was already being enforced that way, because Lighthouse's `resource-summary` rows carry only `transferSize`, so the alternative reading would give one table two units; and it is the number the LHR actually publishes. In practice this bites hardest on HTML and CSS, which compress, and barely at all on JPEG, AVIF and WebP, which are already compressed — so the tier this defines loosest is the one whose bytes are almost entirely images anyway.
+
+**`Save-Data` is honoured structurally, not by detection.** Settled in
+[issue #12](https://github.com/imecoulter/coulterheiberger-com/issues/12), which found the original
+row asked for something no code on this site can do. Static output means there is no server to vary
+on the request header (ADR-0001), and the client-side signal is Chromium-only —
+`navigator.connection.saveData` is Chrome 65+ / Edge 79+, `false` in both Firefox and Safari — while
+Chrome removed Lite mode in Chrome 100, which was the only thing setting the header on Android. So
+compliance is defined as what the page *sends*, not what it detects: below-fold imagery is
+`loading="lazy"`, nothing preloads, nothing autoplays, and a visitor who scrolls nowhere fetches
+nothing beyond the LCP Path. The rejected alternative was shipping JavaScript to make a page
+lighter, for a signal most browsers never send. `prefers-reduced-motion` is unaffected — it is a
+real, universally supported preference and is honoured as a first-class path (docs/styling.md).
 
 **The timing half of the LCP Path row binds first, and by a wide margin.** Measured under real request-level slow-4G throttling (`throttlingMethod: 'devtools'`, the condition this ADR names), LCP tracks hero transfer bytes at ~189 B/ms off a ~1200 ms floor — one round trip for the document, another for the hero, at 562.5 ms of latency each. A single 300 KB hero lands at 2871 ms with nothing else on the page. **2.5s is reached at roughly 240 KB, less than half the 500 KB ceiling**, so a page cannot spend the byte budget without failing the timing budget first. That is not an artifact of the throttling method — under lantern simulation the crossover is ~315 KB, still well short of 500 KB. Treat 500 KB as the outer wall it is; the number to design against is the one the clock imposes. Revisit if the LCP Path ever stops being dominated by a single image.
 

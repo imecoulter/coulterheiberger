@@ -74,3 +74,73 @@ h3 {
   letter-spacing: var(--track-spec);
   color: var(--muted);
 }
+
+/* ---- Registration --------------------------------------------------------
+   The one-time entrance of an element as it first enters the viewport. Three
+   moves, durations and easing from docs/design-direction.md. The observer
+   that adds .is-in is one inline script in src/layouts/Base.astro — the only
+   JavaScript on the site. Decided in issue #12.
+
+   THE HIDDEN STATE IS DECLARED ONLY UNDER no-preference. That inversion is
+   the whole reduced-motion design, not a formatting choice: "reduce" is not a
+   branch that strips animation, it is the plain document, and Registration is
+   what everyone else gets layered on top. Do NOT rewrite this as a `reduce`
+   block that disables things — that computes the animated path first and
+   fails toward motion when anything goes wrong.
+
+   --d is the stagger delay, set per element by the observer in groups of four
+   at 60ms. Elements on the first screen must NOT carry data-anim: an element
+   at opacity 0 or fully clipped is not an LCP candidate (web.dev/articles/lcp
+   excludes "elements with an opacity of 0"), so animating the hero would make
+   LCP wait for this script instead of the image decode. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-anim='rise'] {
+    opacity: 0;
+    transform: translateY(10px);
+    transition:
+      opacity 0.48s ease-out var(--d, 0ms),
+      transform 0.48s ease-out var(--d, 0ms);
+  }
+
+  [data-anim='rise'].is-in {
+    opacity: 1;
+    transform: none;
+  }
+
+  [data-anim='rule'] {
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.62s ease-out var(--d, 0ms);
+  }
+
+  [data-anim='rule'].is-in {
+    transform: none;
+  }
+
+  [data-anim='wipe'] {
+    clip-path: inset(100% 0 0 0);
+    transition: clip-path 0.56s ease-out var(--d, 0ms);
+  }
+
+  [data-anim='wipe'].is-in {
+    clip-path: inset(0);
+  }
+
+  /* ---- Navigation cross-fade ---------------------------------------------
+     Cross-document view transitions, CSS only. There is no client-side
+     router: issue #12 measured Astro's ClientRouter at 5,494 B gzip — 10.7%
+     of the entire JS budget, and 13x this whole motion substrate (426 B on
+     the wire) — for a site whose full page loads land at 67-104ms TTFB. Its one
+     unique capability is transition:persist for live state, and v1 has none.
+     Astro's own docs say the router "will increasingly become unnecessary"
+     as this API lands.
+
+     Nested under no-preference for the same fail-safe reason as the moves: a
+     browser that ignores the nesting falls back to no transition, never to a
+     transition the user asked not to see. Chrome 126+ / Safari 18.2+;
+     Firefox has no support and simply navigates. Both documents must opt in,
+     which is automatic here because every page shares this stylesheet. */
+  @view-transition {
+    navigation: auto;
+  }
+}

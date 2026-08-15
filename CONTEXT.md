@@ -26,6 +26,21 @@ _Avoid_: original, raw, full-res, source image
 An explicit user action required before an Exhibit loads. Distinguishes a deliberate opt-in from an automatic load.
 _Avoid_: trigger, lazy load, interaction
 
+### Motion
+
+**Registration**:
+The one-time entrance of an element as it first enters the viewport — the site's only element-level
+motion. It marks the arrival of a piece of information rather than performing for the visitor: it
+never repeats on scroll back, and never applies to the first screen. The term is free because the
+corner registration *marks* it might have collided with were cut as costume.
+_Avoid_: reveal, fade-in, scroll animation, entrance effect
+
+**Navigation Cross-fade**:
+The brief cross-fade between two pages during an ordinary navigation. The site has no client-side
+router — every navigation is a full page load, and the cross-fade is the browser's own, present
+where it is supported and absent where it is not.
+_Avoid_: page transition, view transitions, SPA navigation, routing
+
 ### Site structure
 
 **Project**:
