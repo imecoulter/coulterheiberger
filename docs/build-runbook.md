@@ -23,11 +23,11 @@ This file holds only what the map does not: **what order to run sessions in, wha
 | 5 | Design direction | [#10](https://github.com/imecoulter/coulterheiberger-com/issues/10) | prototype | Opus 5 | xhigh |
 | 6 | Styling ✅ | [#11](https://github.com/imecoulter/coulterheiberger-com/issues/11) | grilling | Opus 5 | high |
 | — | Typography (background agent) | [#21](https://github.com/imecoulter/coulterheiberger-com/issues/21) | research | — | — |
-| 7 | Perf gate | [#13](https://github.com/imecoulter/coulterheiberger-com/issues/13) | task | Opus 5 | high |
+| 7 | Perf gate ✅ | [#13](https://github.com/imecoulter/coulterheiberger-com/issues/13) | task | Opus 5 | high |
 | 8 | Motion strategy | [#12](https://github.com/imecoulter/coulterheiberger-com/issues/12) | grilling | Opus 5 | xhigh |
 | 9 | Launch checklist | [#14](https://github.com/imecoulter/coulterheiberger-com/issues/14) | task | Sonnet 5 | medium |
 
-Sessions 1–6 are done. **Perf gate and Motion strategy were swapped** — see session 7 for the reasoning. Everything else is strictly sequential.
+Sessions 1–7 are done. **Perf gate and Motion strategy were swapped** — see session 7 for the reasoning. Everything else is strictly sequential.
 
 [#21](https://github.com/imecoulter/coulterheiberger-com/issues/21) graduated out of the map's fog when [#11](https://github.com/imecoulter/coulterheiberger-com/issues/11) closed and the question became precisely stateable. It is a research ticket, so it runs as a background agent alongside the numbered sessions rather than taking a slot — but it gates the *choice* of typefaces, which in turn gates the OG/social image question and the last open section of `docs/design-direction.md`. Fire it early.
 
@@ -156,6 +156,10 @@ Either way, decide where the tokens live and how they're consumed.
 ## 7 — Perf gate · [#13](https://github.com/imecoulter/coulterheiberger-com/issues/13)
 
 **Opus 5 · high**
+
+**Outcome:** the gate is now LCP-Path-specific — `scripts/assert-lcp-path.mjs` sums transfer bytes finishing at or before observed LCP, `throttlingMethod` is `devtools`, `aggregationMethod` is `median`, and total page weight is demoted to a warn-level backstop. `npm run perf` is now three steps so the primary budget reports before the loose one. **Both judgement calls landed in ADR-0002:** byte figures are over the wire, and the 2.5s clock binds at ~240 KB — less than half the 500 KB ceiling — so the timing assertion, not the byte budget, is what a hero image hits first. No threshold was raised.
+
+**Note for later sessions:** `npm run perf` cannot run locally on Windows. `chrome-launcher` throws `EPERM` removing Chrome's temp profile after every Lighthouse run, so `lhci collect` exits 1 with no LHRs written. CI is `ubuntu-latest` and unaffected; this is the machine, not the config. To measure locally, run the `lighthouse` CLI directly with `--output-path` — results are saved before the failing cleanup.
 
 **Pulled forward, ahead of motion strategy.** This was scheduled late on the reasoning that a gate rewritten against a holding page gets rewritten again. Research #5 undercut that: it delivered verified working code rather than a direction, and it found **two live defects in the current config** — `aggregationMethod` defaulting to `optimistic`, so the gate passes on the best of three runs rather than the median, and the near-fold lazy-loading leak at Chrome's 1250 px threshold. Neither depends on design direction, and #12 is a bundle-cost decision against a hard budget, so it should not be taken against a gate that grades on its best run.
 

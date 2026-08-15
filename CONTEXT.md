@@ -43,7 +43,7 @@ _Avoid_: blog, journal, notes, devlog
 ### Performance
 
 **LCP Path**:
-Everything required to paint a page's hero content. Budgeted strictly; the measure that governs whether the site feels fast.
+Everything required to paint a page's hero content. Budgeted strictly; the measure that governs whether the site feels fast. Measured as the over-the-wire bytes of every request finishing at or before observed LCP (`scripts/assert-lcp-path.mjs`).
 _Avoid_: critical path, above the fold, initial load
 
 **Post-LCP Media**:
