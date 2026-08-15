@@ -21,7 +21,7 @@ These are not style preferences. Violating one is a defect. Full rationale in [A
 - The Ambient Layer is built from Rendered Assets, not live WebGL.
 - The LCP element is never a 3D canvas.
 - Every Exhibit ships a mobile poster with tap-to-load. Consider mobile and desktop on every visual decision.
-- Performance budget: LCP Path ≤ 500 KB and LCP < 2.5s on throttled 4G; JS on non-Exhibit routes ≤ 50 KB. Post-LCP Media is uncapped but must stream and must never block interaction.
+- Performance budget, all figures **over the wire**: LCP Path ≤ 500 KB and LCP < 2.5s on throttled 4G; JS on non-Exhibit routes ≤ 50 KB. Post-LCP Media is uncapped but must stream and must never block interaction. The 2.5s clock binds long before 500 KB does — it is reached at roughly 240 KB of hero — so design against the timing, not the ceiling.
 - Source-resolution Rendered Assets never enter git. Only the web-resolution exports committed under `src`/`public` are tracked. This is what makes the repo's image bytes identical to the site's image bytes — the property that keeps repo visibility a non-issue for IP (see [issue #7](https://github.com/imecoulter/coulterheiberger-com/issues/7)). Masters live in `.render-drop/`, a sibling of the working tree and outside the repository.
 - Committed Rendered Assets are JPEG, sRGB with no embedded profile, 3200 px on the long edge. Never PNG or WebP: Astro picks a `<Picture>` fallback tier from the source format, and anything outside `gif`/`svg`/`jpg`/`jpeg` silently yields a ~7× larger PNG tier. Full spec in [docs/asset-delivery.md](./docs/asset-delivery.md).
 
