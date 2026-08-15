@@ -2,11 +2,22 @@
 import Base from '../layouts/Base.astro';
 
 const email = 'ime@coulterheiberger.com';
+
+const person = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: 'Coulter Heiberger',
+  jobTitle: 'Architectural Visualization Specialist',
+  url: 'https://coulterheiberger.com',
+  email: `mailto:${email}`,
+};
 ---
 
 <Base
   title="Coulter Heiberger — Architectural Visualization"
   description="Architectural visualization by Coulter Heiberger. Portfolio in progress."
+  noindex
+  structuredData={person}
 >
   <main>
     <span class="t-label">Portfolio in progress</span>

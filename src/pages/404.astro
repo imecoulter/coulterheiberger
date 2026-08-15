@@ -1,23 +1,18 @@
 ---
+import Base from '../layouts/Base.astro';
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>Not found — Coulter Heiberger</title>
-    <meta name="robots" content="noindex" />
-  </head>
-  <body>
-    <main>
-      <h1>404</h1>
-      <p>That page doesn't exist.</p>
-      <p><a href="/">Back to the start</a></p>
-    </main>
-  </body>
-</html>
+<Base
+  title="Not found — Coulter Heiberger"
+  description="That page doesn't exist."
+  noindex
+>
+  <main>
+    <h1>404</h1>
+    <p>That page doesn't exist.</p>
+    <p><a href="/">Back to the start</a></p>
+  </main>
+</Base>
 
 <style>
   :root {
@@ -35,18 +30,14 @@
     }
   }
 
-  html {
-    background: var(--bg);
-    color: var(--fg);
-    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  }
-
-  body {
-    margin: 0;
+  main {
     min-height: 100dvh;
     display: grid;
     place-items: center;
     padding: 2rem;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   }
 
   h1 {

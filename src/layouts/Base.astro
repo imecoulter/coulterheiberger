@@ -5,9 +5,16 @@ import '../styles/base.css';
 interface Props {
   title: string;
   description: string;
+  /** Site-wide true until launch. Flipping a page's noindex is the launch
+      switch for that page — see docs/content-architecture.md. */
+  noindex?: boolean;
+  /** JSON-LD, e.g. a Person or CreativeWork graph. Omit if the page has none. */
+  structuredData?: Record<string, unknown>;
 }
 
-const { title, description } = Astro.props;
+const { title, description, noindex = true, structuredData } = Astro.props;
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 ---
 
 <!doctype html>
@@ -18,9 +25,21 @@ const { title, description } = Astro.props;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    {/* Site-wide until launch. Removing this line is the launch switch — see
-        docs/content-architecture.md. */}
-    <meta name="robots" content="noindex" />
+    <link rel="canonical" href={canonicalURL} />
+    {noindex && <meta name="robots" content="noindex" />}
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Coulter Heiberger" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+
+    {structuredData && (
+      <script type="application/ld+json" is:inline set:html={JSON.stringify(structuredData)} />
+    )}
   </head>
   <body>
     <slot />
