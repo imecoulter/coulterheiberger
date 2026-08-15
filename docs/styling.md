@@ -9,14 +9,18 @@ there and summarised at the bottom of this file.
 
 ```
 src/styles/tokens.css    custom properties only — nothing in this file paints
-src/styles/base.css      reset, element defaults, the three type-role classes
+src/styles/base.css      reset, element defaults, type roles, Registration, cross-fade
 src/styles/fonts.css     @font-face only (does not exist yet — typography is open)
-src/layouts/Base.astro   imports the above, once, for every page
+src/layouts/Base.astro   imports the above once for every page; holds the only <script>
 src/components/*.astro   everything else, in a scoped <style> block
 ```
 
 That is the whole convention. **Do not invent a fourth location.** No `global.css`, no
 `utilities.css`, no per-route stylesheet, no `<style is:global>` outside `Base.astro`.
+
+**JavaScript gets the same rule, with one home instead of three.** The site has exactly one
+`<script>`, inline in `Base.astro`. No `src/scripts/`, no per-page script, no island — see
+[Motion](#motion) for why, and for what it would take to justify a second one.
 
 ## The one rule
 
@@ -102,6 +106,89 @@ removes one round trip from the LCP Path at no meaningful byte cost.
 When typography closes, `@font-face` goes in `src/styles/fonts.css`, **self-hosted**, with the files
 under `src/fonts/` so they are hashed and cached. **Never a Google Fonts `<link>`** — the prototype
 used one, and it costs two extra origins and a render-blocking external stylesheet on the LCP Path.
+
+## Motion
+
+Two things move on this site, and neither uses a library. Decided in
+[issue #12](https://github.com/imecoulter/coulterheiberger-com/issues/12) by building every
+candidate and measuring it. The design they implement is the Motion section of
+[docs/design-direction.md](./design-direction.md).
+
+**Registration** — the one-time entrance of an element as it first enters the viewport. Three moves
+(`rise`, `rule`, `wipe`) live in `base.css`; one `IntersectionObserver` in `Base.astro` adds `.is-in`
+once and stops watching. The contract is three attributes and nothing else:
+
+| | |
+| --- | --- |
+| `data-anim="rise\|rule\|wipe"` | opts an element in and picks its move |
+| `.is-in` | added by the observer; the only thing the script does |
+| `--d` | stagger delay, set per element in groups of four at 60 ms |
+
+**Navigation Cross-fade** — `@view-transition { navigation: auto; }`, three lines of CSS in
+`base.css`. Zero JavaScript, no client-side router. Chrome 126+ / Safari 18.2+; Firefox has no
+support and simply navigates.
+
+### Two rules that are invisible until something breaks
+
+**Nothing on the first screen carries `data-anim`.** An element at `opacity: 0` or fully clipped is
+not an LCP candidate — [web.dev's LCP article](https://web.dev/articles/lcp) excludes "elements with
+an opacity of 0" — so animating the hero makes LCP wait for the script instead of the image decode.
+Registration is for content you scroll to. The perf gate will catch a violation, but only after it
+ships.
+
+**The hidden state is declared only inside `@media (prefers-reduced-motion: no-preference)`**, for
+both Registration and the cross-fade. This is the reduced-motion design, not a formatting habit:
+under `reduce` the page is simply the finished document — verified in a real browser, computed
+`opacity: 1`, no transform, no clip, `transition-duration: 0s`, and `pagereveal.viewTransition` null
+on a real navigation. Do not rewrite either as a `reduce` block that turns things off. That form
+computes the animated path first and fails *toward* motion; this one fails toward stillness.
+
+### What each option costs
+
+Measured on this repo's real dependency graph (astro 7.2.0 / vite 8.2.1 / rolldown, gsap 3.15.0,
+motion 13.1.0), gzip level 6 — the unit `lighthouserc.cjs` asserts against 51,200 B. Kept here so
+the choice can be reopened with numbers instead of re-derived from scratch:
+
+| approach | gzip | requests | % of the 50 KB JS budget |
+| --- | --- | --- | --- |
+| **IntersectionObserver + CSS** (shipped) | **195 B** | **0 — inlined** | 0.4% |
+| `motion/mini` (`animate`) + IO | 3,187 B | 1 | 6.2% |
+| `motion` (`animate` + `inView` + `stagger`) | 21,755 B | 1 | 42.5% |
+| GSAP core alone | 27,297 B | 1 | 53.3% |
+| GSAP + ScrollTrigger | 44,205 B | 1 | 86.3% |
+| GSAP + ScrollTrigger + SplitText | 47,104 B | 1 | 92.0% |
+| Astro `ClientRouter` | 5,494 B | 1 | 10.7% |
+| Native CSS scroll-driven | 0 B | 0 | — cannot fire once |
+
+Whole substrate on the wire: **+426 B gzip on the document** (2,938 → 3,954 B raw, 1,230 → 1,656 B
+gzip), zero extra requests.
+
+Three things that table doesn't show:
+
+- **An external file is a round trip.** Under the gate's `devtools` throttling every library
+  candidate costs 562.5 ms of latency before anything it reveals can paint, and lands *on* the LCP
+  Path — GSAP would spend ~44 KB of the ~240 KB the 2.5 s clock actually permits, for zero pixels.
+- **Native scroll-driven CSS is disqualified on capability, not support.** `animation-timeline:
+  view()` scrubs progress from scroll *position*, so it necessarily reverses on scroll back, and the
+  design direction requires fire-once. Firefox's absence is the second reason, not the first.
+- **`ClientRouter` is 13x the whole substrate** — 5,494 B against 426 B — on a site whose full page
+  loads measure 67-104 ms TTFB. Its one unique capability is `transition:persist` for live state, and v1 has none. Astro's
+  own docs say it "will increasingly become unnecessary" as the native API lands.
+
+### When to revisit
+
+Not a closed door, and not a budget ceiling to squeeze under — 50 KB of headroom is sitting unused.
+What rules a library out today is that the design has nothing for it to do:
+
+> Registration, not performance. Line-level only. Fires once and never re-triggers on scroll back.
+> Nothing scales, nothing parallaxes. At most two elements animating at a time.
+
+That is an entrance-reveal spec, and 195 B implements all of it. Sequenced timelines, scrub-linked
+motion, physics, SVG morphing and line-splitting are all things GSAP does well and this design
+forbids — so the order is **amend `docs/design-direction.md` first, then pick the library the new
+design needs.** Never the reverse. At that point the candidate is `motion/mini` at 3.2 KB unless
+SplitText specifically is the thing you need, and the cost of being wrong is one PR: everything here
+is one attribute, one class and one observer.
 
 ## Enforcing the refusals
 

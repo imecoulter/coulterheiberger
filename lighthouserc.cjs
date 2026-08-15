@@ -61,6 +61,14 @@ module.exports = {
         // ADR-0002: JS on non-Exhibit routes <= 50 KB. resource-summary rows carry
         // only transferSize, so this too is over-the-wire — the same unit the LCP
         // Path budget uses.
+        //
+        // KNOWN BLIND SPOT: resource-summary is built from network records, so an
+        // inline <script> is not a request and does not appear here at all — it is
+        // counted in the document row instead. The site's only JavaScript is inline
+        // (issue #12), so this assertion currently reads 0 and the real 182 B sits
+        // in the HTML. That is the cheap end of the trade and it is deliberate; what
+        // this row still catches is exactly what it should — the moment someone adds
+        // a library, because a library means a bundle means a request.
         'resource-summary:script:size': ['error', { maxNumericValue: 51200 }],
 
         // ADR-0002's LCP Path budget is asserted by scripts/assert-lcp-path.mjs,

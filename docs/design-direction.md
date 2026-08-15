@@ -118,6 +118,22 @@ Nothing scales, nothing parallaxes. At most two elements animating at a time.
 
 Staggered in groups of four at 60 ms. Fully disabled under `prefers-reduced-motion: reduce`.
 
+**Nothing on the first screen registers.** Content above the fold paints in its final state. This
+started as an LCP constraint — a hidden hero is not an LCP candidate, so it would make the paint
+wait on a script — but it is also the right call for the direction: a mark that fires on content the
+visitor is already looking at is performing, which is the thing this motion spec exists to refuse.
+
+**One page-to-page move:** a brief cross-fade on ordinary navigation, present where the browser
+supports it and absent where it does not. No client-side router — see
+[issue #12](https://github.com/imecoulter/coulterheiberger-com/issues/12), which priced one at
+5,494 B gzip against 426 B for this entire motion substrate, on a site whose page loads already
+land in under 100 ms.
+
+No animation library. Both moves are CSS plus one `IntersectionObserver`, 195 B; the mechanics, the
+measured cost of every alternative, and the conditions for revisiting are in
+[docs/styling.md](./styling.md). The order there is binding: **this document is amended first, then
+a library is chosen to serve it.**
+
 ## Consequence for content production
 
 **Every plate needs two art-directed crops** — 21:9 desktop, 4:5 at 390 px, delivered via `<picture>`
