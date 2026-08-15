@@ -90,8 +90,7 @@ A Project needs a minimum of **one** committed export. The grid thumbnail is not
 
 ## 3. The publish ritual
 
-> **Status: the two commands and the CI check in §4 are specified here but not yet built.** Do not try to
-> run them. Tracked in [issue #17](https://github.com/imecoulter/coulterheiberger-com/issues/17).
+Built on [issue #17](https://github.com/imecoulter/coulterheiberger-com/issues/17).
 
 ```
 1. Render.                    Preset from §1. Masters land in .render-drop\
@@ -124,12 +123,28 @@ in the ritual.
 Masters are preserved in `.done\`, which is what makes §2's quality settings cheaply reversible: changing
 the quality number means re-running the command over files already on disk, never a re-render.
 
+It refuses, before writing anything, on three things §2 left undefined and one it did not: a master whose
+name slugifies to nothing; two masters that slugify to the *same* name, which would silently overwrite an
+export; and a master under 3200 px on the long edge, since §1 fixes the preset there and upscaling would
+ship a soft image under a name claiming otherwise.
+
+**The colour conversion is not the obvious sharp call, and the difference is invisible until it ships.**
+sharp picks its working space from the input's bit depth — `processingProfile = interpretation == RGB16 ?
+"p3" : "srgb"` — so a **16-bit master**, which is exactly what §1's preset produces, is transformed into a
+*P3* working space and then written out untagged. That is this document's own warning, reproduced by the
+default pipeline. `withIccProfile('srgb')` is the intuitive fix and is worse: it converts an already-sRGB
+untagged master a second time (drift 40/255, measured) and attaches a profile §4 then rejects. The command
+uses `pipelineColourspace('srgb')`, which forces the working space before that branch is reached; the
+embedded profile is converted into sRGB and dropped on write, in one JPEG encode. Verified by hand on a
+P3-tagged 16-bit master: a stored `234,51,34` red is committed as `254,0,0`, with no profile.
+
 ---
 
 ## 4. Enforcement
 
-The spec is enforced mechanically, on the PR, before anything reaches `main`. A tracked image under
-`src/` fails the build if it:
+The spec is enforced mechanically, on the PR, before anything reaches `main`. `npm run check:assets`
+(`scripts/check-assets.mjs`) runs as the `Asset spec` step of `Verify and deploy`, before the build,
+because it reads tracked files rather than `dist/`. A tracked image under `src/` fails the build if it:
 
 - is not JPEG,
 - has a long edge over 3200 px,
@@ -139,6 +154,11 @@ The spec is enforced mechanically, on the PR, before anything reaches `main`. A 
 This is what makes the preset genuinely set-and-forget: the constraint stops being something held in your
 head. It matters more than a lint rule because "no masters in git" is binding and a violation is
 *permanent* — scrubbing a master from history means a force-push over a protected branch.
+
+Images are identified by **magic bytes, not by file extension**. An extension list reads the filename,
+which is the thing an accidental commit gets wrong — a master saved as `.jpg`, or dragged in as `.txt`, is
+still a master in git. SVG is deliberately not checked: it is vector, so it has no pixel long edge and no
+ICC profile.
 
 `.render-drop\` sits outside the repository, as a sibling of the working tree, so a master cannot be
 committed even by `git add -A`.

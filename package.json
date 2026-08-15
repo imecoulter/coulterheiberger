@@ -13,16 +13,21 @@
     "astro": "astro",
     "check": "astro check",
     "check:css": "node scripts/check-css.mjs",
+    "check:assets": "node scripts/check-assets.mjs",
+    "assets": "node scripts/assets.mjs",
+    "publish": "node scripts/publish.mjs",
     "perf": "lhci collect && node scripts/assert-lcp-path.mjs && lhci assert",
     "deploy": "astro build && wrangler deploy"
   },
   "dependencies": {
+    "@astrojs/mdx": "^7.0.5",
     "@astrojs/sitemap": "^3.7.3",
     "astro": "^7.2.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@lhci/cli": "^0.15.1",
+    "sharp": "^0.35.3",
     "typescript": "^6.0.3",
     "wrangler": "^4.120.1"
   }
