@@ -31,6 +31,7 @@ If a task appears to require breaking one of these, stop and say so rather than 
 
 - Routes, the Project schema, and collection structure are specified in [docs/content-architecture.md](./docs/content-architecture.md). Do not add a frontmatter field without a page that renders it.
 - Styling is hand-written modern CSS — **no Tailwind, no framework, no preprocessor**. The token model, the file layout, and the modern-CSS baseline are in [docs/styling.md](./docs/styling.md); read it before writing a style block, and do not invent a fourth place for CSS to live. The design it implements is [docs/design-direction.md](./docs/design-direction.md).
+- Motion is CSS plus one inline `IntersectionObserver` — **no animation library and no client-side router**, decided by measuring every candidate in [issue #12](https://github.com/imecoulter/coulterheiberger-com/issues/12). The site has exactly one `<script>`; adding a second, or a library, means amending [docs/design-direction.md](./docs/design-direction.md) first. Costs and conditions are in [docs/styling.md](./docs/styling.md).
 - `npm run build` — static build to `dist/`. `npm run deploy` — build then `wrangler deploy`.
 - Start the dev server in background mode: `astro dev --background`. Manage it with `astro dev stop`, `astro dev status`, `astro dev logs`. Do not run `astro dev` in the foreground; it will block.
 
