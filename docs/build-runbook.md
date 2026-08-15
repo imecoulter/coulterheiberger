@@ -24,12 +24,16 @@ This file holds only what the map does not: **what order to run sessions in, wha
 | 6 | Styling ✅ | [#11](https://github.com/imecoulter/coulterheiberger-com/issues/11) | grilling | Opus 5 | high |
 | — | Typography (background agent) | [#21](https://github.com/imecoulter/coulterheiberger-com/issues/21) | research | — | — |
 | 7 | Perf gate ✅ | [#13](https://github.com/imecoulter/coulterheiberger-com/issues/13) | task | Opus 5 | high |
-| 8 | Motion strategy | [#12](https://github.com/imecoulter/coulterheiberger-com/issues/12) | grilling | Opus 5 | xhigh |
-| 9 | Launch checklist | [#14](https://github.com/imecoulter/coulterheiberger-com/issues/14) | task | Sonnet 5 | medium |
+| 8 | Motion strategy ✅ | [#12](https://github.com/imecoulter/coulterheiberger-com/issues/12) | grilling | Opus 5 | xhigh |
+| 9 | Launch checklist ✅ | [#14](https://github.com/imecoulter/coulterheiberger-com/issues/14) | task | Sonnet 5 | medium |
 
-Sessions 1–7 are done. **Perf gate and Motion strategy were swapped** — see session 7 for the reasoning. Everything else is strictly sequential.
+**Sessions 1–9 are done — the numbered order is complete.** **Perf gate and Motion strategy were swapped** — see session 7 for the reasoning. Everything else ran strictly sequentially.
 
-[#21](https://github.com/imecoulter/coulterheiberger-com/issues/21) graduated out of the map's fog when [#11](https://github.com/imecoulter/coulterheiberger-com/issues/11) closed and the question became precisely stateable. It is a research ticket, so it runs as a background agent alongside the numbered sessions rather than taking a slot — but it gates the *choice* of typefaces, which in turn gates the OG/social image question and the last open section of `docs/design-direction.md`. Fire it early.
+The map itself ([#2](https://github.com/imecoulter/coulterheiberger-com/issues/2)) is still open, held by the one thing not on this list: research [#21](https://github.com/imecoulter/coulterheiberger-com/issues/21).
+
+**Two PRs are open against `main`, not yet merged:** [#24](https://github.com/imecoulter/coulterheiberger-com/pull/24) (session 8, motion substrate) and [#25](https://github.com/imecoulter/coulterheiberger-com/pull/25) (session 9, launch checklist). The ✅ on those sessions marks the *decision* as resolved and the ticket closed — not the merge. Per [#9](https://github.com/imecoulter/coulterheiberger-com/issues/9), merging stays a deliberate, manually-reviewed step.
+
+[#21](https://github.com/imecoulter/coulterheiberger-com/issues/21) graduated out of the map's fog when [#11](https://github.com/imecoulter/coulterheiberger-com/issues/11) closed and the question became precisely stateable. It is a research ticket, so it runs as a background agent alongside the numbered sessions rather than taking a slot — but it gates the *choice* of typefaces, which in turn gates the OG/social image question and the last open section of `docs/design-direction.md`. **Still open** — it is the only thing standing between the map and closing. [#14](https://github.com/imecoulter/coulterheiberger-com/issues/14) built the OG/Twitter metadata substrate without an image for exactly this reason: the image strategy can't be decided until #21 resolves.
 
 [#17](https://github.com/imecoulter/coulterheiberger-com/issues/17) (asset delivery tooling) is unblocked and unscheduled. It is not on the critical path to the map's destination — it is the tooling you need to publish real Projects, which is downstream work — so it is deliberately left out of the order above.
 
@@ -185,9 +189,11 @@ genuinely needs to move, it moves in ADR-0002 first, with a reason.
 
 ---
 
-## 8 — Motion strategy · [#12](https://github.com/imecoulter/coulterheiberger-com/issues/12)
+## 8 — Motion strategy · [#12](https://github.com/imecoulter/coulterheiberger-com/issues/12) ✅ done
 
 **Opus 5 · xhigh**
+
+**Outcome:** no animation library, no `ClientRouter` — each candidate built as its own site and measured against the 50 KB non-Exhibit budget, not quoted from vendor numbers. IntersectionObserver + CSS costs 195 B, inlined, zero extra requests; every library candidate (`motion/mini`, `motion`, GSAP, GSAP+ScrollTrigger+SplitText) loses on **requests, not bytes** — each ships a separate `_astro/*.js`, and 562.5 ms of throttled latency before it can even run lands squarely on the LCP Path. New hard rule: nothing on the first screen carries `data-anim`, since an off-screen/opacity-0 element isn't an LCP candidate and animating the hero would make LCP wait on script. The cross-fade shipped for 0 bytes via `@view-transition`. `prefers-reduced-motion` is the baseline, not a fallback — the animated path is the one that has to opt in. `ClientRouter` rejected: 5,494 B for one capability (`transition:persist`) v1 doesn't use. `Save-Data` compliance in ADR-0002 amended to be about what the page sends, since there's no server to vary on the header. Substrate landed on [PR #24](https://github.com/imecoulter/coulterheiberger-com/pull/24).
 
 **Why here:** the hardest remaining decision, because it is a three-way trade against a hard 50 KB budget with a genuine platform-support cliff — Firefox stable does not ship `animation-timeline` at all. It also carries the `ClientRouter` question, where the honest answer may be "no router".
 
@@ -205,9 +211,11 @@ so a router has to earn its place rather than be assumed.
 
 ---
 
-## 9 — Launch checklist · [#14](https://github.com/imecoulter/coulterheiberger-com/issues/14)
+## 9 — Launch checklist · [#14](https://github.com/imecoulter/coulterheiberger-com/issues/14) ✅ done
 
 **Sonnet 5 · medium**
+
+**Outcome:** infrastructure built, launch switch deliberately left unflipped. `noindex` stays on both pages — `/404` permanently per `docs/content-architecture.md`, `/` because it's still the placeholder page, not the launched site. Shipped: hand-written `public/robots.txt` referencing the sitemap (production had been serving Cloudflare's synthetic content-signals default in its absence); `@astrojs/sitemap`, filtered to exclude `/404/`; canonical URLs; Open Graph and Twitter card metadata with no image, since #21 hasn't resolved; Person JSON-LD on the homepage, CreativeWork per Project deferred until Project pages exist. `404.astro` previously hand-rolled its own `<head>` independently of `index.astro`; both now route through `Base.astro`, the one shared head component. Verified against the deployed preview on [PR #25](https://github.com/imecoulter/coulterheiberger-com/pull/25).
 
 **Why last:** it is the ticket that stops launch being something you forget. Mechanical breadth, no judgement calls — which is what `medium` is for.
 
