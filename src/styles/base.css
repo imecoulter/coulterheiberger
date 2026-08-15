@@ -1,0 +1,76 @@
+/* Reset + element defaults. No component lives here. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: var(--t-body);
+  line-height: 1.62;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 3px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--f-display);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+/* ---- type roles ----------------------------------------------------------
+   Three families, three classes. Serif body is the element default and has
+   no class. These exist because the mono recipe was otherwise restated in
+   five components (issue #11) — that repetition is where drift starts.
+
+   HARD CAP: three. A fourth type role is a change to the design direction,
+   not a styling decision. Do not add one here without amending
+   docs/design-direction.md first. */
+.t-display {
+  font-family: var(--f-display);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.t-label {
+  font-family: var(--f-mono);
+  font-size: var(--t-label);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--muted);
+}
+
+.t-spec {
+  font-family: var(--f-mono);
+  font-size: var(--t-spec);
+  text-transform: uppercase;
+  letter-spacing: var(--track-spec);
+  color: var(--muted);
+}

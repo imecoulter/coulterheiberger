@@ -38,6 +38,10 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Gates on the design direction's hard refusals. See docs/styling.md
+      - name: Design rules
+        run: npm run check:css
+
       # Gates the deploy on the ADR-0002 budget. Config: lighthouserc.cjs
       - name: Performance budget
         run: npm run perf

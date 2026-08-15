@@ -1,0 +1,28 @@
+---
+import '../styles/tokens.css';
+import '../styles/base.css';
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {/* Site-wide until launch. Removing this line is the launch switch — see
+        docs/content-architecture.md. */}
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

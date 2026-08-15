@@ -12,6 +12,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
+    "check:css": "node scripts/check-css.mjs",
     "perf": "lhci autorun",
     "deploy": "astro build && wrangler deploy"
   },
