@@ -4,6 +4,11 @@ dist/
 .astro/
 # wrangler local state
 .wrangler/
+# lighthouse ci run output — untracked but unignored until now (found by
+# research on issue #5)
+.lighthouseci/
+# agent worktrees
+.claude/worktrees/
 
 # dependencies
 node_modules/
