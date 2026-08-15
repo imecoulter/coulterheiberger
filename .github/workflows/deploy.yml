@@ -32,6 +32,12 @@ jobs:
       - name: Install
         run: npm ci
 
+      # Gates docs/asset-delivery.md §4 on every tracked image under src/. Runs
+      # before the build because it reads tracked files, not dist/ — so it fails
+      # fast, and it fails on the PR, which is the last cheap moment.
+      - name: Asset spec
+        run: npm run check:assets
+
       - name: Type check
         run: npm run check
 
