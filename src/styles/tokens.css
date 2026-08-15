@@ -1,0 +1,57 @@
+/* Datum tokens. Custom properties only — nothing in this file paints.
+
+   THREE PRIMARIES: --ground, --ink, --signal. Everything else derives.
+   --rule and --muted are tints on the ground/ink axis, so the night band
+   flips two properties and the derived pair follows. */
+:root {
+  --ground: #f2f0ec;
+  --ink: #14161a;
+  --signal: #e3392c;
+
+  --rule: color-mix(in oklab, var(--ink) 18%, var(--ground));
+  --muted: color-mix(in oklab, var(--ink) 58%, var(--ground));
+
+  /* three families, three jobs */
+  --f-display: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --f-body: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --f-mono: 'JetBrains Mono', 'Cascadia Mono', Consolas, ui-monospace, monospace;
+
+  --t-spec: 0.6875rem;
+  --t-label: 0.75rem;
+  --t-body: 1.0625rem;
+  --track-spec: 0.07em;
+  --track-label: 0.09em;
+
+  --gutter: 20px;
+  --rhythm: 64px;
+  --measure: 64ch;
+}
+
+@media (min-width: 720px) {
+  :root {
+    --gutter: 48px;
+    --rhythm: 128px;
+  }
+}
+
+@media (min-width: 1200px) {
+  :root {
+    --rhythm: 160px;
+  }
+}
+
+/* THE night band. One per page.
+
+   The two derived tokens MUST be restated here. A custom property resolves
+   at computed-value time on the element that declares it and then inherits
+   as a resolved value — so a color-mix() declared only on :root bakes in
+   :root's ground/ink and will NOT re-derive in this scope. Verified on the
+   built page (issue #11): omitting these two lines ships the day-tinted
+   rules on the night ground. Three values still, stated once each. */
+.night {
+  --ground: #0e1114;
+  --ink: #e8e6e1;
+
+  --rule: color-mix(in oklab, var(--ink) 18%, var(--ground));
+  --muted: color-mix(in oklab, var(--ink) 58%, var(--ground));
+}

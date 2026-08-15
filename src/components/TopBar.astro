@@ -1,0 +1,66 @@
+---
+import Wrap from './Wrap.astro';
+
+interface Props {
+  current?: 'index' | 'about';
+}
+
+const { current = 'index' } = Astro.props;
+const email = 'ime@coulterheiberger.com';
+---
+
+<Wrap>
+  <header class="bar">
+    <a class="home" href="/">Coulter Heiberger</a>
+    <nav>
+      <a href="/" aria-current={current === 'index' ? 'page' : undefined}>Index</a>
+      <a href="/about/" aria-current={current === 'about' ? 'page' : undefined}>About</a>
+    </nav>
+    <span class="addr">{email}</span>
+  </header>
+</Wrap>
+
+<style>
+  .bar {
+    display: flex;
+    align-items: baseline;
+    gap: 24px;
+    justify-content: space-between;
+    padding-block: 16px;
+    border-bottom: 1px solid var(--rule);
+
+    & nav {
+      display: flex;
+      gap: 24px;
+    }
+
+    & a {
+      text-decoration: none;
+
+      &[aria-current] {
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+    }
+
+    & .home {
+      font-family: var(--f-display);
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    & .addr {
+      display: none;
+      font-family: var(--f-mono);
+      font-size: var(--t-spec);
+      letter-spacing: var(--track-spec);
+      color: var(--muted);
+    }
+  }
+
+  @media (min-width: 720px) {
+    .bar .addr {
+      display: block;
+    }
+  }
+</style>

@@ -1,0 +1,63 @@
+---
+interface Props {
+  rows: { term: string; value: string }[];
+}
+
+const { rows } = Astro.props;
+---
+
+<dl class="meta">
+  {
+    rows.map((r) => (
+      <div class="row">
+        <dt>{r.term}</dt>
+        <dd>{r.value}</dd>
+      </div>
+    ))
+  }
+</dl>
+
+<style>
+  .meta {
+    margin: 0;
+    display: grid;
+
+    & .row {
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      gap: 16px;
+      padding-block: 10px;
+      border-top: 1px solid var(--rule);
+
+      &:last-child {
+        border-bottom: 1px solid var(--rule);
+      }
+    }
+
+    & dt {
+      font-family: var(--f-mono);
+      font-size: var(--t-spec);
+      text-transform: uppercase;
+      letter-spacing: var(--track-spec);
+      color: var(--muted);
+      padding-top: 3px;
+    }
+
+    & dd {
+      margin: 0;
+      font-size: 0.9375rem;
+      line-height: 1.45;
+    }
+  }
+
+  @media (min-width: 900px) {
+    .meta .row {
+      grid-template-columns: 1fr;
+      gap: 2px;
+      padding-block: 12px;
+    }
+    .meta dt {
+      padding-top: 0;
+    }
+  }
+</style>

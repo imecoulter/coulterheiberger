@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2100 900" width="2100" height="900">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2B333D"/>
+      <stop offset="42%" stop-color="#5A5A5E"/>
+      <stop offset="74%" stop-color="#A8957E"/>
+      <stop offset="100%" stop-color="#D6C3A6"/>
+    </linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3A3B3B"/>
+      <stop offset="100%" stop-color="#1B2026"/>
+    </linearGradient>
+    <linearGradient id="litface" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#8A7A64"/>
+      <stop offset="100%" stop-color="#4A4741"/>
+    </linearGradient>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" seed="7"/>
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+    <filter id="haze" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="26"/>
+    </filter>
+  </defs>
+
+  <rect width="2100" height="900" fill="url(#sky)"/>
+
+  <!-- distant range -->
+  <path d="M0 556 L210 528 L430 548 L690 512 L980 544 L1290 520 L1600 550 L1880 530 L2100 552 L2100 580 L0 580 Z"
+        fill="#6C6A69" opacity="0.55" filter="url(#haze)"/>
+
+  <!-- far slabs -->
+  <rect x="180" y="430" width="120" height="150" fill="#4E5359" opacity="0.75"/>
+  <rect x="1720" y="404" width="150" height="176" fill="#4A4F55" opacity="0.72"/>
+
+  <!-- principal massing -->
+  <rect x="742" y="214" width="296" height="366" fill="#1E242A"/>
+  <rect x="1038" y="214" width="128" height="366" fill="url(#litface)"/>
+  <rect x="1166" y="322" width="228" height="258" fill="#232A31"/>
+  <rect x="1394" y="286" width="96" height="294" fill="#39383A"/>
+  <rect x="546" y="352" width="196" height="228" fill="#272D33"/>
+
+  <!-- warm interior light bands -->
+  <g fill="#E8C88E">
+    <rect x="1046" y="268" width="112" height="6" opacity="0.85"/>
+    <rect x="1046" y="330" width="112" height="6" opacity="0.72"/>
+    <rect x="1046" y="392" width="112" height="6" opacity="0.6"/>
+    <rect x="1046" y="454" width="112" height="6" opacity="0.45"/>
+    <rect x="770" y="300" width="240" height="3" opacity="0.32"/>
+    <rect x="770" y="382" width="240" height="3" opacity="0.26"/>
+  </g>
+
+  <!-- basin -->
+  <rect x="0" y="580" width="2100" height="320" fill="url(#water)"/>
+  <g fill="#E8C88E" opacity="0.16">
+    <rect x="1046" y="596" width="112" height="150"/>
+  </g>
+  <g fill="#8E9AA4" opacity="0.09">
+    <rect x="0" y="612" width="2100" height="2"/>
+    <rect x="0" y="664" width="2100" height="2"/>
+    <rect x="0" y="734" width="2100" height="2"/>
+    <rect x="0" y="820" width="2100" height="2"/>
+  </g>
+  <rect x="0" y="578" width="2100" height="3" fill="#B9A88E" opacity="0.35"/>
+
+  <rect width="2100" height="900" filter="url(#grain)" opacity="0.09"/>
+</svg>

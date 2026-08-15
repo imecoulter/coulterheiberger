@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000">
+  <defs>
+    <radialGradient id="glowT" cx="0.5" cy="0.5" r="0.68">
+      <stop offset="0%" stop-color="#1C2730"/>
+      <stop offset="100%" stop-color="#0B0E11"/>
+    </radialGradient>
+    <linearGradient id="scanT" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7FE3D0" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#7FE3D0" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#7FE3D0" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="grainY">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" seed="3"/>
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+  </defs>
+
+  <rect width="800" height="1000" fill="url(#glowT)"/>
+
+  <!-- ground plane, closer -->
+  <g stroke="#39505C" stroke-width="2" opacity="0.55" fill="none">
+    <path d="M-360 1000 L400 640"/><path d="M-60 1000 L400 640"/><path d="M240 1000 L400 640"/>
+    <path d="M560 1000 L400 640"/><path d="M860 1000 L400 640"/><path d="M1160 1000 L400 640"/>
+  </g>
+  <g stroke="#39505C" stroke-width="2" opacity="0.45" fill="none">
+    <path d="M0 672 H800"/><path d="M0 716 H800"/><path d="M0 782 H800"/><path d="M0 878 H800"/>
+  </g>
+
+  <!-- point cloud, closer and denser -->
+  <g fill="#9FD8CC" opacity="0.9">
+    <rect x="150" y="252" width="5" height="5"/><rect x="228" y="228" width="5" height="5"/>
+    <rect x="306" y="266" width="5" height="5"/><rect x="384" y="214" width="5" height="5"/>
+    <rect x="462" y="248" width="5" height="5"/><rect x="540" y="222" width="5" height="5"/>
+    <rect x="618" y="268" width="5" height="5"/><rect x="190" y="196" width="5" height="5"/>
+    <rect x="500" y="188" width="5" height="5"/><rect x="660" y="210" width="5" height="5"/>
+  </g>
+  <g fill="#7FE3D0" opacity="0.68">
+    <rect x="176" y="318" width="4" height="4"/><rect x="256" y="352" width="4" height="4"/>
+    <rect x="336" y="310" width="4" height="4"/><rect x="416" y="366" width="4" height="4"/>
+    <rect x="496" y="324" width="4" height="4"/><rect x="576" y="372" width="4" height="4"/>
+    <rect x="636" y="330" width="4" height="4"/><rect x="128" y="368" width="4" height="4"/>
+  </g>
+
+  <!-- wireframe volumes, framed vertically -->
+  <g stroke="#8FC7D6" fill="none" stroke-width="3" opacity="0.85">
+    <rect x="150" y="330" width="300" height="320"/>
+    <path d="M150 330 L232 262 L532 262 L450 330"/>
+    <path d="M450 330 L532 262 L532 582 L450 650"/>
+    <rect x="470" y="430" width="230" height="220"/>
+    <path d="M470 430 L548 366 L778 366 L700 430"/>
+    <path d="M700 430 L778 366 L778 586 L700 650"/>
+  </g>
+
+  <!-- selection / measurement on the same volume as the wide crop -->
+  <g stroke="#E3392C" stroke-width="4" fill="none" opacity="0.95">
+    <path d="M470 430 H700"/>
+    <path d="M470 414 V446"/><path d="M700 414 V446"/>
+  </g>
+  <rect x="470" y="430" width="230" height="220" fill="#E3392C" opacity="0.08"/>
+
+  <rect x="0" y="470" width="800" height="150" fill="url(#scanT)" opacity="0.26"/>
+
+  <g stroke="#6E7C86" stroke-width="3" opacity="0.6" fill="none">
+    <path d="M40 40 H100 M40 40 V100"/>
+    <path d="M760 40 H700 M760 40 V100"/>
+    <path d="M40 960 H100 M40 960 V900"/>
+    <path d="M760 960 H700 M760 960 V900"/>
+  </g>
+
+  <rect width="800" height="1000" filter="url(#grainY)" opacity="0.07"/>
+</svg>
