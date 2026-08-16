@@ -14,6 +14,7 @@
     "check": "astro check",
     "check:css": "node scripts/check-css.mjs",
     "check:assets": "node scripts/check-assets.mjs",
+    "check:served": "node scripts/check-served-document.mjs",
     "assets": "node scripts/assets.mjs",
     "publish": "node scripts/publish.mjs",
     "budget": "lhci collect && node scripts/assert-lcp-path.mjs && lhci assert",

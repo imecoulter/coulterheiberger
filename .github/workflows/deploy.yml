@@ -60,6 +60,26 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
+      # Gates ADR-0004's standing rule — if it's on the wire, it's in the repo —
+      # against the Served Document, which is the only place edge transforms are
+      # visible at all. Every gate above runs on dist/, and dist/ is precisely
+      # what an edge-injected script is invisible to: a Web Analytics beacon ran
+      # on every page from 2026-08-10 without this pipeline noticing.
+      #
+      # After the deploy by necessity — the transforms happen at the edge, above
+      # the build, so there is nothing to inspect until the bytes are live. It
+      # blocks by failing the workflow; a red main is the signal that a dashboard
+      # toggle re-opened the hole.
+      #
+      # The script retries for up to two minutes: seconds after a deploy the edge
+      # can still be serving the previous document from cache, which looks exactly
+      # like a divergence. It also sends browser headers, without which Cloudflare
+      # skips HTML rewriting altogether and the check passes vacuously — do not
+      # "simplify" either away.
+      - name: Served Document
+        if: github.event_name != 'pull_request'
+        run: npm run check:served -- https://coulterheiberger.com
+
       # Fork PRs get no repository secrets, so CLOUDFLARE_API_TOKEN is empty —
       # skip rather than fail the check. Uploads a version only; never promoted
       # to the production custom domain. See issue #9.

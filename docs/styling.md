@@ -19,8 +19,14 @@ That is the whole convention. **Do not invent a fourth location.** No `global.cs
 `utilities.css`, no per-route stylesheet, no `<style is:global>` outside `Base.astro`.
 
 **JavaScript gets the same rule, with one home instead of three.** The site has exactly one
-`<script>`, inline in `Base.astro`. No `src/scripts/`, no per-page script, no island — see
+*authored* `<script>`, inline in `Base.astro`. No `src/scripts/`, no per-page script, no island — see
 [Motion](#motion) for why, and for what it would take to justify a second one.
+
+The one script that is not authored here is the Cloudflare Web Analytics beacon, also in
+`Base.astro`, shipped verbatim and governed by
+[ADR-0004](./adr/0004-measurement-committed-beacon-no-field-cwv.md). It is committed rather
+than edge-injected so that CI measures what visitors receive, and it counts against the 50 KB JS
+budget with no carve-out. It is not a precedent for a second authored script.
 
 ## The one rule
 

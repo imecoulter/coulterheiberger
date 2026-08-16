@@ -83,3 +83,7 @@ _Avoid_: critical path, above the fold, initial load
 **Post-LCP Media**:
 Visual payload that streams after the LCP Path has painted. Uncapped in total size, but must never block interaction.
 _Avoid_: lazy assets, deferred media
+
+**Served Document**:
+The document as a visitor receives it, after edge transforms. May differ from the build output.
+_Avoid_: the HTML, production, dist, output
