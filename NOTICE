@@ -5,3 +5,35 @@ this repository or served by this site — including but not limited to
 photographs, renders, illustrations, copy, and project descriptions — are
 © Coulter Heiberger. All rights reserved. No license, express or implied, is
 granted to use, reproduce, modify, or redistribute them.
+
+--------------------------------------------------------------------------------
+
+FONTS
+
+The font files under src/fonts/ are neither. They are subsets of third-party
+families, redistributed under the SIL Open Font License 1.1, which is not
+compatible with either of the terms above and governs those files alone.
+
+  src/fonts/montserrat-wght500-site-trimmed.woff2
+    Montserrat — Copyright 2011 The Montserrat Project Authors
+    https://github.com/JulietaUla/Montserrat
+
+  src/fonts/jetbrainsmono-wght500-mono-spec-no-liga.woff2
+    JetBrains Mono — Copyright 2020 The JetBrains Mono Project Authors
+    https://github.com/JetBrains/JetBrainsMono
+
+Both are Modified Versions under OFL 1.1: instanced to a single weight and
+subset to the repertoire this site sets (scripts/dev/subset-fonts.mjs). Neither
+upstream family declares a Reserved Font Name, so clause 3 does not apply and
+the subsets keep the original family names.
+
+Each file carries the full licence text and licence URL in its own name table
+(IDs 13 and 14), which is how clause 2 is satisfied — pyftsubset drops those
+records by default, and the build script asserts they survived. The licence is
+therefore readable from the shipped binary:
+
+  python -c "from fontTools.ttLib import TTFont; \
+    print(str(TTFont('src/fonts/montserrat-wght500-site-trimmed.woff2')['name'] \
+    .getName(13,3,1)))"
+
+OFL 1.1: https://openfontlicense.org

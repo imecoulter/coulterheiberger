@@ -6,8 +6,10 @@ Decided in [issue #10](https://github.com/imecoulter/coulterheiberger-com/issues
 > and no longer exists on disk — confirmed against every branch, worktree, stash, dangling git
 > object and session scratchpad while resolving
 > [#11](https://github.com/imecoulter/coulterheiberger-com/issues/11). This document is rebuilt from
-> #10's resolution comment and the surviving prototype source. The **typography** section is the one
-> part #10 left open; it is still open.
+> #10's resolution comment and the surviving prototype source. The **typography** section was the one
+> part #10 left open; it closed in
+> [#21](https://github.com/imecoulter/coulterheiberger-com/issues/21) and this document is now
+> complete.
 
 ## The direction
 
@@ -94,16 +96,46 @@ departure is **night muted**, which derives neutral rather than the original's c
 cool cast was an undocumented fourth colour decision, and it was dropped for the same reason the
 registration marks were.
 
-## Typography — OPEN
+## Typography
 
-The direction commits to **three type roles**: engineering grotesk display, transitional serif body,
-spec-sheet mono. The serif is **kept but demoted** — right for reading, not distinctive; its real
-cost is LCP Path bytes.
+Three roles, **two webfonts**. Closed in
+[#21](https://github.com/imecoulter/coulterheiberger-com/issues/21), which priced each role against
+the LCP Path instead of arguing about it. Full measurements in
+[docs/research/typography-lcp-path.md](./research/typography-lcp-path.md).
 
-**Prototype stand-ins, not decisions:** Archivo / Source Serif 4 / JetBrains Mono.
+| role | face | cut | on the wire |
+| --- | --- | --- | ---: |
+| display | **Montserrat** | static `wght=500`, site repertoire | 9,628 B |
+| body | **system serif** — Georgia, Times New Roman, Nimbus Roman | — | 0 B |
+| mono | **JetBrains Mono** | static `wght=500`, no ligatures | 4,020 B |
 
-What three licensed families cost the LCP Path — and which can be dropped or served from a system
-stack — is still unresolved. This is the section to close before the direction is final.
+**The serif is demoted all the way to a system stack.** #10 kept it but called it "right for reading,
+not distinctive." #21 then found it was **73% of the type stack** — 45,340 B for 400 + 600 + italic,
+against 16,712 B for both distinctive roles combined, and 24 KB of hero budget. Paying the largest
+share of the budget for the least distinctive role is the trade this direction should refuse. If
+Project prose ever genuinely needs a bought serif, the argument reopens with the prose in hand.
+
+**Montserrat over Archivo is a direction call, not a byte call.** The two are 944 B apart, about
+5 ms — #21 was explicit that bytes do not decide it. Recorded honestly: the argument *against*
+Montserrat is that it is a geometric sans rather than an engineering grotesk, and #10's own precedent
+sweep found Kilograph already running Poppins, so a geometric display face moves toward the archviz
+cluster this direction is built to be distinguishable from. It was chosen anyway, on the rendered
+page rather than the table. Archivo remains buildable in `scripts/dev/subset-fonts.mjs`; swapping
+back is two font-family declarations.
+
+**How the faces are cut mattered more than which faces they are** — the same families unsubsetted
+cost **+1,263 ms and fail the perf gate**, the audited static cuts **+113 ms and pass**. So:
+
+- **Static instances, never variable.** 6.5× the bytes for an axis this design never travels.
+- **No ligatures on mono.** They were 74% of the file, and a specification line must never render
+  `->` as an arrow.
+- **No preload.** Measured *slower* on a text page (727 → 1,074 ms). `inlineStylesheets: 'always'`
+  already puts `@font-face` in the document.
+- **One weight per role.** `.t-spec` was given `font-weight: 500` to match `.t-label`; before that
+  mono needed a second file for a weight nobody had chosen.
+
+**The hard cap of three type roles still holds.** A fourth role is a change to this document, not a
+styling decision — and it is now also a change to the font build.
 
 ## Motion
 

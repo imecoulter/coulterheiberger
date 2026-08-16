@@ -15,6 +15,25 @@ export default defineConfig({
       filter: (page) => !page.endsWith('/404/'),
     }),
   ],
+  vite: {
+    build: {
+      // Fonts are NEVER base64-inlined. Vite's assetsInlineLimit defaults to
+      // 4096 B and the mono subset is 4,020 B — 76 bytes under — so without
+      // this it silently became a data: URI while the 9,628 B display face
+      // stayed a file. That asymmetry is a threshold accident, not a decision.
+      //
+      // It also fails in the direction issue #21 measured. On `/` the LCP
+      // element is the <h1>, a text-LCP page, where font bytes cost nothing:
+      // the fallback paint IS the LCP and the swap registers no later
+      // candidate. Base64 in the document moves those bytes onto the critical
+      // path, delaying first paint — and base64 of already-brotli-compressed
+      // woff2 inflates ~33% and barely gzips, so it is the expensive way to
+      // save one request.
+      //
+      // Returning undefined for everything else keeps Vite's default logic.
+      assetsInlineLimit: (filePath) => (filePath.endsWith('.woff2') ? false : undefined),
+    },
+  },
   // Static output, no adapter. See docs/adr/0001-astro-static-on-cloudflare-workers.md
   build: {
     format: 'directory',
