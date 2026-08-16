@@ -1,6 +1,8 @@
 # Portfolio
 
-The personal portfolio site of Coulter Heiberger, an architectural visualization specialist. The site is itself a portfolio piece: its craft, speed, and construction are part of what it demonstrates.
+The personal portfolio site of Coulter Heiberger, a technical artist. The site is itself a portfolio piece: its craft, speed, and construction are part of what it demonstrates.
+
+**Scope.** The site is the portfolio of one independent practice. Everything presented on it is that practice's work; work done for an employer is out of scope. See [ADR-0005](./docs/adr/0005-the-site-presents-the-independent-practice.md).
 
 ## Language
 
@@ -59,12 +61,16 @@ _Avoid_: morph, shared element, hero transition, magic move
 ### Site structure
 
 **Project**:
-A single piece of architectural visualization work presented on the site. A Project may include Rendered Assets and may — but usually does not — include an Exhibit.
+A single piece of work presented on the site: a real-time system, a rendered sequence, an interactive build. A Project may include Rendered Assets and may — but usually does not — include an Exhibit.
 _Avoid_: work, piece, case study, entry
 
 **Plate**:
 A Project as it is presented: one image and one specification line, a single unit. Every piece of work on the site is a Plate under an identical metadata contract, so plates differ in subject rather than in status. The index and the detail page show the same Plate in two presentations, not two different objects.
 _Avoid_: card, tile, thumbnail, item, hero
+
+**Social Card**:
+The image a link to the site unfurls into when it is shared. Two kinds, and they are made differently: a Project's is a build-time crop of its own hero, and the site-wide default is a typographic card authored once and built by `scripts/dev/`.
+_Avoid_: OG image, preview image, thumbnail, share image
 
 **Credit**:
 A Project's provenance: where the work was done and for whom. Covers commissioned work made at a studio, work made for that studio's own client, and speculative work made for neither. Stated on every Project, without exception.

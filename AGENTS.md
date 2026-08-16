@@ -1,6 +1,6 @@
 # coulterheiberger.com
 
-Personal portfolio site for Coulter Heiberger, architectural visualization specialist. The site is itself a portfolio piece — its craft and speed are part of what it demonstrates.
+Personal portfolio site for Coulter Heiberger, technical artist. The site is itself a portfolio piece — its craft and speed are part of what it demonstrates.
 
 Read `CONTEXT.md` for the project's vocabulary before writing anything that names a domain concept. Use those terms; don't drift to the synonyms listed under `_Avoid_`.
 
@@ -14,8 +14,9 @@ Astro 7, static output, deployed to Cloudflare Workers static assets. No SSR, no
 
 ## Binding constraints
 
-These are not style preferences. Violating one is a defect. Full rationale in [ADR-0002](./docs/adr/0002-graphics-isolation-and-performance-budget.md), and for the last two, [ADR-0003](./docs/adr/0003-accessibility-bar.md).
+These are not style preferences. Violating one is a defect. Full rationale in [ADR-0002](./docs/adr/0002-graphics-isolation-and-performance-budget.md); for the first, [ADR-0005](./docs/adr/0005-the-site-presents-the-independent-practice.md); and for the last two, [ADR-0003](./docs/adr/0003-accessibility-bar.md).
 
+- The site presents **one independent practice** and the canonical role is **Technical Artist**. Never reframe it as architectural visualization, never qualify the display line, and never add `worksFor` or `affiliation` to the Person graph. Surrounding docs analyse an archviz precedent set — that is what the design differentiates *from*, not what the site is. See [ADR-0005](./docs/adr/0005-the-site-presents-the-independent-practice.md).
 - No heavy graphics runtime (Three.js, Cesium, or successor) may be imported from a shared layout, and none may load on initial page render. Each lives in a route-scoped, dynamically imported island behind an explicit user Gate.
 - Two WebGL contexts never coexist on one route.
 - The Ambient Layer is built from Rendered Assets, not live WebGL.

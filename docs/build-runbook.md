@@ -109,6 +109,16 @@ too, but do not build it.
 
 **Note:** Cloudflare's docs do not cover preview URLs for an assets-only Worker with no script. This is a prove-it-by-doing-it session, not a reading session.
 
+**Known limitation — a preview deploy emits PRODUCTION `og:image` URLs.** Found while building the Social Card ([#32](https://github.com/imecoulter/coulterheiberger-com/issues/32)). `astro.config.mjs` hardcodes `site: 'https://coulterheiberger.com'`, and `Base.astro` resolves the card against it, so a preview's `og:image` points at production. **This is accepted, not a bug to fix.** Making `site` env-aware would also move the canonical URL and every sitemap entry onto the preview origin, which is a real SEO hazard in exchange for a cosmetic one.
+
+To check a card on a preview deploy, skip the unfurl and open the file directly:
+
+```
+<preview-origin>/_astro/<hashed-filename>
+```
+
+The hashed filename is in the preview's own `og:image` tag — take the path, keep the preview origin. Third-party unfurl debuggers will show you production's card no matter what you paste, so they are not a check.
+
 ```
 /wayfinder https://github.com/imecoulter/coulterheiberger-com/issues/2 #9
 

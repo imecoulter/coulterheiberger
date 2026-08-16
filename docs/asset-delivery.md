@@ -77,6 +77,12 @@ export ratios sends you back into the toolchain when the design moves.
 
 Repo weight lands at roughly 1.2–2.0 MB per committed asset depending on render noise.
 
+**This document, and `npm run assets`, cover Rendered Assets only.** The site-wide Social Card
+(`src/assets/social-card.jpg`) is not one: it has no master, it is built from committed fonts by
+`scripts/dev/build-social-card.mjs`, and §3's ritual would refuse it outright at the 3200 px minimum.
+It is still graded by §4, because §4 reads every tracked image under `src/` and the card conforms to
+§2's format, colour and size rules by construction. See `docs/content-architecture.md` §6.
+
 ### Naming and roles
 
 **Filenames do reach the public.** Astro hashes every emitted variant but *retains the source basename*:
