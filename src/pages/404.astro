@@ -25,8 +25,11 @@ import Base from '../layouts/Base.astro';
      color-mix() with a hard-coded hex. That is the one thing docs/styling.md
      forbids outright: a component never hard-codes a value a token names, and
      never redefines a derived token. Nothing here paints a colour now. */
+
+  /* No min-height here. `body` is a flex column and `main` takes `flex: 1`
+     from base.css, so this fills everything the footer does not — a 100dvh
+     main plus a footer is one screen and a bit, which is a 404 you scroll. */
   main {
-    min-height: 100dvh;
     display: grid;
     place-items: center;
     padding: var(--gutter);

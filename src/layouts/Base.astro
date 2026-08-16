@@ -4,6 +4,7 @@ import '../styles/tokens.css';
 import '../styles/fonts.css';
 import '../styles/base.css';
 import socialCard from '../assets/social-card.jpg';
+import Footer from '../components/Footer.astro';
 
 interface Props {
   title: string;
@@ -100,6 +101,7 @@ const ogImageURL = new URL(ogImage.src, Astro.site);
   </head>
   <body>
     <slot />
+    <Footer />
     <script>
       // Registration — the only JavaScript authored for this site (the beacon
       // below is Cloudflare's, verbatim). It adds .is-in once per element and
