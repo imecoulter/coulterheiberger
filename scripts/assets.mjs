@@ -52,6 +52,16 @@ import { assertSlug, renderDropDir, repoRoot } from './lib/repo.mjs';
 const JPEG = { quality: 92, chromaSubsampling: '4:4:4', mozjpeg: true };
 const LONG_EDGE = 3200;
 
+/**
+ * The aspect window in which a single `framing` keyword can serve both crops
+ * (issue #30). design-direction.md art-directs two: 21:9 and 4:5. A master
+ * between them is cut only vertically to reach 21:9 and only horizontally to
+ * reach 4:5, so the two axes of one keyword answer one crop each. Outside the
+ * window both crops read the same axis and one keyword has to serve both —
+ * which is a composition problem, not a spec violation, so it warns.
+ */
+const FRAMING_WINDOW = { min: 4 / 5, max: 21 / 9 };
+
 /** §1 writes 16-bit PNG. The others are accepted so a re-drop is never blocked. */
 const MASTER_EXTENSIONS = new Set(['.png', '.tif', '.tiff', '.jpg', '.jpeg']);
 
@@ -186,9 +196,28 @@ if (ignored.length) {
 }
 console.log(`  masters moved to ${done}`);
 
+// The framing window (see FRAMING_WINDOW). A warning, never a failure: the
+// master is spec-compliant, and the consequence is that whoever writes the
+// keyword has less to work with, not that anything is wrong with the file.
+for (const w of written) {
+  const aspect = w.width / w.height;
+  if (aspect >= FRAMING_WINDOW.min && aspect <= FRAMING_WINDOW.max) continue;
+  const cut =
+    aspect > FRAMING_WINDOW.max
+      ? 'wider than 21:9, so both crops cut width and both read the left/right axis'
+      : 'taller than 4:5, so both crops cut height and both read the top/bottom axis';
+  console.log(
+    `\n  note — ${w.name} is ${aspect.toFixed(3)}, outside the ${FRAMING_WINDOW.min.toFixed(3)}-` +
+      `${FRAMING_WINDOW.max.toFixed(3)} framing window.\n` +
+      `         It is ${cut}:\n` +
+      `         one framing keyword cannot serve both crops for this image.\n` +
+      `         Pick the keyword for whichever crop the composition can least afford to lose.`,
+  );
+}
+
 // ----------------------------------------------------------------- frontmatter
 const yaml = (items) =>
-  items.map((w) => `  - src: ./${w.name}\n    alt: ''`).join('\n');
+  items.map((w) => `  - src: ./${w.name}\n    alt: ''\n    framing: ''`).join('\n');
 
 if (existsSync(entry)) {
   // No YAML round-tripping (§3): print the block, never edit the file.
@@ -204,9 +233,10 @@ if (existsSync(entry)) {
   );
   console.log(
     `\n  wrote ${entry}\n\n` +
-      `Fill in title, summary, credit and every alt before publishing. They are\n` +
-      `.min(1) in the schema, so the build fails until they are written — that is\n` +
-      `the reminder, by design. Then: npm run publish ${slug}`,
+      `Fill in title, summary, credit, and every alt and framing, before publishing.\n` +
+      `They are .min(1) — and framing an enum — in the schema, so the build fails\n` +
+      `until they are written; that is the reminder, by design. Decide framing at\n` +
+      `390 px, where the 4:5 crop is. Then: npm run publish ${slug}`,
   );
 }
 
