@@ -128,6 +128,25 @@ The entry id is **`riverside-tower`** — Astro strips the trailing `/index` whe
 (`astro/dist/content/utils.js`, verified by build). No `generateId` override, no frontmatter `slug`.
 Images are referenced as `./north-dusk.jpg`, relative to `index.mdx`, resolved by the `image()` helper.
 
+### The slug's shape is a contract, not a convention
+
+`SLUG_RE` in `scripts/lib/repo.mjs` is the one definition: **a lowercase letter, then lowercase
+letters, digits and single interior hyphens.** It is asserted by `npm run assets` and `npm run
+publish` when they scaffold, and by `npm run check:assets` in CI over what is actually on disk — the
+second gate exists because the first only sees folders the ritual created. A folder added by hand, or
+renamed after scaffolding, reaches `main` otherwise unexamined.
+
+Three separate things ride on that one string, which is why it is worth a gate:
+
+- **The public URL segment.** This document already calls URLs the most expensive thing here to
+  change: once indexed they need 301s indefinitely.
+- **The collection entry id**, since the folder name *is* the id.
+- **A CSS `<custom-ident>`** — `plate-<slug>`, the Carry's `view-transition-name`
+  (`docs/styling.md`). This is the reason the pattern requires a **leading letter** rather than
+  merely a leading alphanumeric: an ident may not begin with a digit, and an invalid one fails as
+  *no transition at all*. Silent, and invisible in review — nothing throws, the Carry simply does not
+  happen on that one Project.
+
 ---
 
 ## 3. The Build Log collection — decided, not built
