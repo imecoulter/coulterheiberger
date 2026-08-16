@@ -131,10 +131,15 @@ the 50 KB assertion would go back to reading 0 on every PR.
   to say *one authored script*. The distinction is now load-bearing: authored behaviour still has one
   home in `Base.astro`, and a second one still requires amending `docs/design-direction.md`. A
   third-party measurement script is a different category, governed by this ADR.
-- **The performance gate now depends on the public internet.** `lighthouserc.cjs` collects against a
-  local static server, but the beacon is fetched from `static.cloudflareinsights.com`. If that host is
-  unreachable in CI, the script row under-reports rather than failing loudly. Accepted: the same
-  outage would make the deploy pointless anyway.
+- **The performance gate now depends on the public internet, and says so.** `lighthouserc.cjs`
+  collects against a local static server, but the beacon is fetched from
+  `static.cloudflareinsights.com`. If that host is unreachable, `resource-summary:script:size` would
+  read 0 and **pass** — the vacuous gate this ADR exists to end, reintroduced by an outage and
+  invisible, because `lhci assert` prints only failures. So `scripts/assert-lcp-path.mjs` asserts a
+  floor: the beacon must appear in the network records of every run. LHCI 0.15 has no
+  `minNumericValue`, which is why the floor cannot live in the rc file beside the ceiling it guards.
+  A hard failure is the right outcome — a deploy whose JS budget nothing verified is not one worth
+  shipping.
 - **A post-deploy check now blocks the deploy** if the Served Document's script inventory differs from
   the built one. That is the rule at the top of this ADR turned into a gate — without it, nothing stops
   a future dashboard toggle from re-opening the exact hole this ADR closes.

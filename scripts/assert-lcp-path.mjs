@@ -76,6 +76,32 @@ function lcpPathBytes(lhr) {
   return { bytes, counted, lcpMs, route: new URL(url).pathname };
 }
 
+/**
+ * ADR-0004's floor: the Web Analytics beacon must actually be on the wire.
+ *
+ * `resource-summary:script:size` in lighthouserc.cjs is what prices the beacon
+ * against ADR-0002's 50 KB. That row is built from network records, so if the
+ * beacon fails to load — CDN outage, a lost `is:inline`, someone reintroducing a
+ * PROD-only branch — the row reads 0 and PASSES. That is precisely the vacuous
+ * gate ADR-0004 was written to end, and it is indistinguishable from a healthy
+ * build in the LHCI output, because `lhci assert` only prints failures.
+ *
+ * So the presence of the beacon is asserted here, where the raw LHR is in hand.
+ * LHCI 0.15 has no `minNumericValue`, which is why this cannot live in the
+ * rc file next to the ceiling it guards.
+ *
+ * Deliberately a hard failure rather than a warning: a red build on a
+ * cloudflareinsights.com outage is the correct outcome, because the deploy it
+ * would gate is one whose JS budget nothing verified.
+ */
+const BEACON_URL = 'https://static.cloudflareinsights.com/beacon.min.js';
+
+function beaconBytes(lhr) {
+  const items = lhr.audits?.['network-requests']?.details?.items ?? [];
+  const request = items.find((r) => (r.url || '').startsWith(BEACON_URL));
+  return request ? request.transferSize || 0 : null;
+}
+
 /** Same rule LHCI's own `aggregationMethod: 'median'` uses, so the two gates agree. */
 function median(values) {
   const sorted = [...values].sort((a, b) => a - b);
@@ -88,18 +114,20 @@ try {
   /** One budget for every route. Split this once Exhibit routes exist — ADR-0002
    *  gives Exhibits their own uncapped tier, so a single budget will be wrong. */
   const byRoute = new Map();
+  const beaconRuns = [];
   for (const lhr of loadLhrs(LHCI_DIR)) {
     const result = lcpPathBytes(lhr);
     if (!byRoute.has(result.route)) byRoute.set(result.route, []);
     byRoute.get(result.route).push(result);
+    beaconRuns.push({ route: result.route, bytes: beaconBytes(lhr) });
   }
 
-  let failed = false;
+  let lcpFailed = false;
   for (const [route, runs] of [...byRoute].sort()) {
     const value = median(runs.map((r) => r.bytes));
     const worst = runs.reduce((a, b) => (a.bytes >= b.bytes ? a : b));
     const ok = value <= BUDGET_BYTES;
-    if (!ok) failed = true;
+    if (!ok) lcpFailed = true;
 
     console.log(`\n${ok ? 'PASS' : 'FAIL'}  LCP Path  ${kb(value)} / ${kb(BUDGET_BYTES)}  ${route}`);
     console.log(
@@ -115,7 +143,27 @@ try {
     }
   }
 
-  if (failed) {
+  const missing = beaconRuns.filter((r) => !r.bytes);
+  if (missing.length > 0) {
+    console.error(
+      `\nFAIL  Beacon  absent from ${missing.length}/${beaconRuns.length} run(s)  ` +
+        `[${[...new Set(missing.map((r) => r.route))].sort().join(', ')}]\n\n` +
+        `The Cloudflare Web Analytics beacon did not load, so\n` +
+        `\`resource-summary:script:size\` is grading a page without it — it reads 0 and\n` +
+        `passes, which is the vacuous gate ADR-0004 exists to end.\n\n` +
+        `Check, in order: is the snippet still in src/layouts/Base.astro with is:inline;\n` +
+        `has someone put it behind import.meta.env.PROD (ADR-0004 forbids it); is\n` +
+        `static.cloudflareinsights.com reachable from the runner.\n\n` +
+        `Do NOT delete this assertion to get green. If the beacon is genuinely going\n` +
+        `away, it goes away from Base.astro and from ADR-0004 first.`,
+    );
+  } else {
+    const value = median(beaconRuns.map((r) => r.bytes));
+    console.log(`\nPASS  Beacon  ${kb(value)} on the wire, all ${beaconRuns.length} run(s)`);
+    console.log(`      Priced against ADR-0002's 50 KB JS budget by lighthouserc.cjs.`);
+  }
+
+  if (lcpFailed) {
     console.error(
       `\nLCP Path budget exceeded (ADR-0002: <= ${kb(BUDGET_BYTES)} over the wire).\n` +
         `Move bytes off the LCP Path — make them Post-LCP Media that streams lazily.\n` +
@@ -124,9 +172,10 @@ try {
         `change it in docs/adr/0002-graphics-isolation-and-performance-budget.md first,\n` +
         `with a reason.`,
     );
-    process.exit(1);
   }
-  console.log('\nLCP Path budget ok.');
+
+  if (lcpFailed || missing.length > 0) process.exit(1);
+  console.log('\nLCP Path budget ok. Beacon on the wire.');
 } catch (err) {
   console.error(`\nCould not evaluate the LCP Path budget.\n${err.message}`);
   process.exit(1);
