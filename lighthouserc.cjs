@@ -62,13 +62,21 @@ module.exports = {
         // only transferSize, so this too is over-the-wire — the same unit the LCP
         // Path budget uses.
         //
-        // KNOWN BLIND SPOT: resource-summary is built from network records, so an
-        // inline <script> is not a request and does not appear here at all — it is
-        // counted in the document row instead. The site's only JavaScript is inline
-        // (issue #12), so this assertion currently reads 0 and the real 182 B sits
-        // in the HTML. That is the cheap end of the trade and it is deliberate; what
-        // this row still catches is exactly what it should — the moment someone adds
-        // a library, because a library means a bundle means a request.
+        // BLIND SPOT, partly closed: resource-summary is built from network
+        // records, so an inline <script> is not a request and does not appear here
+        // at all — it is counted in the document row instead. The site's authored
+        // JavaScript is inline (issue #12), so its 195 B still sits in the HTML
+        // rather than in this row.
+        //
+        // This row read 0 — a gate passing vacuously — until the Cloudflare Web
+        // Analytics beacon moved out of edge injection and into Base.astro
+        // (ADR-0004). It now asserts a real ~11,340 B, 22% of the budget, on every
+        // PR. The beacon counts here with no carve-out, deliberately: a future
+        // React island prices itself against what the visitor already downloads,
+        // not against code we happen to have written.
+        //
+        // PRE-COMMITMENT (ADR-0004): if this row goes red, the beacon goes. Not
+        // this threshold, and not hero bytes.
         'resource-summary:script:size': ['error', { maxNumericValue: 51200 }],
 
         // ADR-0002's LCP Path budget is asserted by scripts/assert-lcp-path.mjs,
