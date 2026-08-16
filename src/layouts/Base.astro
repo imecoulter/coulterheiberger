@@ -101,8 +101,9 @@ const ogImageURL = new URL(ogImage.src, Astro.site);
   <body>
     <slot />
     <script>
-      // Registration — the only JavaScript on the site. It adds .is-in once per
-      // element and stops watching; the moves themselves are CSS in base.css.
+      // Registration — the only JavaScript authored for this site (the beacon
+      // below is Cloudflare's, verbatim). It adds .is-in once per element and
+      // stops watching; the moves themselves are CSS in base.css.
       //
       // Inline on purpose. Issue #12 measured this at 195 B gzip with ZERO
       // extra requests: Astro inlines a script that imports nothing. Every
@@ -132,5 +133,30 @@ const ogImageURL = new URL(ogImage.src, Astro.site);
 
       for (const el of document.querySelectorAll('[data-anim]')) io.observe(el);
     </script>
+    {/* Cloudflare Web Analytics — the site's only third-party script, and the
+        only one that is not authored here. See ADR-0004.
+
+        It used to be injected at the edge by an auto-install ruleset, which
+        meant 11,364 B ran on every page while the repo and CI saw nothing. That
+        ruleset is now disabled and the snippet lives here, because if it's on
+        the wire, it's in the repo. ADR-0004 records what disabling it actually
+        took — `auto_install: false` alone did not stop the injection.
+
+        `is:inline` is required: Astro would otherwise try to process this, and
+        the point is to ship Cloudflare's snippet byte-for-byte.
+
+        No PROD branch, on purpose. Cloudflare validates telemetry by postfix
+        hostname match, so localhost and *.workers.dev previews are rejected
+        server-side — CI measures the 11,340 B against the 50 KB budget while
+        reporting nothing. Shipping it conditionally would put the gate back to
+        grading a document no visitor receives.
+
+        The token is public by construction; it ships in this HTML. */}
+    <script
+      is:inline
+      type="module"
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon='{"token": "1384ca912aa746e5acc7e4c495a9c460"}'
+    ></script>
   </body>
 </html>
