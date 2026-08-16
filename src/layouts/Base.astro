@@ -6,14 +6,15 @@ import '../styles/base.css';
 interface Props {
   title: string;
   description: string;
-  /** Site-wide true until launch. Flipping a page's noindex is the launch
-      switch for that page — see docs/content-architecture.md. */
+  /** Opt a single page OUT of indexing. Defaults to false: the site is
+      launched, so a new page is indexable unless it says otherwise. `/404`
+      is the only page that sets it — see docs/content-architecture.md. */
   noindex?: boolean;
   /** JSON-LD, e.g. a Person or CreativeWork graph. Omit if the page has none. */
   structuredData?: Record<string, unknown>;
 }
 
-const { title, description, noindex = true, structuredData } = Astro.props;
+const { title, description, noindex = false, structuredData } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 ---
@@ -41,9 +42,6 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     {structuredData && (
       <script type="application/ld+json" is:inline set:html={JSON.stringify(structuredData)} />
     )}
-    {/* Site-wide until launch. Removing this line is the launch switch — see
-        docs/content-architecture.md. */}
-    <meta name="robots" content="noindex" />
     {/* Registration is opt-in via [data-anim] and gated on this script, so with
         scripting off the marked elements would stay hidden. The selector is
         :root-qualified to outrank base.css's equal-specificity [data-anim]

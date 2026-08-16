@@ -182,9 +182,29 @@ because one query filtered on `import.meta.env.PROD` and another did not.
 
 **Scaffold Projects live on `main`.** With no real Projects yet, ~3 placeholder entries belong on `main` so
 that the design work, the perf gate, and preview deploys all run against realistically-shaped content
-instead of an empty grid. Both pages already carry `noindex`; launch is therefore **replace the scaffold
-folders, then remove `noindex`** ([#14](https://github.com/imecoulter/coulterheiberger-com/issues/14)) — not
-a switch someone flips over an empty site.
+instead of an empty grid.
+
+### Indexability — two switches, not one
+
+This was originally written as a single switch ("replace the scaffold folders, then remove `noindex`"),
+which conflated two moves that happen at different times. They are separate:
+
+**1. Placeholder live — done.** `/` is indexable. This is safe *specifically because no route renders a
+Project*: the scaffolds are unreachable, absent from the sitemap, and invisible to a crawler. What gets indexed is one honest page that says the portfolio is in progress, which is worth having
+crawled and canonicalised early rather than on launch day.
+
+**2. v1 launched — not yet.** Replacing the three scaffold folders with real Projects and shipping
+`/projects/<slug>/`. **The moment a route renders a Project, indexability becomes load-bearing again** —
+scaffold content would go from unreachable to crawlable in the same commit that adds the route. Whoever
+builds those pages replaces the scaffolds in the same change, or gives the route a temporary `noindex`.
+
+`noindex` is now **opt-in per page** (`Base.astro` defaults it to `false`), because a launched site whose
+pages default to invisible is a trap. `/404` is the only page that sets it, permanently.
+
+This switch had never actually worked. `Base.astro` carried an unconditional `noindex` *in addition to* the
+conditional prop, so removing the prop from a page changed nothing — the mechanism
+[#14](https://github.com/imecoulter/coulterheiberger-com/issues/14) documented was a no-op from the day it
+was written, and both live pages served two `robots` tags. Found by audit, not by the tickets.
 
 **MDX for Projects, `.astro` for everything else.** `@astrojs/mdx` is build-time only and adds zero client
 JS, so it costs the LCP Path nothing, and the case-study Projects that arrive later will want embedded
