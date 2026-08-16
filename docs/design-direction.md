@@ -105,9 +105,13 @@ the LCP Path instead of arguing about it. Full measurements in
 
 | role | face | cut | on the wire |
 | --- | --- | --- | ---: |
-| display | **Montserrat** | static `wght=500`, site repertoire | 9,628 B |
+| display | **Montserrat** | static `wght=500`, site repertoire | 9,656 B |
 | body | **system serif** — Georgia, Times New Roman, Nimbus Roman | — | 0 B |
-| mono | **JetBrains Mono** | static `wght=500`, no ligatures | 4,020 B |
+| mono | **JetBrains Mono** | static `wght=500`, no ligatures | 5,228 B |
+
+**A page may use two of the three roles.** The cap is a ceiling, not a quota — `/` is Montserrat and
+mono only, because four lines with no prose on them have nothing for the serif to do. The serif is
+still live on `/404`. What a fourth role would require is unchanged: an amendment here first.
 
 **The serif is demoted all the way to a system stack.** #10 kept it but called it "right for reading,
 not distinctive." #21 then found it was **73% of the type stack** — 45,340 B for 400 + 600 + italic,
