@@ -2,15 +2,17 @@
 import Base from '../layouts/Base.astro';
 import { EMAIL, LINKEDIN } from '../site';
 
-/* sameAs is legal here because the footer renders the link — the governing rule
-   in docs/content-architecture.md is that if no page renders a field, the field
-   does not exist. `address` still fails that test and stays out until /about/
-   lands. */
+const email = 'ime@coulterheiberger.com';
+
+// `worksFor` and `affiliation` are NEVER added here. They are the obvious next
+// schema.org enrichment and they are wrong: this site describes an independent
+// practice, and an organization edge would assert something it does not claim.
+// See ADR-0004.
 const person = {
   '@context': 'https://schema.org',
   '@type': 'Person',
   name: 'Coulter Heiberger',
-  jobTitle: 'Architectural Visualization Specialist',
+  jobTitle: 'Technical Artist',
   url: 'https://coulterheiberger.com',
   email: `mailto:${EMAIL}`,
   sameAs: [LINKEDIN],
@@ -18,14 +20,15 @@ const person = {
 ---
 
 <Base
-  title="Coulter Heiberger — Architectural Visualization"
-  description="Architectural visualization by Coulter Heiberger. Portfolio in progress."
+  title="Coulter Heiberger — Technical Artist"
+  description="Real-time systems for spatial environments: terrain, architecture, simulation, and interactive experiences. Portfolio in progress."
   structuredData={person}
 >
   <main>
     <span class="t-label eyebrow">Portfolio in progress</span>
     <h1>Coulter Heiberger</h1>
-    <p class="t-display role">Architectural Visualization</p>
+    <p class="t-display role">Technical Artist</p>
+    <p class="t-label email"><a href={`mailto:${email}`}>{email}</a></p>
   </main>
 </Base>
 
@@ -55,8 +58,8 @@ const person = {
     letter-spacing: -0.022em;
   }
 
-  /* Montserrat, not the serif. "Architectural Visualization" is a title, not
-     reading — it belongs to the same voice as the name directly above it.
+  /* Montserrat, not the serif. "Technical Artist" is a title, not reading —
+     it belongs to the same voice as the name directly above it.
      Tracking comes from .t-display and matches the h1 at -0.02em. */
   .role {
     margin: 24px 0 0;

@@ -1,8 +1,9 @@
 ---
+import { getImage } from 'astro:assets';
 import '../styles/tokens.css';
 import '../styles/fonts.css';
 import '../styles/base.css';
-import Footer from '../components/Footer.astro';
+import socialCard from '../assets/social-card.jpg';
 
 interface Props {
   title: string;
@@ -13,11 +14,45 @@ interface Props {
   noindex?: boolean;
   /** JSON-LD, e.g. a Person or CreativeWork graph. Omit if the page has none. */
   structuredData?: Record<string, unknown>;
+  /** The page's Social Card source — for a Project, `images[0]`. A page says
+      WHICH image; it never says how to crop it. See docs/content-architecture.md
+      §6. Omit to get the site-wide card. */
+  image?: { src: ImageMetadata; alt: string };
 }
 
-const { title, description, noindex = false, structuredData } = Astro.props;
+const { title, description, noindex = false, structuredData, image } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+
+/**
+ * The site-wide default. It applies to EVERY page that does not name its own
+ * image, `/404` included — a carve-out would only mean one route unfurls as a
+ * bare link, and nobody shares a 404 on purpose anyway.
+ *
+ * This alt string is the one on the site not enforced by a schema: every other
+ * alt comes through `alt: z.string().min(1)` on the Project collection. It is a
+ * constant here because the card is a constant.
+ */
+const card = image ?? { src: socialCard, alt: 'Coulter Heiberger — Technical Artist' };
+
+/**
+ * THE LAYOUT OWNS THE CROP. `getImage` with both dimensions resizes `fit: 'cover'`
+ * from centre, so any source becomes 1200x630 without the page knowing the ratio
+ * exists. Keeping it here is what stops a second, divergent card mechanism
+ * appearing the first time a page wants a different aspect.
+ *
+ * 1200x630 is provisional framing, not a settled one. Astro crops from centre and
+ * a centre crop recomposes nothing — the same defect
+ * [#30](https://github.com/imecoulter/coulterheiberger-com/issues/30) tracks for
+ * the 21:9 and 4:5 art-directed crops. This is that issue's THIRD ratio, and
+ * whatever framing mechanism it lands must cover the card too.
+ *
+ * `format: 'jpeg'` rather than the delivery pipeline's AVIF/WebP: crawler support
+ * for modern formats is uneven and a card that some scrapers cannot decode is
+ * worse than a slightly larger one nobody's LCP Path pays for.
+ */
+const ogImage = await getImage({ src: card.src, width: 1200, height: 630, format: 'jpeg' });
+const ogImageURL = new URL(ogImage.src, Astro.site);
 ---
 
 <!doctype html>
@@ -36,7 +71,13 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalURL} />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content={ogImageURL} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={card.alt} />
+    {/* Unconditional, because the card is. `summary` was correct while #14 shipped
+        the metadata with no image at all; every page now has one. */}
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
 
@@ -61,8 +102,9 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     <slot />
     <Footer />
     <script>
-      // Registration — the only JavaScript on the site. It adds .is-in once per
-      // element and stops watching; the moves themselves are CSS in base.css.
+      // Registration — the only JavaScript authored for this site (the beacon
+      // below is Cloudflare's, verbatim). It adds .is-in once per element and
+      // stops watching; the moves themselves are CSS in base.css.
       //
       // Inline on purpose. Issue #12 measured this at 195 B gzip with ZERO
       // extra requests: Astro inlines a script that imports nothing. Every
@@ -92,5 +134,30 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
       for (const el of document.querySelectorAll('[data-anim]')) io.observe(el);
     </script>
+    {/* Cloudflare Web Analytics — the site's only third-party script, and the
+        only one that is not authored here. See ADR-0004.
+
+        It used to be injected at the edge by an auto-install ruleset, which
+        meant 11,364 B ran on every page while the repo and CI saw nothing. That
+        ruleset is now disabled and the snippet lives here, because if it's on
+        the wire, it's in the repo. ADR-0004 records what disabling it actually
+        took — `auto_install: false` alone did not stop the injection.
+
+        `is:inline` is required: Astro would otherwise try to process this, and
+        the point is to ship Cloudflare's snippet byte-for-byte.
+
+        No PROD branch, on purpose. Cloudflare validates telemetry by postfix
+        hostname match, so localhost and *.workers.dev previews are rejected
+        server-side — CI measures the 11,340 B against the 50 KB budget while
+        reporting nothing. Shipping it conditionally would put the gate back to
+        grading a document no visitor receives.
+
+        The token is public by construction; it ships in this HTML. */}
+    <script
+      is:inline
+      type="module"
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon='{"token": "1384ca912aa746e5acc7e4c495a9c460"}'
+    ></script>
   </body>
 </html>
