@@ -9,14 +9,39 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* The column every page is: content, then the footer, with the footer resting
+   on the bottom of the viewport when the content is shorter than one screen.
+   Added with the footer in issue #34 — before it, `body` had one child and
+   nothing to distribute. /404 in particular used to hold its own
+   `min-height: 100dvh` on <main>; that plus a footer is one screen PLUS the
+   footer, i.e. a 404 page you have to scroll. `flex: 1` on <main> is the same
+   full-height centring with the footer accounted for. */
 body {
   margin: 0;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
   background: var(--ground);
   color: var(--ink);
   font-family: var(--f-body);
   font-size: var(--t-body);
   line-height: 1.62;
   -webkit-font-smoothing: antialiased;
+}
+
+/* `flex: 1` fills whatever the footer does not, which is what puts the footer
+   on the bottom of the viewport on a short page.
+
+   `width: 100%` is NOT redundant with the flex container's default
+   `align-items: stretch`. A cross-axis `margin-inline: auto` — which is how a
+   page centres its own measure — beats `stretch` outright, so without an
+   explicit width <main> shrink-to-fits and the whole page collapses to the
+   width of its longest line. Verified in a browser: 827px instead of 1280px.
+   With a definite 100%, max-width still caps the measure and the auto margins
+   still centre it. Any other direct child of <body> needs the same pair. */
+main {
+  flex: 1;
+  width: 100%;
 }
 
 img {

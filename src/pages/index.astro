@@ -1,15 +1,19 @@
 ---
 import Base from '../layouts/Base.astro';
+import { EMAIL, LINKEDIN } from '../site';
 
-const email = 'ime@coulterheiberger.com';
-
+/* sameAs is legal here because the footer renders the link — the governing rule
+   in docs/content-architecture.md is that if no page renders a field, the field
+   does not exist. `address` still fails that test and stays out until /about/
+   lands. */
 const person = {
   '@context': 'https://schema.org',
   '@type': 'Person',
   name: 'Coulter Heiberger',
   jobTitle: 'Architectural Visualization Specialist',
   url: 'https://coulterheiberger.com',
-  email: `mailto:${email}`,
+  email: `mailto:${EMAIL}`,
+  sameAs: [LINKEDIN],
 };
 ---
 
@@ -22,16 +26,15 @@ const person = {
     <span class="t-label eyebrow">Portfolio in progress</span>
     <h1>Coulter Heiberger</h1>
     <p class="t-display role">Architectural Visualization</p>
-    <p class="t-label email"><a href={`mailto:${email}`}>{email}</a></p>
   </main>
 </Base>
 
 <style>
-  /* TWO of the three type roles, not three. Four lines do not need three
-     families: this page is Montserrat (name, role) and JetBrains Mono (the two
-     utility lines), at three sizes. The serif is not absent from the site —
-     /404 still sets prose in it — it is absent from a page that has no prose to
-     read, which is the only job the direction kept it for.
+  /* TWO of the three type roles, not three. A handful of lines do not need
+     three families: this page is Montserrat (name, role) and JetBrains Mono
+     (the eyebrow, and the footer below it). The serif is not absent from the
+     site — /404 still sets prose in it — it is absent from a page that has no
+     prose to read, which is the only job the direction kept it for.
 
      This is a page-level choice, not a change to docs/design-direction.md. The
      hard cap of three roles is a ceiling, not a quota. */
@@ -61,31 +64,8 @@ const person = {
     line-height: 1.5;
   }
 
-  /* The same mono role as the eyebrow, at the same size — deliberately. This
-     was .t-spec, which is 0.6875rem against the eyebrow's 0.75rem: a 1px
-     difference, too small to read as hierarchy and big enough to read as a
-     mistake. .t-spec is for specification lines (`Cycles · 3200 px · 41 min`);
-     an email address is a label.
-
-     Uppercase and label tracking are switched off: an address is data you read
-     and type, not a phrase set in caps, and IME@COULTERHEIBERGER.COM was the
-     most actionable line on the page and the hardest to read. The href was
-     always lowercase, so nothing about the link changes.
-
-     THIS LINE DEPENDS ON THE FONT CUT. MONO_SPEC was uppercase-only, and
-     `text-transform: none` against that subset does not lowercase the line, it
-     shatters it — `@` and `.` from JetBrains Mono, every letter from Consolas.
-     U+0061-007A was added to the cut for exactly this line (+1,208 B, taking
-     the stack to 14,884 B against a 500 KB ceiling). If the
-     mono subset is ever narrowed again, this rule breaks silently and visibly. */
-  .email {
-    margin: calc(var(--rhythm) * 0.5) 0 0;
-    text-transform: none;
-    letter-spacing: normal;
-
-    & a {
-      text-decoration: none;
-      border-bottom: 1px solid var(--rule);
-    }
-  }
+  /* The email address used to be a fourth line here. Issue #34 moved it into
+     src/components/Footer.astro, where it is on every page instead of one, and
+     it is NOT duplicated back — the address appears once per page. The notes
+     that used to live here about the lowercase mono cut moved with it. */
 </style>

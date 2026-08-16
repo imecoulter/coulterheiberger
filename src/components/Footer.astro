@@ -1,0 +1,63 @@
+---
+/* The site's contact surface, on every page including /404.
+   Decided in issue #34: `mailto:` stays, and a LinkedIn link joins it. No
+   contact form — see docs/content-architecture.md §1 for the reasoning and for
+   the trigger that would reopen it.
+
+   This is the repo's first component, so it sets the precedent: scoped <style>
+   in the file, no token hard-coded, no new type role. */
+import { EMAIL, LINKEDIN } from '../site';
+---
+
+{/* No data-anim. The footer is on the first screen on /404 and on the current
+    placeholder /, and base.css:106 rules first-screen elements out of
+    Registration. Independently, CONTEXT.md scopes Registration to information
+    arriving — the footer is furniture that is simply present. */}
+<footer class="t-spec">
+  <a class="address" href={`mailto:${EMAIL}`}>{EMAIL}</a>
+  {/* rel="me" pairs with the Person graph's sameAs on /. No target="_blank":
+      it decides tab behaviour on the visitor's behalf and drags rel="noopener"
+      in behind it. */}
+  <a href={LINKEDIN} rel="me">LinkedIn</a>
+</footer>
+
+<style>
+  /* Aligned to the same 1600px measure and gutter as index.astro's <main>, so
+     the footer sits on the page's left edge rather than the viewport's.
+
+     `width: 100%` for the reason spelled out in base.css: <body> is a flex
+     column, and `margin-inline: auto` on a flex item beats `align-items:
+     stretch`, so without it this shrink-to-fits and centres itself. */
+  footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 28px;
+    width: 100%;
+    max-width: 1600px;
+    margin-inline: auto;
+    padding: calc(var(--rhythm) * 0.5) var(--gutter);
+  }
+
+  /* --muted arrives from .t-spec. It is 4.90:1 on the day ground and 5.01:1 on
+     the night ground — computed from the oklab mixes in tokens.css, not eyeballed.
+     --t-spec is 0.6875rem = 11px, so the WCAG large-text 3:1 exemption does not
+     apply and 4.5:1 is the bar. NEVER --signal here: it is not a text colour. */
+  a {
+    text-decoration: none;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* Same reasoning as the home page's old email line, which this replaces: an
+     address is data you read and type, not a phrase set in caps, and
+     IME@COULTERHEIBERGER.COM was the least readable actionable string on the site.
+
+     THIS LINE DEPENDS ON THE FONT CUT. MONO_SPEC was uppercase-only, and
+     `text-transform: none` against that subset does not lowercase the line, it
+     shatters it — `@` and `.` from JetBrains Mono, every letter from Consolas.
+     U+0061-007A is in the cut for exactly this line (docs/styling.md#fonts). If
+     the mono subset is ever narrowed again, this breaks silently and visibly. */
+  .address {
+    text-transform: none;
+    letter-spacing: normal;
+  }
+</style>

@@ -18,7 +18,7 @@ The governing rule, applied throughout: **if no page renders a field, the field 
 | --- | --- |
 | `/` | **The Project index itself.** A positioning line, then every Project |
 | `/projects/<slug>/` | Project detail |
-| `/about/` | Bio, experience, capabilities, contact — one page |
+| `/about/` | Bio, experience, capabilities, location, contact — one page |
 | `/404` | Keeps its `noindex` |
 | `/log/`, `/log/<slug>/` | Build Log. Shape decided in §3, **not built** |
 
@@ -37,9 +37,50 @@ exist, and a landing page in front of a portfolio is a doormat. The work is the 
 
 ### Why `/about/` is one page
 
-Bio, experience, capabilities, and contact are one document about one person. Split across four routes they
-become four thin pages competing for the same visitor. Contact in particular is not a route: it is a
-`mailto:` and nothing else.
+Bio, experience, capabilities, location, and contact are one document about one person. Split across five
+routes they become five thin pages competing for the same visitor. Contact in particular is not a route.
+
+**`location` is listed here and rendered nowhere yet.** Nothing in the repo states a location, and the
+governing rule at the top of this file says a field nobody renders does not exist — so there is no
+`location` in any schema and no `address` in the Person graph on `/`. Both land when `/about/` does.
+Whoever builds that page: this is the line that says the field is wanted.
+
+### Contact: `mailto:` and a LinkedIn link, no form
+
+Decided in [issue #34](https://github.com/imecoulter/coulterheiberger-com/issues/34). Contact is
+`src/components/Footer.astro` on every page — the address, and one text link to LinkedIn carrying
+`rel="me"` to pair with the Person graph's `sameAs` on `/`. **No contact form at v1.** There are no real
+Projects yet, so a form would optimise a funnel with nothing at the top of it.
+
+Two arguments that get made for this decision are wrong, and are written down here so they are not made
+again:
+
+1. **A form would not reopen [ADR-0001](./adr/0001-astro-static-on-cloudflare-workers.md), and claiming it
+   would is the weakest argument in favour of `mailto:`, not the strongest.** Verified against live
+   Cloudflare docs: adding `"main": "./worker/index.ts"` and `"run_worker_first": ["/api/*"]` to the
+   existing `assets` block in `wrangler.jsonc` runs a Worker on one path while every other request is
+   served by static assets — **no Astro adapter, no change to `output: 'static'`**. ADR-0001 already wrote
+   the clause ("Anything genuinely dynamic later becomes an explicit Worker route"), so doing this
+   *executes* the ADR rather than reopening it. The honest cost of a form is spam handling, JS payload and
+   maintenance. Argue it on those.
+2. **`mailto:` is not "zero spam surface."** The address ships in plaintext twice per render — the
+   `<a href="mailto:">` and the JSON-LD `email` field — in a public repo on an indexable page. That is
+   accepted deliberately. The real argument is that **spam is handled at a mail layer that already exists,
+   at zero bytes**: the address sits on Cloudflare Email Routing, so the mitigation is rotating an alias,
+   not building anything.
+
+**The revisit trigger is one inbound LinkedIn connection request or InMail from a stranger that reads as a
+work enquiry.** One, not two: someone who routes around a published address onto a channel that costs them
+*more* effort has demonstrated the form hypothesis rather than merely matched it.
+[#33](https://github.com/imecoulter/coulterheiberger-com/issues/33) is explicitly **not** the instrument —
+analytics cannot observe an enquiry that was never sent, and a tripwire that cannot fire is a permanent
+decision in a temporary costume.
+
+Also decided and deliberately absent, so none of these reads as an oversight: **no phone number** (robocall
+bait, and unlike the address it cannot be rotated behind Email Routing); **no availability status** (wrong
+the moment he is busy, and stale reads worse than absent); **no Instagram / ArtStation / Behance / X** (a
+link list's credibility is set by its weakest entry); **GitHub deferred** until the Build Log ships and
+gives it a reason to exist.
 
 ---
 

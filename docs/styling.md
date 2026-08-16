@@ -137,8 +137,9 @@ compresses it into the woff2. It surfaced because a charset change to *mono* mov
 4 bytes.
 
 **The mono cut includes lowercase (`U+0061-007A`)** even though `.t-label` and `.t-spec` both
-uppercase their text. It is there for the home page's email address, which sets `text-transform: none`
-precisely because an address is data rather than a phrase. Consequence worth knowing: the subset no
+uppercase their text. It is there for the email address in
+`src/components/Footer.astro`, which sets `text-transform: none` precisely because an address is data
+rather than a phrase. Consequence worth knowing: the subset no
 longer *enforces* mono-as-an-uppercase-face, so a stray lowercase mono line will now render instead of
 falling back conspicuously and telling you.
 

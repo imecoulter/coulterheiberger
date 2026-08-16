@@ -2,6 +2,7 @@
 import '../styles/tokens.css';
 import '../styles/fonts.css';
 import '../styles/base.css';
+import Footer from '../components/Footer.astro';
 
 interface Props {
   title: string;
@@ -58,6 +59,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   </head>
   <body>
     <slot />
+    <Footer />
     <script>
       // Registration — the only JavaScript on the site. It adds .is-in once per
       // element and stops watching; the moves themselves are CSS in base.css.
