@@ -9,6 +9,8 @@ dist/
 .lighthouseci/
 # agent worktrees
 .claude/worktrees/
+# playwright-mcp scratch (screenshots, snapshots) from checking pages by eye
+.playwright-mcp/
 
 # dependencies
 node_modules/

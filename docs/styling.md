@@ -107,12 +107,12 @@ removes one round trip from the LCP Path at no meaningful byte cost.
 Vite hashes and cache-busts them. **Never a Google Fonts `<link>`** — the prototype used one, and it
 costs two extra origins and a render-blocking external stylesheet on the LCP Path.
 
-Two files ship, **13,648 B on the wire**:
+Two files ship, **14,884 B on the wire**:
 
 | | file | |
 | --- | --- | ---: |
-| display | `montserrat-wght500-site-trimmed.woff2` | 9,628 B |
-| mono | `jetbrainsmono-wght500-mono-spec-no-liga.woff2` | 4,020 B |
+| display | `montserrat-wght500-site-trimmed.woff2` | 9,656 B |
+| mono | `jetbrainsmono-wght500-mono-spec-no-liga.woff2` | 5,228 B |
 
 The body serif is a **system stack** and has no file. Why, and everything else about the faces, is in
 [docs/design-direction.md](./design-direction.md#typography); the measurements are in
@@ -130,14 +130,28 @@ Sources are the variable TTFs from `github.com/google/fonts` and are **not** com
 asserts that name IDs 13/14 survive subsetting — without them the file breaks OFL 1.1 clause 2, and
 pyftsubset drops them by default. Licence terms are in [NOTICE](../NOTICE).
 
+**The output is byte-reproducible**, which is the only thing that makes a committed binary auditable:
+run it twice on the same sources and the hashes match. That was not true until `--no-recalc-timestamp`
+was passed to `varLib.instancer`, which stamps `head.modified` with the current time by default and
+compresses it into the woff2. It surfaced because a charset change to *mono* moved *Montserrat* by
+4 bytes.
+
+**The mono cut includes lowercase (`U+0061-007A`)** even though `.t-label` and `.t-spec` both
+uppercase their text. It is there for the home page's email address, which sets `text-transform: none`
+precisely because an address is data rather than a phrase. Consequence worth knowing: the subset no
+longer *enforces* mono-as-an-uppercase-face, so a stray lowercase mono line will now render instead of
+falling back conspicuously and telling you.
+
 **Three things not to undo:**
 
 - **No `<link rel="preload">`.** Measured *slower* on a text page (727 → 1,074 ms). Stylesheets are
   inlined, so `@font-face` is already in the document; a preload only promotes fonts ahead of a paint
   they never blocked.
 - **Fonts are never base64-inlined.** `astro.config.mjs` forces `assetsInlineLimit` to skip `.woff2`.
-  Vite's 4,096 B default would otherwise inline the 4,020 B mono file — and only that one — putting
-  it on the document's critical path, where on a text-LCP page it delays the paint that *is* the LCP.
+  Vite's 4,096 B default inlined the mono file when it was 4,020 B — and only that one — putting it on
+  the document's critical path, where on a text-LCP page it delays the paint that *is* the LCP. At
+  5,228 B it now clears the threshold unaided, which is exactly why the rule stays written down: one
+  charset edit moved it from 76 B under the line to 1,132 B over, and nothing warns you either way.
 - **`font-display: swap`**, not `optional`. Indistinguishable on every measurement taken, and
   `optional` risks a first visit with no webfont at all. Revisit only if a real CLS case is shown.
 
