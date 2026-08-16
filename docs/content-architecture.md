@@ -220,6 +220,82 @@ author, no editorial workflow, and no publishing calendar. A CMS here would exis
 
 ---
 
+## 6. Social Cards
+
+Decided in [issue #32](https://github.com/imecoulter/coulterheiberger-com/issues/32).
+[#14](https://github.com/imecoulter/coulterheiberger-com/issues/14) built the Open Graph and Twitter
+metadata deliberately without an image, waiting on the typeface decision; this is the other half of it,
+and it is why the metadata substrate lives here rather than in a document of its own.
+
+**Every page has a Social Card. There are no carve-outs, `/404` included.** A route that unfurls as a
+bare link is not a saving.
+
+### The page says which image. The layout says how.
+
+`Base.astro` takes one optional prop:
+
+```ts
+image?: { src: ImageMetadata; alt: string }
+```
+
+and does everything else itself — `getImage({ width: 1200, height: 630, format: 'jpeg' })`, then
+`og:image`, `og:image:width`, `og:image:height`, `og:image:alt`, and `twitter:card`. A page that could
+also specify the crop is a page that will eventually specify a *different* crop, and then there are two
+card mechanisms drifting apart.
+
+A Project passes `images[0]` — its hero, and per §2 there is no separate hero field, so there is nothing
+to choose and no new frontmatter. **No page passes it yet**, because no route renders a Project. The prop
+is the mechanism those pages will use; §2's schema is unchanged.
+
+### A Project's card is a crop of its hero, not a generated card
+
+The alternative was a generated card setting `title`, `credit` and the specification line over the image
+— the caption contract [#10](https://github.com/imecoulter/coulterheiberger-com/issues/10) already
+defines, in the faces [#21](https://github.com/imecoulter/coulterheiberger-com/issues/21) already chose.
+**It is rejected permanently, not deferred.** Two reasons, and the second is the real one:
+
+- It builds a second typographic system that has to be kept in sync with the page it advertises, for an
+  artifact nobody sees at more than thumbnail scale in a timeline.
+- **The work is the argument.** A card that puts a caption between the reader and the image makes the
+  metadata the headline. That inverts the direction: the specification line exists to *measure* a plate,
+  not to stand in for one.
+
+The site-wide default below is typographic precisely because it has no plate to stand in front of.
+
+### The framing is provisional, and it is issue #30's third ratio
+
+Astro crops from **centre**, and a centre crop recomposes nothing — the same defect
+[#30](https://github.com/imecoulter/coulterheiberger-com/issues/30) tracks for the 21:9 desktop and 4:5
+at 390 px crops named in `docs/design-direction.md`. 1200×630 is **that issue's third ratio**, recorded
+here so its eventual framing mechanism covers the card too, rather than a second mechanism appearing
+beside it.
+
+### The site-wide default card
+
+`src/assets/social-card.jpg`, committed at 2400×1260 and delivered at 1200×630, so the delivered file is
+a downscale and never a same-size re-encode. Built by `scripts/dev/build-social-card.mjs`, a **local dev
+tool on the `subset-fonts.mjs` pattern**: CI never runs it and consumes the committed artifact. That
+file's header carries the reasoning that does not belong here — why the text is outlined out of the
+committed woff2 instead of set as live SVG `<text>`, and what is deliberately *not* on the card.
+
+`src/assets/` rather than `public/` is load-bearing. Astro content-hashes the emitted filename, and
+crawlers cache a Social Card by URL for a long time; a hash is the only thing that reliably busts that.
+
+Its `og:image:alt` — `Coulter Heiberger — Technical Artist` — is a constant in `Base.astro`, and is
+**the one alt string on the site not enforced by a schema.** Every other one arrives through
+`alt: z.string().min(1)` (§2).
+
+The card is not a Rendered Asset and never goes through `npm run assets` — see
+`docs/asset-delivery.md` §2.
+
+### `og:type` stays `website` everywhere
+
+Not an oversight. `article` is the only alternative worth having and it belongs to the Build Log, which
+is decided (§3) and not built. Revisit when `/log/` ships. Deciding now what a Project is in Open
+Graph's vocabulary would mean deciding it with no page to check the answer against.
+
+---
+
 ## Verified mechanics
 
 Built and run against this repo's real dependency graph — astro 7.2.0, @astrojs/mdx 7.0.5 — not read from

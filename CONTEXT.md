@@ -1,6 +1,8 @@
 # Portfolio
 
-The personal portfolio site of Coulter Heiberger, an architectural visualization specialist. The site is itself a portfolio piece: its craft, speed, and construction are part of what it demonstrates.
+The personal portfolio site of Coulter Heiberger, a technical artist. The site is itself a portfolio piece: its craft, speed, and construction are part of what it demonstrates.
+
+**Scope.** The site is the portfolio of one independent practice. Everything presented on it is that practice's work; work done for an employer is out of scope. See [ADR-0004](./docs/adr/0004-the-site-presents-the-independent-practice.md).
 
 ## Language
 
@@ -26,6 +28,10 @@ _Avoid_: original, raw, full-res, source image
 An explicit user action required before an Exhibit loads. Distinguishes a deliberate opt-in from an automatic load.
 _Avoid_: trigger, lazy load, interaction
 
+**Plate**:
+One piece of work as it is presented on a page — the image or Exhibit together with the specification line that measures it. Every Plate carries the same metadata contract, so a competition still and a point-cloud viewer are the same kind of object and differ in subject rather than status. That equivalence is the site's central argument.
+_Avoid_: card, tile, figure, slide
+
 ### Motion
 
 **Registration**:
@@ -44,8 +50,12 @@ _Avoid_: page transition, view transitions, SPA navigation, routing
 ### Site structure
 
 **Project**:
-A single piece of architectural visualization work presented on the site. A Project may include Rendered Assets and may — but usually does not — include an Exhibit.
+A single piece of work presented on the site: a real-time system, a rendered sequence, an interactive build. A Project may include Rendered Assets and may — but usually does not — include an Exhibit.
 _Avoid_: work, piece, case study, entry
+
+**Social Card**:
+The image a link to the site unfurls into when it is shared. Two kinds, and they are made differently: a Project's is a build-time crop of its own hero, and the site-wide default is a typographic card authored once and built by `scripts/dev/`.
+_Avoid_: OG image, preview image, thumbnail, share image
 
 **Credit**:
 A Project's provenance: where the work was done and for whom. Covers commissioned work made at a studio, work made for that studio's own client, and speculative work made for neither. Stated on every Project, without exception.
