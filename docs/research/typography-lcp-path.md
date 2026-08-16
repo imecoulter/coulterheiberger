@@ -13,10 +13,18 @@ throttling and the same median rule the deploy gate uses — not read off a blog
 > Two of them departed from §9's recommendation, both deliberately:
 > **Montserrat, not Archivo**, for the display role — §9 called this taste and 944 B, and it was
 > settled on a rendered page. And `.t-spec` took `font-weight: 500` (§9 rec 5), which collapsed mono
-> to one file, so the shipped stack is **13,648 B** rather than the 16,712 B two-role figure in §3.1.
+> to one file, so the shipped stack was **13,648 B** rather than the 16,712 B two-role figure in §3.1.
+>
+> **The stack has since moved to 14,884 B** (display 9,656 B, mono 5,228 B) and the tables below are
+> not restated to match — they record what was measured, which is the point of keeping them. Two
+> changes account for it. `U+0061-007A` was added to the mono cut (+1,208 B) for the home page's email
+> address: §6 established that an uppercase-only cut is safe from `unicode-range` fallback and named
+> `ime@coulterheiberger.com` as the live case *in lowercase*, without noticing the subset could not
+> draw a letter of it. And `varLib.instancer` was pinned with `--no-recalc-timestamp`, without which
+> the build was not byte-reproducible at all.
 >
 > One thing this document could not have found, because it measured fonts and not the build: Vite
-> base64-inlines any asset under 4,096 B, and the mono subset lands at 4,020 B. See
+> base64-inlines any asset under 4,096 B, and the mono subset landed at 4,020 B — 76 B under. See
 > [docs/styling.md](../styling.md#fonts).
 
 ## The answer

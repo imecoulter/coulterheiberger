@@ -18,9 +18,16 @@ export default defineConfig({
   vite: {
     build: {
       // Fonts are NEVER base64-inlined. Vite's assetsInlineLimit defaults to
-      // 4096 B and the mono subset is 4,020 B — 76 bytes under — so without
-      // this it silently became a data: URI while the 9,628 B display face
-      // stayed a file. That asymmetry is a threshold accident, not a decision.
+      // 4096 B, and the mono subset was 4,020 B — 76 bytes under — so without
+      // this it silently became a data: URI while the display face stayed a
+      // file. That asymmetry was a threshold accident, not a decision.
+      //
+      // The mono subset is now 5,228 B and clears that threshold on its own, so
+      // this callback no longer changes today's output. KEEP IT ANYWAY: it went
+      // from 76 bytes under the line to 1,132 over on one charset edit, and the
+      // failure mode is silent — nothing warns you, the bytes just move onto
+      // the document's critical path. This states the rule instead of relying
+      // on a file size to keep satisfying it by accident.
       //
       // It also fails in the direction issue #21 measured. On `/` the LCP
       // element is the <h1>, a text-LCP page, where font bytes cost nothing:

@@ -6,9 +6,14 @@ Decided in [issue #6](https://github.com/imecoulter/coulterheiberger-com/issues/
 [issue #3](https://github.com/imecoulter/coulterheiberger-com/issues/3). This document is the spec renders
 are produced against; it is binding on both the render preset and the tooling.
 
-The design goal is that **nothing here is remembered per asset.** The preset is set once. Every other
-setting is applied by a command or enforced by CI. If a rule in this document requires a per-asset
-judgement call, that is a defect in the rule.
+The design goal is that **nothing about encoding or placement is remembered per asset.** The preset is
+set once. Every other such setting is applied by a command or enforced by CI. If an encoding or
+placement rule in this document requires a per-asset judgement call, that is a defect in the rule.
+
+**Composition is the deliberate exception.** A Rendered Asset carries one `framing` keyword, because
+where a crop should hold cannot be derived from the file — only looked at. Decided in
+[issue #30](https://github.com/imecoulter/coulterheiberger-com/issues/30); the model is in
+`docs/design-direction.md`, "Framing", and the field in `docs/content-architecture.md` §2.
 
 ---
 
@@ -95,9 +100,10 @@ Built on [issue #17](https://github.com/imecoulter/coulterheiberger-com/issues/1
 ```
 1. Render.                    Preset from §1. Masters land in .render-drop\
 2. npm run assets <slug>      Convert, place, scaffold MDX. Masters move to .render-drop\.done\<slug>\
-3. Write.                     Alt text for every image; body copy.
+3. Write.                     Alt text and framing for every image; body copy.
 4. npm run publish <slug>     Branch, commit, push, open the PR.
-5. Merge.                     After CI is green — and after looking at the preview deploy.
+5. Merge.                     After CI is green — and after looking at the preview deploy,
+                              and at 390 px, where framing is decided.
 ```
 
 Steps 2 and 4 take no options beyond the slug. There is nothing to configure at any step.
@@ -117,7 +123,7 @@ in the ritual.
 3. Moves the masters to `.render-drop\.done\<slug>\`, so the drop folder is self-clearing and always shows
    exactly what is pending.
 4. If `src/content/projects/<slug>/index.mdx` does not exist, writes it complete — frontmatter listing
-   every image, `alt: ''` stubs, hero set to the first image. If it does exist, prints the YAML block for
+   every image, `alt: ''` and `framing: ''` stubs, hero set to the first image. If it does exist, prints the YAML block for
    the new images to paste. No YAML round-tripping.
 
 Masters are preserved in `.done\`, which is what makes §2's quality settings cheaply reversible: changing

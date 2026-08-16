@@ -14,7 +14,7 @@
   /* Three roles, two webfonts. Settled in issue #21, which priced each role
      against the LCP Path rather than arguing about it.
 
-     Display and mono are self-hosted subsets (src/styles/fonts.css), 13,648 B
+     Display and mono are self-hosted subsets (src/styles/fonts.css), 14,884 B
      together. Body is a SYSTEM STACK: shipping a serif cost 45,340 B — 73% of
      the full three-face stack, and 24 KB of hero budget — for the role the
      design direction had already demoted to "right for reading, not

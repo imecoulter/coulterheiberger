@@ -10,11 +10,11 @@
  * is "replace the scaffold folders, then remove noindex" — delete this script
  * at the same time.
  *
- * It exists rather than being a one-off because the art-direction framing
- * question (docs/design-direction.md, "Consequence for content production") is
- * still open, and whoever answers it will want fresh plates at known
- * compositions. An unreproducible scaffold makes that harder than it needs to
- * be.
+ * It exists rather than being a one-off because the plates have to be
+ * regenerated at known compositions whenever a decision downstream needs them
+ * to be — which has already happened once, when issue #30 made `framing` a
+ * required per-image field and the plates all wanted the same keyword. An
+ * unreproducible scaffold makes that harder than it needs to be.
  *
  * The plates are deliberately abstract — graded bands, a horizon, a soft glow
  * and fine grain. They are not imitation architecture and not derived from any
@@ -34,19 +34,57 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import { renderDropDir } from '../lib/repo.mjs';
 
-/** Every plate: name, pixel dimensions, and a palette in sRGB. */
+/**
+ * Every plate: name, pixel dimensions, a palette in sRGB, and where the
+ * composition sits.
+ *
+ * The composition fields are per plate rather than module constants because of
+ * issue #30: `framing` is a required, per-image field with nine legal values,
+ * and plates that all put the subject in the same corner would exercise exactly
+ * one of them. So the three heroes are composed to want three different
+ * answers — `left top`, `centre`, `right` — and the framing keywords committed
+ * in each index.mdx are read off these numbers, not guessed.
+ *
+ *   horizon  fraction of height where sky meets ground. Lower number = higher
+ *            horizon in frame; 0.74 reads as a "low horizon" over open water.
+ *   slab     subject extent as fractions of width, and its top as a fraction
+ *            of the horizon.
+ *   light    the warm source, as a fraction of width and of the horizon.
+ *
+ * Aspects are also spread deliberately. #30's model holds only while native
+ * aspect sits between 4:5 (0.800) and 21:9 (2.333), and the first two heroes
+ * were 2.334 and 2.332 — a hair outside, by accident, which made every scaffold
+ * a warning case and none of them a normal one. Heroes now span 1.5 / 1.778 /
+ * 2.0, inside the window.
+ *
+ * `Stair_Void_Portrait` stays at 2600x3400 (0.765) ON PURPOSE. It is the one
+ * plate outside the window, so regenerating this set through the real ritual
+ * fires the `npm run assets` framing warning on real content — the cheap way to
+ * know that warning works and reads well.
+ */
 const SETS = {
   'riverside-tower': [
-    { name: 'Hero_North_Dusk.png', w: 4096, h: 2304, sky: [28, 38, 58], ground: [16, 18, 24], glow: [212, 138, 84] },
-    { name: 'Interior_Atrium.png', w: 3600, h: 2400, sky: [214, 208, 196], ground: [58, 54, 50], glow: [246, 238, 214] },
+    // Subject left and high, light off to the right -> `left top`.
+    { name: 'Hero_North_Dusk.png', w: 4096, h: 2304, sky: [28, 38, 58], ground: [16, 18, 24], glow: [212, 138, 84],
+      horizon: 0.62, slab: { x0: 0.11, x1: 0.46, top: 0.14 }, light: { x: 0.72, y: 0.55 } },
+    { name: 'Interior_Atrium.png', w: 3600, h: 2400, sky: [214, 208, 196], ground: [58, 54, 50], glow: [246, 238, 214],
+      horizon: 0.62, slab: { x0: 0.11, x1: 0.46, top: 0.14 }, light: { x: 0.72, y: 0.55 } },
   ],
   'harbour-pavilion': [
-    { name: 'Hero_Water_Level.png', w: 4096, h: 1756, sky: [136, 168, 186], ground: [40, 58, 68], glow: [232, 240, 240] },
-    { name: 'Roof_Study_Overcast.png', w: 3400, h: 2550, sky: [186, 190, 194], ground: [92, 96, 100], glow: [220, 222, 224] },
+    // Centred over a low horizon, light directly above it -> `centre`.
+    { name: 'Hero_Water_Level.png', w: 4096, h: 2048, sky: [136, 168, 186], ground: [40, 58, 68], glow: [232, 240, 240],
+      horizon: 0.74, slab: { x0: 0.38, x1: 0.62, top: 0.34 }, light: { x: 0.5, y: 0.42 } },
+    { name: 'Roof_Study_Overcast.png', w: 3400, h: 2550, sky: [186, 190, 194], ground: [92, 96, 100], glow: [220, 222, 224],
+      horizon: 0.62, slab: { x0: 0.11, x1: 0.46, top: 0.14 }, light: { x: 0.72, y: 0.55 } },
   ],
   'civic-archive': [
-    { name: 'Hero_Street_Elevation.png', w: 4200, h: 1800, sky: [96, 106, 124], ground: [44, 44, 48], glow: [206, 196, 176] },
-    { name: 'Stair_Void_Portrait.png', w: 2600, h: 3400, sky: [32, 30, 34], ground: [18, 17, 20], glow: [224, 190, 138] },
+    // Elevation banked to the right of centre, light raking in from the left,
+    // and vertically full-height -> `right`, with no vertical component.
+    { name: 'Hero_Street_Elevation.png', w: 4200, h: 2800, sky: [96, 106, 124], ground: [44, 44, 48], glow: [206, 196, 176],
+      horizon: 0.62, slab: { x0: 0.56, x1: 0.89, top: 0.1 }, light: { x: 0.28, y: 0.55 } },
+    // Out of the framing window on purpose (0.765) — see the docblock above.
+    { name: 'Stair_Void_Portrait.png', w: 2600, h: 3400, sky: [32, 30, 34], ground: [18, 17, 20], glow: [224, 190, 138],
+      horizon: 0.62, slab: { x0: 0.11, x1: 0.46, top: 0.14 }, light: { x: 0.72, y: 0.55 } },
   ],
 };
 
@@ -98,6 +136,13 @@ const GRAIN_BLOCK = 3;
  * Project pages land: a gate run against 5 KB heroes passes for the wrong
  * reason. Whoever builds those pages should replace these plates with real
  * Rendered Assets before trusting an LCP Path number.
+ *
+ * That warning no longer lives only here. `scripts/assert-lcp-path.mjs` counts
+ * scaffold plates on the LCP Path and annotates the route with what it would
+ * weigh at asset-delivery.md's 43 KB proxy, so the gap is stated where the
+ * number is read rather than in a docblock nobody opens. It identifies
+ * scaffolds by their `credit` line, which makes it self-clearing: the commit
+ * that replaces these plates with real work also deletes the annotation.
  */
 const DETAIL = 26;
 const OCTAVES = 5;
@@ -135,22 +180,22 @@ function octave(w, h, cells) {
 for (const plate of SETS[set]) {
   const { w, h } = plate;
   const px = Buffer.alloc(w * h * 3);
-  const horizon = Math.round(h * 0.62);
-  // A warm source off to one side, so the tall crop and the wide crop see
-  // genuinely different compositions — which is the whole point of the open
-  // art-direction question.
-  const glowX = w * 0.72;
-  const glowY = horizon * 0.55;
+  const horizon = Math.round(h * plate.horizon);
+  // The warm source, placed per plate. On every plate but the centred one it is
+  // off to one side, so the 21:9 crop and the 4:5 crop see genuinely different
+  // compositions — which is what makes these plates worth framing at all.
+  const glowX = w * plate.light.x;
+  const glowY = horizon * plate.light.y;
   const glowR = Math.min(w, h) * 0.45;
 
-  // Deliberately off-centre, so the 21:9 crop and the 4:5 crop see genuinely
-  // different compositions. That is the whole substance of the open framing
-  // question in docs/design-direction.md — a centre crop should visibly lose
-  // the subject on these plates, which makes them useful for answering it.
+  // The subject. Its placement is per plate (see SETS) so that the three heroes
+  // want three different `framing` keywords rather than all wanting `left top`.
+  // Wherever it sits, a centre crop should visibly lose it — that is what makes
+  // framing a real decision on these plates rather than a formality.
   const slab = {
-    x0: Math.round(w * 0.11),
-    x1: Math.round(w * 0.46),
-    y0: Math.round(horizon * 0.14),
+    x0: Math.round(w * plate.slab.x0),
+    x1: Math.round(w * plate.slab.x1),
+    y0: Math.round(horizon * plate.slab.top),
     mullion: (Math.PI * 2) / Math.max(6, Math.round(w / 150)),
     floor: (Math.PI * 2) / Math.max(6, Math.round(h / 26)),
   };

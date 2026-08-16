@@ -3,6 +3,14 @@
  * Asserts docs/asset-delivery.md §4 over every tracked image under src/:
  * JPEG, long edge <= 3200 px, no embedded ICC profile, <= 3 MB.
  *
+ * Also asserts docs/content-architecture.md §2's slug shape over every Project
+ * folder actually on disk. `assets` and `publish` already check the slug they
+ * are handed, but they only ever see folders the ritual created — a folder
+ * added by hand, or renamed afterwards, reaches main unexamined. The slug is
+ * the URL, the entry id, and the tail of the Carry's view-transition-name, and
+ * a bad one fails silently in the third of those. Same reason as the images:
+ * this is the cheap moment.
+ *
  * This gate matters more than a lint rule because the mistake it catches is
  * permanent. "Source-resolution Rendered Assets never enter git" is binding
  * (AGENTS.md), and scrubbing a master out of history means a force-push over a
@@ -24,7 +32,7 @@ import { execFileSync } from 'node:child_process';
 import { openSync, readSync, closeSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import sharp from 'sharp';
-import { repoRoot } from './lib/repo.mjs';
+import { repoRoot, SLUG_RE } from './lib/repo.mjs';
 
 /** docs/asset-delivery.md §2 and §4. */
 const LONG_EDGE = 3200;
@@ -134,6 +142,37 @@ for (const file of tracked) {
   }
 }
 
+/* docs/content-architecture.md §2. Derived from the tracked list rather than
+   readdir: the question is what reaches main, not what is sitting in a
+   worktree. The folder name IS the slug — there is no frontmatter override. */
+const slugs = [
+  ...new Set(
+    tracked
+      .map((file) => file.match(/^src\/content\/projects\/([^/]+)\//))
+      .filter(Boolean)
+      .map((m) => m[1]),
+  ),
+];
+const badSlugs = slugs.filter((slug) => !SLUG_RE.test(slug));
+
+if (badSlugs.length > 0) {
+  console.error(
+    `check:assets — ${badSlugs.length} Project folder name(s) are not usable slugs.\n` +
+      `A slug starts with a lowercase letter, then lowercase letters, digits and\n` +
+      `single interior hyphens (SLUG_RE, scripts/lib/repo.mjs).\n\n` +
+      `The folder name is three things at once: the public URL segment, the\n` +
+      `collection entry id, and the tail of the Carry's view-transition-name\n` +
+      `(plate-<slug>). The last of those fails SILENTLY — an invalid CSS\n` +
+      `custom-ident is not an error, it is simply no transition, on that one\n` +
+      `Project, invisible in review. Rename the folder now; once the URL is\n` +
+      `indexed it needs a 301 indefinitely.\n`,
+  );
+  for (const slug of badSlugs) {
+    console.error(`  src/content/projects/${slug}/`);
+  }
+  console.error('');
+}
+
 if (violations.length > 0) {
   console.error(
     `check:assets — ${violations.length} violation(s) of docs/asset-delivery.md §4.\n` +
@@ -147,9 +186,11 @@ if (violations.length > 0) {
   for (const v of violations) {
     console.error(`  ${v.file}\n    ${v.rule}: ${v.detail}\n`);
   }
-  process.exit(1);
 }
 
+if (violations.length > 0 || badSlugs.length > 0) process.exit(1);
+
 console.log(
-  `check:assets — ok. ${checked} tracked image(s) under src/, all JPEG, <= ${LONG_EDGE} px, no ICC, <= 3 MB.`,
+  `check:assets — ok. ${checked} tracked image(s) under src/, all JPEG, <= ${LONG_EDGE} px, no ICC, <= 3 MB.\n` +
+    `                ${slugs.length} Project slug(s), all usable as a URL segment and a custom-ident.`,
 );

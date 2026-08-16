@@ -64,12 +64,19 @@ const projects = defineCollection({
           z.object({
             src: image(),
             alt: z.string().min(1),
+            framing: z.enum([
+              'centre', 'top', 'bottom', 'left', 'right',
+              'left top', 'left bottom', 'right top', 'right bottom',
+            ]),
           }),
         )
         .min(1),
     }),
 });
 ```
+
+(Abridged: the schema in `src/content.config.ts` carries a long comment on `framing` that is not
+reproduced here.)
 
 Six fields. Every one is required, and every one is rendered by a page.
 
@@ -81,6 +88,7 @@ Six fields. Every one is required, and every one is rendered by a page.
 | `year` | index card, detail fact block | Display only. Not the sort key |
 | `order` | index sort, ascending | Curation, not chronology |
 | `images` | detail gallery; `images[0]` on the index card | `images[0]` **is** the hero — there is no separate hero field |
+| `images[].framing` | every build-time crop, as sharp's `position` — **once the Project page lands** | Nine keywords, required per image. Knowingly the one field ahead of its page (issue #30): it cannot be derived from the file, so it is collected while someone is looking at the image. See `design-direction.md`, "Framing" |
 
 ### `credit` is required, and it is one line
 
@@ -127,6 +135,25 @@ src/content/projects/
 The entry id is **`riverside-tower`** — Astro strips the trailing `/index` when generating ids
 (`astro/dist/content/utils.js`, verified by build). No `generateId` override, no frontmatter `slug`.
 Images are referenced as `./north-dusk.jpg`, relative to `index.mdx`, resolved by the `image()` helper.
+
+### The slug's shape is a contract, not a convention
+
+`SLUG_RE` in `scripts/lib/repo.mjs` is the one definition: **a lowercase letter, then lowercase
+letters, digits and single interior hyphens.** It is asserted by `npm run assets` and `npm run
+publish` when they scaffold, and by `npm run check:assets` in CI over what is actually on disk — the
+second gate exists because the first only sees folders the ritual created. A folder added by hand, or
+renamed after scaffolding, reaches `main` otherwise unexamined.
+
+Three separate things ride on that one string, which is why it is worth a gate:
+
+- **The public URL segment.** This document already calls URLs the most expensive thing here to
+  change: once indexed they need 301s indefinitely.
+- **The collection entry id**, since the folder name *is* the id.
+- **A CSS `<custom-ident>`** — `plate-<slug>`, the Carry's `view-transition-name`
+  (`docs/styling.md`). This is the reason the pattern requires a **leading letter** rather than
+  merely a leading alphanumeric: an ident may not begin with a digit, and an invalid one fails as
+  *no transition at all*. Silent, and invisible in review — nothing throws, the Carry simply does not
+  happen on that one Project.
 
 ---
 

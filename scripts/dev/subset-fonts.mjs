@@ -82,18 +82,33 @@ const SITE =
   'U+20AC,U+2122';
 
 /**
- * Mono. `.t-label` and `.t-spec` both carry `text-transform: uppercase`
- * (`src/styles/base.css`), so lowercase letterforms are never drawn.
+ * Mono. `.t-label` and `.t-spec` carry `text-transform: uppercase`
+ * (`src/styles/base.css`), so for those two roles lowercase is never drawn.
  *
  * Issue #21 §6 verified in a browser that `unicode-range` is matched against the
- * POST-`text-transform` codepoints, so an uppercase-only cut is safe: lowercase
- * source text does not silently fall back. That was the suspected trap; it is
- * not one. The home page's `ime@coulterheiberger.com` is the live case.
+ * POST-`text-transform` codepoints, so an uppercase-only cut is safe from silent
+ * fallback. That was the suspected trap; it is not one.
+ *
+ * LOWERCASE IS IN THE CUT ANYWAY, and #21's own note above is why. It called the
+ * home page's `ime@coulterheiberger.com` "the live case" and wrote it in
+ * lowercase — while shipping a subset that could not draw a single letter of it.
+ * The uppercase-only decision was made for the label role and never re-checked
+ * against the one line that is an address rather than a phrase. `text-transform`
+ * safety is not the same as having the glyphs: with the transform switched off,
+ * `@` and `.` came from JetBrains Mono and every letter fell back to Consolas.
+ *
+ * Costs 1,208 B (4,020 -> 5,228), which is 0.24% of the 500 KB ceiling and is
+ * not what decided it. The real cost is that the subset no longer ENFORCES mono
+ * as an uppercase face — that rule now lives only in the role classes, so a new
+ * lowercase mono line will render happily instead of falling back and telling
+ * you. Check base.css before adding one.
  */
 const MONO_SPEC =
   'U+0020-0040,' + // space, digits, and ASCII punctuation up to @
   'U+0041-005A,' + // A-Z
-  'U+005B-0060,U+007B-007E,' +
+  'U+005B-0060,' +
+  'U+0061-007A,' + // a-z — for the email address, not for the label roles
+  'U+007B-007E,' +
   'U+00A0,U+00B0,U+00B7,U+00D7,' +
   'U+2010-2015,U+2018-2019,U+201C-201D,U+2026,U+2032-2033';
 
@@ -173,6 +188,15 @@ function subset({ input, output, unicodes, layoutFeatures, instance }) {
         // @font-face `font-family` does that), so it renders correctly either
         // way; it just lies to whoever opens the file next.
         '--update-name-table',
+        // Without this the build is NOT REPRODUCIBLE, which is the entire
+        // reason this script exists next to a committed binary. `instancer`
+        // stamps head.modified with the current time by default; that value is
+        // compressed into the woff2, so two runs on identical inputs differ by
+        // a few bytes and there is no way to check the committed file came from
+        // the committed script. Caught by regenerating for the lowercase change
+        // and watching Montserrat move 9,628 -> 9,632 B on an unchanged charset.
+        // `fontTools.subset` already defaults to no-recalc; only this step does.
+        '--no-recalc-timestamp',
         '-o',
         pinned,
       ],

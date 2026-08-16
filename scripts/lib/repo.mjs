@@ -30,8 +30,17 @@ export function renderDropDir() {
   return join(dirname(dirname(commonDir)), '.render-drop');
 }
 
-/** Slug doubles as the public URL segment and the collection entry id. */
-export const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+/**
+ * The slug is the public URL segment, the collection entry id, and — since
+ * issue #31 — the tail of the Carry's `view-transition-name` (`plate-<slug>`).
+ *
+ * The LEADING LETTER is what that third use added. A CSS `<custom-ident>` may
+ * not begin with a digit, and an invalid one fails as *no transition*: nothing
+ * throws, nothing logs, the Carry just doesn't happen on that Project. The
+ * pattern previously allowed `2024-tower`, which is a fine URL and a broken
+ * ident. See docs/content-architecture.md §2 and docs/styling.md.
+ */
+export const SLUG_RE = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 
 export function assertSlug(slug, command) {
   if (!slug) {
@@ -45,7 +54,8 @@ export function assertSlug(slug, command) {
   if (!SLUG_RE.test(slug)) {
     console.error(
       `${command} — "${slug}" is not a usable slug.\n` +
-        `Lowercase letters, digits and single hyphens only. It becomes a public URL.`,
+        `Must start with a lowercase letter, then lowercase letters, digits and\n` +
+        `single interior hyphens. It becomes a public URL and a CSS custom-ident.`,
     );
     process.exit(1);
   }

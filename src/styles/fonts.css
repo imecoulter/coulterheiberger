@@ -1,6 +1,6 @@
 /* @font-face only. Nothing else lives here — see docs/styling.md.
 
-   Two files, 13,648 B on the wire. The third type role (serif body) is a system
+   Two files, 14,884 B on the wire. The third type role (serif body) is a system
    stack and has no @font-face: issue #21 priced Source Serif 4 at 45,340 B, 73%
    of the full stack and 24 KB of hero budget, for the one role the design
    direction had already demoted to "right for reading, not distinctive."
