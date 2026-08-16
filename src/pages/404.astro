@@ -42,8 +42,19 @@ import Base from '../layouts/Base.astro';
     color: var(--muted);
   }
 
+  /* The link sits inside a --muted paragraph, so without this it inherits
+     --muted and is distinguished from the sentence around it only by a --rule
+     underline — a 1.54:1 hairline. Lifting the link to --ink and giving the
+     underline --muted (4.90:1) makes it the most contrasted thing on the page,
+     which is right for the only action a 404 offers.
+
+     A design fix, not gate compliance: axe fires link-in-text-block only when a
+     link is distinguished from its surrounding text BY COLOUR, and this link
+     was not distinguished at all, so the audit was notApplicable and CI was
+     never going to force it. Issue #35. */
   a {
-    border-bottom: 1px solid var(--rule);
+    color: var(--ink);
+    border-bottom: 1px solid var(--muted);
     text-decoration: none;
   }
 </style>

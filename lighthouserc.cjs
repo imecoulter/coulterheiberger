@@ -1,7 +1,14 @@
-// Performance gate for the budget in docs/adr/0002-graphics-isolation-and-performance-budget.md
+// Performance and accessibility gate, for the budget in
+// docs/adr/0002-graphics-isolation-and-performance-budget.md and the bar in
+// docs/adr/0003-accessibility-bar.md.
 //
 // Runs against the built ./dist over a local static server, so a regression
 // blocks the deploy rather than being discovered in production.
+//
+// The static server discovers EVERY .html under dist/ and audits all of them
+// (@lhci/cli/src/collect/fallback-server.js). 404.html is already in scope, and
+// a future page enrols itself with no change here. There is deliberately no
+// assertMatrix: one bar across all URLs, with no relaxation for 404.html.
 //
 // Mobile form factor is the condition ADR-0002 names. Do not switch it to desktop.
 //
@@ -81,6 +88,57 @@ module.exports = {
         // Raising this number is cheap and means little; raising the two above it,
         // or the budget in assert-lcp-path.mjs, is not. See issue #13.
         'resource-summary:total:size': ['warn', { maxNumericValue: 2097152 }],
+
+        // ---- accessibility (issue #35, ADR-0003) --------------------------
+        //
+        // WCAG AA is the named target. AAA was priced and REFUSED on design
+        // fit, not skipped: 7:1 needs ~69% ink (day) / 70% (night) against
+        // today's 58%, a visibly darker specification line. "Never considered"
+        // and "considered and refused" read identically in a config file, and
+        // only one is true here — the ADR says which.
+        //
+        // Gated at `error`, like every other check in deploy.yml. A `warn` row
+        // gets read once and never again.
+        //
+        // Named audits AND a category score, which looks redundant and is not:
+        // the named audits say WHAT broke, the score catches what nobody
+        // anticipated. Several below are notApplicable today and cost nothing
+        // until a form, an icon button or an image appears — which is exactly
+        // when nobody is thinking about them. maxLength: 0 means zero failing
+        // elements, not zero occurrences of the audit.
+        //
+        // A misspelled id does NOT silently pass: LHCI checks an implicit
+        // `auditRan` assertion first and fails with "x is not a known audit"
+        // (verified — `color-contrst` exits 1). So this list cannot rot into
+        // decoration without CI saying so, which is why it is safe to name ten
+        // audits rather than lean on the score alone.
+        //
+        // maxLength: 0 on a notApplicable audit PASSES — verified against both
+        // routes, where four of these ten are notApplicable today. That is the
+        // property that makes naming them cheap before the DOM has them.
+        'color-contrast': ['error', { maxLength: 0 }],
+        'link-in-text-block': ['error', { maxLength: 0 }],
+        'heading-order': ['error', { maxLength: 0 }],
+        'html-has-lang': ['error', { maxLength: 0 }],
+        'document-title': ['error', { maxLength: 0 }],
+        'meta-viewport': ['error', { maxLength: 0 }],
+        'image-alt': ['error', { maxLength: 0 }],
+        // Quoted like the rest, though it needs no quotes — these are audit ids,
+        // not object keys, and one bare word in the column reads as a typo.
+        'label': ['error', { maxLength: 0 }],
+        'button-name': ['error', { maxLength: 0 }],
+        'link-name': ['error', { maxLength: 0 }],
+
+        // Backstop for the audits not named above. Measured at 1.0 on both
+        // routes before this line was written, so it gates a property the site
+        // already has rather than setting homework.
+        //
+        // READ THIS NUMBER HONESTLY: on these two pages a 1.0 rests on NINE
+        // applicable audits out of 73 — the rest are notApplicable (54) or
+        // manual (10). It catches contrast and missing names. It cannot see a
+        // keyboard trap, and 10 manual audits are where one would live. A green
+        // gate here is not a claim that the site is accessible. ADR-0003.
+        'categories:accessibility': ['error', { minScore: 1 }],
       },
     },
   },

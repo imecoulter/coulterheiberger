@@ -48,9 +48,10 @@ jobs:
       - name: Design rules
         run: npm run check:css
 
-      # Gates the deploy on the ADR-0002 budget. Config: lighthouserc.cjs
-      - name: Performance budget
-        run: npm run perf
+      # Gates the deploy on the ADR-0002 budget and the ADR-0003 accessibility
+      # bar. Config: lighthouserc.cjs — one Lighthouse run serves both.
+      - name: Performance and accessibility budget
+        run: npm run budget
 
       # Pull requests verify only. Deploys happen from main.
       - name: Deploy

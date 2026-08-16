@@ -23,8 +23,8 @@ The source-resolution output of a 3D authoring toolchain, from which a Rendered 
 _Avoid_: original, raw, full-res, source image
 
 **Gate**:
-An explicit user action required before an Exhibit loads. Distinguishes a deliberate opt-in from an automatic load.
-_Avoid_: trigger, lazy load, interaction
+An explicit user action required before an Exhibit loads. Distinguishes a deliberate opt-in from an automatic load. A visitor performs a Gate; CI does not have one.
+_Avoid_: trigger, lazy load, interaction, CI check, gate (for a build check)
 
 ### Motion
 

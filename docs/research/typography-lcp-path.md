@@ -45,7 +45,7 @@ static cuts cost **+113 ms and pass**. Choosing families is a design decision; c
 
 ## 1. The instrument, and a correction to #13
 
-Issue #13 recorded that `npm run perf` **cannot run locally on Windows** — `chrome-launcher` throws
+Issue #13 recorded that `npm run perf` (renamed `npm run budget` in #35) **cannot run locally on Windows** — `chrome-launcher` throws
 `EPERM` on Chrome's temp profile — and moved all measurement to CI. That is true of `lhci collect`
 as invoked, but the reason is narrower than "Lighthouse does not run here", and it changed how this
 ticket could be worked.
