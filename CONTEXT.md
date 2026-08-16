@@ -12,7 +12,7 @@ _Avoid_: demo, experience, viewer, scene
 
 **Ambient Layer**:
 The site-wide 3D-derived visual identity that gives the site cohesion across pages. Distinct from an Exhibit: it is decoration and atmosphere, never a portfolio item in its own right.
-_Avoid_: background, hero, ambience, chrome
+_Avoid_: background, hero (for the Ambient Layer), ambience, chrome
 
 **Rendered Asset**:
 Visual output produced offline in a 3D authoring toolchain and shipped as images or video — including multi-frame sequences driven by scroll. The Ambient Layer is built from these.
@@ -22,9 +22,17 @@ _Avoid_: static asset, image, still, pre-render
 The source-resolution output of a 3D authoring toolchain, from which a Rendered Asset is made. Kept outside the repository; never shipped and never committed.
 _Avoid_: original, raw, full-res, source image
 
+**Plate**:
+A single Rendered Asset as presented on the site — the image together with the metadata rows that travel with it. The unit the index and the Project page are built from. Distinct from the Rendered Asset itself: the asset is a file, the Plate is that file composed into the page at a given crop.
+_Avoid_: card, tile, slide, image
+
+**Framing**:
+The composition decision a Rendered Asset carries so that a crop recomposes the image rather than cutting it. Stated per asset, because it cannot be derived from the file.
+_Avoid_: focal point, crop hint, gravity, anchor, art direction
+
 **Gate**:
-An explicit user action required before an Exhibit loads. Distinguishes a deliberate opt-in from an automatic load.
-_Avoid_: trigger, lazy load, interaction
+An explicit user action required before an Exhibit loads. Distinguishes a deliberate opt-in from an automatic load. A visitor performs a Gate; CI does not have one.
+_Avoid_: trigger, lazy load, interaction, CI check, gate (for a build check)
 
 ### Motion
 
@@ -41,11 +49,22 @@ router — every navigation is a full page load, and the cross-fade is the brows
 where it is supported and absent where it is not.
 _Avoid_: page transition, view transitions, SPA navigation, routing
 
+**Carry**:
+The continuity of a single Plate's image across a Navigation Cross-fade: it holds its position and
+its scale while the rest of the page fades. A third motion category alongside Registration and the
+Cross-fade, and the one place on the site where an element scales. Absent under
+`prefers-reduced-motion: reduce`, and absent wherever the Cross-fade itself is.
+_Avoid_: morph, shared element, hero transition, magic move
+
 ### Site structure
 
 **Project**:
 A single piece of architectural visualization work presented on the site. A Project may include Rendered Assets and may — but usually does not — include an Exhibit.
 _Avoid_: work, piece, case study, entry
+
+**Plate**:
+A Project as it is presented: one image and one specification line, a single unit. Every piece of work on the site is a Plate under an identical metadata contract, so plates differ in subject rather than in status. The index and the detail page show the same Plate in two presentations, not two different objects.
+_Avoid_: card, tile, thumbnail, item, hero
 
 **Credit**:
 A Project's provenance: where the work was done and for whom. Covers commissioned work made at a studio, work made for that studio's own client, and speculative work made for neither. Stated on every Project, without exception.

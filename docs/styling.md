@@ -44,7 +44,7 @@ Three primaries. Everything else derives or is a scale.
 | --- | --- |
 | `--ground` | the surface |
 | `--ink` | text on the surface |
-| `--signal` | registration red: plate index, focus ring, active state. **Under 1% of pixels.** |
+| `--signal` | registration red: Plate index, focus ring, active state. **Under 1% of pixels.** |
 | `--rule` | derived — hairline, `color-mix` 18% ink into ground |
 | `--muted` | derived — secondary text, `color-mix` 58% ink into ground |
 
@@ -93,7 +93,7 @@ Decided in #11, verified against the build:
 - **Nesting — yes.** Compiles clean through Astro 7 / Vite 8; no `&` reaches the output.
 - **Cascade layers — no.** The reset is element selectors and components are class-scoped with a
   hash attribute, so scoped styles already win. Layers would solve a conflict that does not exist.
-- **Container queries — no**, until a component actually ships at two different widths. Every plate
+- **Container queries — no**, until a component actually ships at two different widths. Every Plate
   today sits in the same container; media queries are the honest tool for a viewport switch.
 - **`:has()` — allowed**, but do not build structure on it.
 - **Reset — hand-written, six lines, in `base.css`.** No `normalize.css`, no Preflight. This design
@@ -163,10 +163,11 @@ falling back conspicuously and telling you.
 
 ## Motion
 
-Two things move on this site, and neither uses a library. Decided in
+Three things move on this site, and none of them uses a library. Two were decided in
 [issue #12](https://github.com/imecoulter/coulterheiberger-com/issues/12) by building every
-candidate and measuring it. The design they implement is the Motion section of
-[docs/design-direction.md](./design-direction.md).
+candidate and measuring it; the Carry was decided in
+[#31](https://github.com/imecoulter/coulterheiberger-com/issues/31). The design they implement is the
+Motion section of [docs/design-direction.md](./design-direction.md).
 
 **Registration** — the one-time entrance of an element as it first enters the viewport. Three moves
 (`rise`, `rule`, `wipe`) live in `base.css`; one `IntersectionObserver` in `Base.astro` adds `.is-in`
@@ -182,6 +183,58 @@ once and stops watching. The contract is three attributes and nothing else:
 `base.css`. Zero JavaScript, no client-side router. Chrome 126+ / Safari 18.2+; Firefox has no
 support and simply navigates.
 
+**The Carry** — a Plate's image holding its position and scale between `/` and `/projects/<slug>/`.
+Zero JavaScript, and **nothing in `base.css` until a component emits `--vt`**: the repo's ethic is
+that if no page renders a field, the field does not exist, so this section is the specification and
+the Plate component is where it lands.
+
+| | |
+| --- | --- |
+| Named element | **The image only.** The Plate is one unit, but a group snapshot rasterizes and stretches the specification line — mono text scaled by a transform is exactly the artefact the datum cannot afford |
+| Name | `plate-<slug>`, derived from the Project slug. Unique per document by construction, matches across the two documents for free, and reverses on back-navigation for free |
+| Declaration | `style={\`--vt: plate-${slug}\`}` on the component; `view-transition-name: var(--vt, none)` **inside** `@media (prefers-reduced-motion: no-preference)`. The value ships inert and the declaration stays gated, which preserves the fail-safe inversion below |
+| Coverage | Every Plate on `/` is named, so one click carries all 3–8. That is deliberate — see the design direction — and it is what the threshold is measured against |
+| `reduce` | Unchanged. No transition at all; the fail-safe inversion is not reopened |
+
+**"0 bytes" was the wrong meter, and #12 recorded it.** The cross-fade was priced at zero and shipped
+on that basis. Field RUM on cross-document view transitions reports roughly **+70 ms LCP on repeat
+mobile pageviews**, correlated with CPU
+([corewebvitals.io](https://www.corewebvitals.io/pagespeed/view-transition-web-performance)). The
+transfer cost genuinely is zero; the paint cost is not, and the shipped cross-fade is paying it
+today. Correction recorded here rather than in #12's table, which measures transfer bytes and is
+right about them.
+
+**The threshold: the Carry's own delta must not exceed the ~70 ms the plain cross-fade already
+costs.** Measured on a real `/` → `/projects/<slug>/` navigation, named minus unnamed, on the same
+page and the same device class. Roughly doubling a cost the record called zero is where a decoration
+stops being affordable — and 3–8 simultaneously named elements is exactly where it would show up.
+
+It is deliberately a *relative* number. An absolute millisecond budget for a transition would be
+invented here and then argued with; the cross-fade's measured cost is a figure the site is already
+paying and has already accepted, so "no worse than what you already agreed to" is a threshold that
+holds its meaning when the hardware changes.
+
+**The escape hatch is the plain cross-fade, and it is the only one.** Over the threshold, delete the
+`--vt` declaration and the site falls back to the Cross-fade it already has. **It is never rescued
+with JavaScript.** A ~200-byte click handler that assigns the name on demand is the obvious fix and
+it is out of bounds: the site has exactly one `<script>`, and adding a second is an amendment to
+`docs/design-direction.md` first — not a call the session building the Project pages gets to make
+under its own deadline.
+
+**The perf gate structurally cannot see this.** `npm run perf` is `lhci collect` plus
+`scripts/assert-lcp-path.mjs` over cold loads, and no browser-driving devDependency exists in this
+repo. Extending CI with Playwright to police a transition was considered and rejected: the
+enforcement machinery would outweigh the thing enforced. So the Carry is held by rule here, and
+watched in the field by [#33](https://github.com/imecoulter/coulterheiberger-com/issues/33).
+
+**Two things to record as unverified, and never to assert.** Both are almost certainly true, and this
+repo runs things rather than reading them:
+
+1. That `view-transition-name: var(--vt)` substitutes in Chrome and Safari, and that the un-set case
+   computes to `none`. This enters `docs/content-architecture.md`'s "Verified mechanics" table only
+   once someone has built it and looked.
+2. The LCP delta of the Carry on real plates. Measurable when Project pages exist, not before.
+
 ### Two rules that are invisible until something breaks
 
 **Nothing on the first screen carries `data-anim`.** An element at `opacity: 0` or fully clipped is
@@ -191,10 +244,11 @@ Registration is for content you scroll to. The perf gate will catch a violation,
 ships.
 
 **The hidden state is declared only inside `@media (prefers-reduced-motion: no-preference)`**, for
-both Registration and the cross-fade. This is the reduced-motion design, not a formatting habit:
-under `reduce` the page is simply the finished document — verified in a real browser, computed
-`opacity: 1`, no transform, no clip, `transition-duration: 0s`, and `pagereveal.viewTransition` null
-on a real navigation. Do not rewrite either as a `reduce` block that turns things off. That form
+Registration, the cross-fade, and the Carry alike. This is the reduced-motion design, not a
+formatting habit: under `reduce` the page is simply the finished document — verified in a real
+browser, computed `opacity: 1`, no transform, no clip, `transition-duration: 0s`, and
+`pagereveal.viewTransition` null on a real navigation. Do not rewrite any of them as a `reduce` block
+that turns things off. That form
 computes the animated path first and fails *toward* motion; this one fails toward stillness.
 
 ### What each option costs
@@ -235,9 +289,13 @@ Not a closed door, and not a budget ceiling to squeeze under — 50 KB of headro
 What rules a library out today is that the design has nothing for it to do:
 
 > Registration, not performance. Line-level only. Fires once and never re-triggers on scroll back.
-> Nothing scales, nothing parallaxes. At most two elements animating at a time.
+> Nothing parallaxes, and element-level Registration never scales. At most two elements animating at
+> a time.
 
-That is an entrance-reveal spec, and 195 B implements all of it. Sequenced timelines, scrub-linked
+That is an entrance-reveal spec, and 195 B implements all of it. **The Carry does not change this
+answer.** It is one CSS declaration and a name derived from a slug; a library has nothing to
+contribute to it, and the fact that the browser does the interpolation is the whole reason it is
+affordable. Sequenced timelines, scrub-linked
 motion, physics, SVG morphing and line-splitting are all things GSAP does well and this design
 forbids — so the order is **amend `docs/design-direction.md` first, then pick the library the new
 design needs.** Never the reverse. At that point the candidate is `motion/mini` at 3.2 KB unless

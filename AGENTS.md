@@ -14,7 +14,7 @@ Astro 7, static output, deployed to Cloudflare Workers static assets. No SSR, no
 
 ## Binding constraints
 
-These are not style preferences. Violating one is a defect. Full rationale in [ADR-0002](./docs/adr/0002-graphics-isolation-and-performance-budget.md).
+These are not style preferences. Violating one is a defect. Full rationale in [ADR-0002](./docs/adr/0002-graphics-isolation-and-performance-budget.md), and for the last two, [ADR-0003](./docs/adr/0003-accessibility-bar.md).
 
 - No heavy graphics runtime (Three.js, Cesium, or successor) may be imported from a shared layout, and none may load on initial page render. Each lives in a route-scoped, dynamically imported island behind an explicit user Gate.
 - Two WebGL contexts never coexist on one route.
@@ -25,6 +25,8 @@ These are not style preferences. Violating one is a defect. Full rationale in [A
 - **If it's on the wire, it's in the repo.** Anything a visitor's browser executes is committed source, gated in CI like every other byte. Edge injection and dashboard toggles that rewrite HTML are not exemptions — the Served Document and the build output must not diverge. See [ADR-0004](./docs/adr/0004-measurement-committed-beacon-no-field-cwv.md).
 - Source-resolution Rendered Assets never enter git. Only the web-resolution exports committed under `src`/`public` are tracked. This is what makes the repo's image bytes identical to the site's image bytes — the property that keeps repo visibility a non-issue for IP (see [issue #7](https://github.com/imecoulter/coulterheiberger-com/issues/7)). Masters live in `.render-drop/`, a sibling of the working tree and outside the repository.
 - Committed Rendered Assets are JPEG, sRGB with no embedded profile, 3200 px on the long edge. Never PNG or WebP: Astro picks a `<Picture>` fallback tier from the source format, and anything outside `gif`/`svg`/`jpg`/`jpeg` silently yields a ~7× larger PNG tier. Full spec in [docs/asset-delivery.md](./docs/asset-delivery.md).
+- **WCAG AA**, gated in CI on every page. `--muted` holds ≥ 4.5:1 on `--ground` in both bands — it is the colour of 11–12 px text, so the large-text 3:1 exemption does not apply and is refused by name. `--signal` holds ≥ 3:1 and **is never a text colour**: it is the focus outline, and it fails 4.5:1. Both are asserted by `npm run check:css` against the built CSS.
+- **An Exhibit ships with a keyboard path and a text alternative.** No per-URL relaxation, no exemption — decided before the first Exhibit exists, because the cost of deciding it afterwards is losing either the Exhibit or the bar.
 
 If a task appears to require breaking one of these, stop and say so rather than working around it.
 

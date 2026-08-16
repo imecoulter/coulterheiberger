@@ -19,11 +19,68 @@
  * resource but is being replaced.
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 
 /** ADR-0002: LCP Path <= 500 KB, over the wire. */
 const BUDGET_BYTES = 500 * 1024;
 const LHCI_DIR = resolve(process.cwd(), '.lighthouseci');
+
+/**
+ * The scaffold annotation.
+ *
+ * The placeholder Projects on `main` (content-architecture.md §5) are synthetic
+ * plates, and they deliver ~5 KB of AVIF at 1600 px where asset-delivery.md
+ * measured 43 KB for a real Rendered Asset — a ~9x gap that
+ * scripts/dev/scaffold-masters.mjs records as measured and unclosable. So the
+ * moment a route renders a Project, this gate starts passing partly because the
+ * content is fake.
+ *
+ * It stays a PASS, and gains a line saying what the route would weigh at the
+ * proxy. A hard failure here would block the v1 Project pages, which have to be
+ * built while the scaffolds are still the only content there is.
+ *
+ * Scaffolds are identified by their `credit` — the Project's provenance, which
+ * says out loud that it is a placeholder — never by a hardcoded list of names.
+ * That makes the annotation self-clearing: the commit that replaces a scaffold
+ * with real work also rewrites its credit, and this line disappears with it.
+ */
+const PROXY_BYTES = 43 * 1024; // asset-delivery.md, Evidence: AVIF q50 @1600
+const HERO_TARGET_BYTES = 220 * 1024; // AGENTS.md / ADR-0002: where the 2.5s clock lands
+const SCAFFOLD_CREDIT = /placeholder/i;
+
+/**
+ * Every committed image belonging to a Project whose `credit` marks it a
+ * scaffold, as the basename stem Astro retains in the emitted filename
+ * (`hero-north-dusk.jpg` -> `/_astro/hero-north-dusk.DkllZt7p_ZqBTNd.avif`).
+ * Read with a regex rather than a YAML parser: this runs after the build, and
+ * pulling in a parser to read two fields from three files would be the heavier
+ * dependency of the two.
+ */
+function scaffoldStems() {
+  const dir = resolve(process.cwd(), 'src', 'content', 'projects');
+  const stems = new Set();
+  if (!existsSync(dir)) return stems;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const file = join(dir, entry.name, 'index.mdx');
+    if (!existsSync(file)) continue;
+    const frontmatter = readFileSync(file, 'utf8').split(/^---\s*$/m)[1] ?? '';
+    const credit = frontmatter.match(/^credit:[ \t]*['"]?(.*?)['"]?[ \t]*$/m)?.[1] ?? '';
+    if (!SCAFFOLD_CREDIT.test(credit)) continue;
+    for (const [, src] of frontmatter.matchAll(/^[ \t]*-[ \t]*src:[ \t]*['"]?(\S+?)['"]?[ \t]*$/gm)) {
+      stems.add(basename(src).replace(/\.[^.]+$/, ''));
+    }
+  }
+  return stems;
+}
+
+/** Requests on the LCP Path that are a variant of a scaffold plate. */
+function scaffoldsOn(counted, stems) {
+  return counted.filter((item) => {
+    const name = basename(new URL(item.url).pathname);
+    return [...stems].some((stem) => name.startsWith(`${stem}.`));
+  });
+}
 
 function loadLhrs(dir) {
   if (!existsSync(dir)) throw new Error(`No ${dir}. Run \`lhci collect\` first.`);
@@ -122,6 +179,7 @@ try {
     beaconRuns.push({ route: result.route, bytes: beaconBytes(lhr) });
   }
 
+  const stems = scaffoldStems();
   let lcpFailed = false;
   for (const [route, runs] of [...byRoute].sort()) {
     const value = median(runs.map((r) => r.bytes));
@@ -133,6 +191,21 @@ try {
     console.log(
       `      median of ${runs.length} run(s): [${runs.map((r) => kb(r.bytes)).join(', ')}]`,
     );
+
+    // What this route would weigh if its scaffold plates were real work.
+    const median_ = runs.find((r) => r.bytes === value) ?? worst;
+    const plates = scaffoldsOn(median_.counted, stems);
+    if (plates.length) {
+      const synthetic = plates.reduce((sum, p) => sum + p.transferSize, 0);
+      const projected = value - synthetic + plates.length * PROXY_BYTES;
+      console.log(
+        `      ${plates.length} scaffold plate(s) counted, delivering ${kb(synthetic)}; at` +
+          ` asset-delivery.md's ${kb(PROXY_BYTES)} proxy\n` +
+          `      this route is ~${kb(projected)}, against a ~${kb(HERO_TARGET_BYTES)} hero design` +
+          ` target. The number above is\n` +
+          `      not yet trustworthy — it clears itself when the scaffolds are replaced.`,
+      );
+    }
     if (!ok) {
       console.log(`      LCP at ${worst.lcpMs.toFixed(0)}ms; requests counted on the worst run:`);
       for (const item of [...worst.counted].sort((a, b) => b.transferSize - a.transferSize)) {

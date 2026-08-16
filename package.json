@@ -17,7 +17,7 @@
     "check:served": "node scripts/check-served-document.mjs",
     "assets": "node scripts/assets.mjs",
     "publish": "node scripts/publish.mjs",
-    "perf": "lhci collect && node scripts/assert-lcp-path.mjs && lhci assert",
+    "budget": "lhci collect && node scripts/assert-lcp-path.mjs && lhci assert",
     "deploy": "astro build && wrangler deploy"
   },
   "dependencies": {
