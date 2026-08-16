@@ -109,6 +109,16 @@ too, but do not build it.
 
 **Note:** Cloudflare's docs do not cover preview URLs for an assets-only Worker with no script. This is a prove-it-by-doing-it session, not a reading session.
 
+**Known limitation — a preview deploy emits PRODUCTION `og:image` URLs.** Found while building the Social Card ([#32](https://github.com/imecoulter/coulterheiberger-com/issues/32)). `astro.config.mjs` hardcodes `site: 'https://coulterheiberger.com'`, and `Base.astro` resolves the card against it, so a preview's `og:image` points at production. **This is accepted, not a bug to fix.** Making `site` env-aware would also move the canonical URL and every sitemap entry onto the preview origin, which is a real SEO hazard in exchange for a cosmetic one.
+
+To check a card on a preview deploy, skip the unfurl and open the file directly:
+
+```
+<preview-origin>/_astro/<hashed-filename>
+```
+
+The hashed filename is in the preview's own `og:image` tag — take the path, keep the preview origin. Third-party unfurl debuggers will show you production's card no matter what you paste, so they are not a check.
+
 ```
 /wayfinder https://github.com/imecoulter/coulterheiberger-com/issues/2 #9
 
@@ -165,13 +175,15 @@ Either way, decide where the tokens live and how they're consumed.
 
 **Opus 5 · high**
 
-**Outcome:** the gate is now LCP-Path-specific — `scripts/assert-lcp-path.mjs` sums transfer bytes finishing at or before observed LCP, `throttlingMethod` is `devtools`, `aggregationMethod` is `median`, and total page weight is demoted to a warn-level backstop. `npm run perf` is now three steps so the primary budget reports before the loose one. **Both judgement calls landed in ADR-0002:** byte figures are over the wire, and the 2.5s clock binds at ~240 KB — less than half the 500 KB ceiling — so the timing assertion, not the byte budget, is what a hero image hits first. No threshold was raised.
+**Outcome:** the gate is now LCP-Path-specific — `scripts/assert-lcp-path.mjs` sums transfer bytes finishing at or before observed LCP, `throttlingMethod` is `devtools`, `aggregationMethod` is `median`, and total page weight is demoted to a warn-level backstop. `npm run perf` is now three steps so the primary budget reports before the loose one. (**Renamed `npm run budget` in [#35](https://github.com/imecoulter/coulterheiberger-com/issues/35)**, which added the accessibility bar to the same Lighthouse run — the step gates two things now, and the old name mentioned one. Read `npm run perf` as `npm run budget` throughout this file.) **Both judgement calls landed in ADR-0002:** byte figures are over the wire, and the 2.5s clock binds at ~240 KB — less than half the 500 KB ceiling — so the timing assertion, not the byte budget, is what a hero image hits first. No threshold was raised.
 
-**Note for later sessions — ~~`npm run perf` cannot run locally on Windows~~. Corrected by [#21](https://github.com/imecoulter/coulterheiberger-com/issues/21).** `npm run perf` as invoked does fail here, but the reason is narrower than "Lighthouse does not run on this machine", and the difference matters: **the audit completes and the LHR is generated**, then `chrome-launcher`'s `destroyTmp()` throws `EPERM` on Chrome's temp profile during teardown and `lhci collect` exits 1 having discarded good results.
+**Note for later sessions — ~~`npm run budget` cannot run locally on Windows~~. Corrected by [#21](https://github.com/imecoulter/coulterheiberger-com/issues/21).** `npm run budget` as invoked does fail here, but the reason is narrower than "Lighthouse does not run on this machine", and the difference matters: **the audit completes and the LHR is generated**, then `chrome-launcher`'s `destroyTmp()` throws `EPERM` on Chrome's temp profile during teardown and `lhci collect` exits 1 having discarded good results.
 
 `destroyTmp` returns early when it is given an explicit `userDataDir` — chrome-launcher only cleans up a temp dir it created itself. Launching with a profile directory you own skips the `rmSync` and the numbers come back. `scripts/research/lh-runner.mjs` on branch `research/typography-lcp-path` does exactly that and is otherwise identical to the gate (same `devtools` throttling, same median-of-3, LCP Path cut lifted verbatim from `scripts/assert-lcp-path.mjs`); it reproduced #13's own 300 KB fixture to **1 ms** (2872 vs 2871), which is what made a 93-run matrix affordable locally.
 
 CI remains the source of truth, but local measurement is available and was wrongly written off here for two sessions.
+
+**To assert locally as well as collect** ([#35](https://github.com/imecoulter/coulterheiberger-com/issues/35)): the same `userDataDir` launch produces an LHR you can feed to the real assertion config, which is how the accessibility bar was verified before it shipped. Write each LHR into `<repo>/.lighthouseci` named to match `/^lhr-\d+\.json$/`, then run `npx lhci assert --config=lighthouserc.cjs`. Both halves of that are load-bearing: `loadSavedLHRs()` filters on that exact filename pattern, and it reads from `<cwd>/.lighthouseci` **regardless of what `--lhr` points at** (`@lhci/utils/src/saved-reports.js:40`) — so `--lhr=<some other dir>` silently asserts against nothing and exits 0. Check the run count in the output; "0 URL(s), 0 total run(s)" means it found no LHRs, not that everything passed.
 
 **Pulled forward, ahead of motion strategy.** This was scheduled late on the reasoning that a gate rewritten against a holding page gets rewritten again. Research #5 undercut that: it delivered verified working code rather than a direction, and it found **two live defects in the current config** — `aggregationMethod` defaulting to `optimistic`, so the gate passes on the best of three runs rather than the median, and the near-fold lazy-loading leak at Chrome's 1250 px threshold. Neither depends on design direction, and #12 is a bundle-cost decision against a hard budget, so it should not be taken against a gate that grades on its best run.
 
@@ -182,7 +194,7 @@ gh api repos/imecoulter/coulterheiberger-com/issues/13 \
   --jq .issue_dependencies_summary.blocked_by
 ```
 
-**Note:** `npm run check:css` was added to `Verify and deploy` by session 6 and sits immediately before `npm run perf`. Leave it where it is; it is a separate gate on the design's hard rules, not part of the budget.
+**Note:** `npm run check:css` was added to `Verify and deploy` by session 6 and sits immediately before `npm run budget`. Leave it where it is; it is a separate gate on the design's hard rules, not part of the budget. ([#35](https://github.com/imecoulter/coulterheiberger-com/issues/35) gave it the token-contrast assertions as well, on the same reasoning — same input, same refusal posture.)
 
 ```
 /wayfinder https://github.com/imecoulter/coulterheiberger-com/issues/2 #13
