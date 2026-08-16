@@ -16,7 +16,7 @@ Decided in [issue #10](https://github.com/imecoulter/coulterheiberger-com/issues
 **The datum is the specification line.** Not a rail, not a grid — the fixed reference every piece of
 work is measured against.
 
-Every piece of work on this site is a **plate** under an identical metadata contract. The only thing
+Every piece of work on this site is a **Plate** under an identical metadata contract. The only thing
 that differs between them is what the specification line says:
 
 ```
@@ -48,7 +48,7 @@ effective background sampled at 4–9 scroll depths. Eight more were read from s
 2. **The rail was borrowed, not risked.** A persistent 132 px left metadata rail was called "the one
    risk taken." Bruno Arizio already *is* a left index column beside a large plate — and carries a
    **10.6 s LCP**, no document scroll (`scrollHeight === innerHeight`, Lenis), one family, no serif.
-   **The rail is cut.** Metadata belongs to the plate and travels with it: a column beside it on
+   **The rail is cut.** Metadata belongs to the Plate and travels with it: a column beside it on
    desktop, the same rows stacked above it at 390 px.
 
 3. **Two cited precedents were factually wrong.** Lusion has **zero `<img>` elements** — a fixed
@@ -87,7 +87,7 @@ the token mechanics and the `color-mix` scoping trap.
 | ink | `#14161A` | `#E8E6E1` |
 | signal | `#E3392C` | `#E3392C` |
 
-**Signal red survives, reduced** — plate index, focus ring, active state, and **under 1% of pixels**.
+**Signal red survives, reduced** — Plate index, focus ring, active state, and **under 1% of pixels**.
 Corner registration marks were **cut as costume**.
 
 The originally hand-picked `rule` and `muted` values (`#C9C6C0` / `#6E706B` day, `#2A2F35` /
@@ -144,7 +144,14 @@ styling decision — and it is now also a change to the font build.
 ## Motion
 
 **Registration, not performance.** Line-level only. Fires once and never re-triggers on scroll back.
-Nothing scales, nothing parallaxes. At most two elements animating at a time.
+Nothing parallaxes, and **element-level Registration never scales**. At most two elements animating
+at a time. (`draw rule` scales a hairline into existence, which is a draw rather than a zoom; no
+Registration move changes the size of content.)
+
+That rule read a flat **"nothing scales"** until
+[#31](https://github.com/imecoulter/coulterheiberger-com/issues/31) adopted the Carry, below. The
+narrowing is written into the rule rather than granted as an exception beside it — a hard rule with
+an undocumented exception is not a hard rule, and the cost of the Carry is precisely this sentence.
 
 | name | move | duration |
 | --- | --- | --- |
@@ -159,21 +166,48 @@ started as an LCP constraint — a hidden hero is not an LCP candidate, so it wo
 wait on a script — but it is also the right call for the direction: a mark that fires on content the
 visitor is already looking at is performing, which is the thing this motion spec exists to refuse.
 
-**One page-to-page move:** a brief cross-fade on ordinary navigation, present where the browser
-supports it and absent where it does not. No client-side router — see
+**Two page-to-page moves, and no client-side router** — see
 [issue #12](https://github.com/imecoulter/coulterheiberger-com/issues/12), which priced one at
 5,494 B gzip against 426 B for this entire motion substrate, on a site whose page loads already
 land in under 100 ms.
 
-No animation library. Both moves are CSS plus one `IntersectionObserver`, 195 B; the mechanics, the
-measured cost of every alternative, and the conditions for revisiting are in
+The **Navigation Cross-fade** is a brief cross-fade on ordinary navigation, present where the browser
+supports it and absent where it does not.
+
+The **Carry** is the second of them, and the site's third motion category overall, decided in
+[#31](https://github.com/imecoulter/coulterheiberger-com/issues/31): a Plate's image travels between
+`/` and `/projects/<slug>/`, holding its position and its scale across the navigation while the rest
+of the page cross-fades. It is a category of its own, not an extension of the Cross-fade — the
+Cross-fade is a property of the document swap, the Carry is element-level continuity through it, and
+collapsing the two is what would let the scaling narrowing above go unnoticed.
+
+**Every Plate on `/` carries, not only the one that was clicked.** Naming just the first would say
+that one piece of work is the way into the others, which contradicts this document's own equivalence
+thesis. At the scale this site runs at, one click moves 3–8 plates, and that is the thing to measure.
+
+**It is not free, and the record said it was.** #12 priced the cross-fade at 0 bytes and shipped it
+on that basis. Field RUM on cross-document view transitions reports roughly **+70 ms LCP on repeat
+mobile pageviews**, correlated with CPU
+([corewebvitals.io](https://www.corewebvitals.io/pagespeed/view-transition-web-performance)) — a cost
+the shipped Cross-fade already pays today, before the Carry adds a single named element. The Carry is
+therefore adopted on direction fit and carries a **threshold**, not a promise. Over it, the Carry is
+cut back to the plain cross-fade and **never rescued with JavaScript**: a small click handler is the
+tempting fix, and a second `<script>` is an amendment to this document, not an implementation
+detail. The threshold, the mechanism, and what remains unverified are in
+[docs/styling.md](./styling.md).
+
+Under `prefers-reduced-motion: reduce` there is still no transition at all. The Carry does not reopen
+that, and the fade is not split off to be kept without it.
+
+No animation library. All three moves are CSS plus one `IntersectionObserver`, 195 B; the mechanics,
+the measured cost of every alternative, and the conditions for revisiting are in
 [docs/styling.md](./styling.md). The order there is binding: **this document is amended first, then
 a library is chosen to serve it.**
 
 ## Consequence for content production
 
-**Every plate needs two art-directed crops** — 21:9 desktop, 4:5 at 390 px, delivered via `<picture>`
-+ `media`. This is not a preference: on the prototype the one plate that was *not* art-directed
+**Every Plate needs two art-directed crops** — 21:9 desktop, 4:5 at 390 px, delivered via `<picture>`
++ `media`. This is not a preference: on the prototype the one Plate that was *not* art-directed
 collapsed to an illegible 140 px band at 390.
 
 `docs/asset-delivery.md` produces crops at build time from one native-aspect export, so the
