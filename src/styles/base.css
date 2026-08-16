@@ -16,7 +16,6 @@ body {
   font-family: var(--f-body);
   font-size: var(--t-body);
   line-height: 1.62;
-  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -45,9 +44,19 @@ h3 {
 }
 
 /* ---- type roles ----------------------------------------------------------
-   Three families, three classes. Serif body is the element default and has
-   no class. These exist because the mono recipe was otherwise restated in
-   five components (issue #11) — that repetition is where drift starts.
+   Three roles, three classes. Serif body is the element default and has no
+   class — and as of issue #21 it is also the only role with no webfont, a
+   system stack rather than a shipped face. These exist because the mono recipe
+   was otherwise restated in five components (issue #11) — that repetition is
+   where drift starts.
+
+   `font-variant-numeric: tabular-nums` used to sit on `body` and was removed in
+   #21: it was a no-op on all three roles. Source Serif 4's defaults were
+   already tabular, JetBrains Mono has no `tnum` at all, and on a subset display
+   face `tnum` keeps its feature record while losing its substitution targets —
+   so the declaration reported a guarantee it did not make. If tabular figures
+   are ever needed, set them on the element that needs them and verify by
+   rendering, not by reading the CSS.
 
    HARD CAP: three. A fourth type role is a change to the design direction,
    not a styling decision. Do not add one here without amending
@@ -67,9 +76,14 @@ h3 {
   color: var(--muted);
 }
 
+/* font-weight 500 is load-bearing, not cosmetic. Without it this inherits
+   body's 400 and mono needs a second file for one weight nobody chose — issue
+   #21 measured that at 3,956 B, which is more than a quarter of the entire
+   type stack. The two mono roles should have matched anyway. */
 .t-spec {
   font-family: var(--f-mono);
   font-size: var(--t-spec);
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: var(--track-spec);
   color: var(--muted);

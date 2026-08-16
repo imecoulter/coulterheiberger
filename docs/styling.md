@@ -10,7 +10,7 @@ there and summarised at the bottom of this file.
 ```
 src/styles/tokens.css    custom properties only — nothing in this file paints
 src/styles/base.css      reset, element defaults, type roles, Registration, cross-fade
-src/styles/fonts.css     @font-face only (does not exist yet — typography is open)
+src/styles/fonts.css     @font-face only — two faces, nothing else
 src/layouts/Base.astro   imports the above once for every page; holds the only <script>
 src/components/*.astro   everything else, in a scoped <style> block
 ```
@@ -103,9 +103,43 @@ removes one round trip from the LCP Path at no meaningful byte cost.
 
 ## Fonts
 
-When typography closes, `@font-face` goes in `src/styles/fonts.css`, **self-hosted**, with the files
-under `src/fonts/` so they are hashed and cached. **Never a Google Fonts `<link>`** — the prototype
-used one, and it costs two extra origins and a render-blocking external stylesheet on the LCP Path.
+`@font-face` lives in `src/styles/fonts.css`, **self-hosted**, with the files under `src/fonts/` so
+Vite hashes and cache-busts them. **Never a Google Fonts `<link>`** — the prototype used one, and it
+costs two extra origins and a render-blocking external stylesheet on the LCP Path.
+
+Two files ship, **13,648 B on the wire**:
+
+| | file | |
+| --- | --- | ---: |
+| display | `montserrat-wght500-site-trimmed.woff2` | 9,628 B |
+| mono | `jetbrainsmono-wght500-mono-spec-no-liga.woff2` | 4,020 B |
+
+The body serif is a **system stack** and has no file. Why, and everything else about the faces, is in
+[docs/design-direction.md](./design-direction.md#typography); the measurements are in
+[docs/research/typography-lcp-path.md](./research/typography-lcp-path.md).
+
+**Regenerating them.** The woff2 are committed binaries, so they need a reproducible build step:
+
+```
+python -m venv .venv-fonts
+.venv-fonts/Scripts/pip install fonttools brotli
+PYTHON=.venv-fonts/Scripts/python.exe FONT_SRC=<dir> node scripts/dev/subset-fonts.mjs
+```
+
+Sources are the variable TTFs from `github.com/google/fonts` and are **not** committed. The script
+asserts that name IDs 13/14 survive subsetting — without them the file breaks OFL 1.1 clause 2, and
+pyftsubset drops them by default. Licence terms are in [NOTICE](../NOTICE).
+
+**Three things not to undo:**
+
+- **No `<link rel="preload">`.** Measured *slower* on a text page (727 → 1,074 ms). Stylesheets are
+  inlined, so `@font-face` is already in the document; a preload only promotes fonts ahead of a paint
+  they never blocked.
+- **Fonts are never base64-inlined.** `astro.config.mjs` forces `assetsInlineLimit` to skip `.woff2`.
+  Vite's 4,096 B default would otherwise inline the 4,020 B mono file — and only that one — putting
+  it on the document's critical path, where on a text-LCP page it delays the paint that *is* the LCP.
+- **`font-display: swap`**, not `optional`. Indistinguishable on every measurement taken, and
+  `optional` risks a first visit with no webfont at all. Revisit only if a real CLS case is shown.
 
 ## Motion
 

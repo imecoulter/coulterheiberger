@@ -1,0 +1,44 @@
+/* @font-face only. Nothing else lives here — see docs/styling.md.
+
+   Two files, 13,648 B on the wire. The third type role (serif body) is a system
+   stack and has no @font-face: issue #21 priced Source Serif 4 at 45,340 B, 73%
+   of the full stack and 24 KB of hero budget, for the one role the design
+   direction had already demoted to "right for reading, not distinctive."
+
+   Both files are subset to a fixed production repertoire and pinned to one
+   static weight. Regenerate with:
+
+     PYTHON=.venv-fonts/Scripts/python.exe FONT_SRC=<dir> \
+       node scripts/dev/subset-fonts.mjs
+
+   NO PRELOAD, deliberately. astro.config.mjs sets inlineStylesheets: 'always',
+   so this file is already in the document by the time the parser reaches it —
+   a preload only promotes these ahead of a paint they never blocked. Measured
+   on issue #21: preloading made the text page SLOWER, 727 -> 1,074 ms, and it
+   was first paint that moved. Do not add one back without re-measuring.
+
+   NO unicode-range, also deliberately. Issue #21 §6 verified in a browser that
+   a narrow range is safe here (it is matched post-text-transform, so the
+   uppercase-only mono cut does not make lowercase source fall back). Safe is
+   not the same as useful: both faces are used on every page, so a range could
+   never avoid a download, and per-glyph fallback already handles anything
+   outside the repertoire. */
+
+@font-face {
+  font-family: 'Montserrat';
+  src: url('../fonts/montserrat-wght500-site-trimmed.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* One weight, not two. `.t-spec` was given font-weight: 500 in base.css to match
+   `.t-label`; before that it inherited body's 400 and mono cost two files.
+   Issue #21: one line, -3,956 B. */
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('../fonts/jetbrainsmono-wght500-mono-spec-no-liga.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}

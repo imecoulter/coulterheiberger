@@ -29,3 +29,7 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# Local font subsetting venv (scripts/dev/subset-fonts.mjs). Never committed;
+# the woff2 subsets under src/fonts/ are the artifact CI consumes.
+.venv-fonts/
