@@ -22,18 +22,20 @@ This file holds only what the map does not: **what order to run sessions in, wha
 | 4 | Preview deploys | [#9](https://github.com/imecoulter/coulterheiberger-com/issues/9) | task | Sonnet 5 | high |
 | 5 | Design direction | [#10](https://github.com/imecoulter/coulterheiberger-com/issues/10) | prototype | Opus 5 | xhigh |
 | 6 | Styling ✅ | [#11](https://github.com/imecoulter/coulterheiberger-com/issues/11) | grilling | Opus 5 | high |
-| — | Typography (background agent) | [#21](https://github.com/imecoulter/coulterheiberger-com/issues/21) | research | — | — |
+| — | Typography ✅ (background agent) | [#21](https://github.com/imecoulter/coulterheiberger-com/issues/21) | research | — | — |
 | 7 | Perf gate ✅ | [#13](https://github.com/imecoulter/coulterheiberger-com/issues/13) | task | Opus 5 | high |
 | 8 | Motion strategy ✅ | [#12](https://github.com/imecoulter/coulterheiberger-com/issues/12) | grilling | Opus 5 | xhigh |
 | 9 | Launch checklist ✅ | [#14](https://github.com/imecoulter/coulterheiberger-com/issues/14) | task | Sonnet 5 | medium |
 
 **Sessions 1–9 are done — the numbered order is complete.** **Perf gate and Motion strategy were swapped** — see session 7 for the reasoning. Everything else ran strictly sequentially.
 
-The map itself ([#2](https://github.com/imecoulter/coulterheiberger-com/issues/2)) is still open, held by the one thing not on this list: research [#21](https://github.com/imecoulter/coulterheiberger-com/issues/21).
+**The map ([#2](https://github.com/imecoulter/coulterheiberger-com/issues/2)) is closed and this runbook is history.** Every decision on it is made and every piece of substrate is built. Keep the file for the reasoning behind the order, not as a list of things to do.
 
 [#24](https://github.com/imecoulter/coulterheiberger-com/pull/24) (session 8, motion substrate) and [#25](https://github.com/imecoulter/coulterheiberger-com/pull/25) (session 9, launch checklist) are both merged. The ✅ on a session marks the *decision* as resolved and the ticket closed — not the merge. Per [#9](https://github.com/imecoulter/coulterheiberger-com/issues/9), merging stays a deliberate, manually-reviewed step.
 
-[#21](https://github.com/imecoulter/coulterheiberger-com/issues/21) graduated out of the map's fog when [#11](https://github.com/imecoulter/coulterheiberger-com/issues/11) closed and the question became precisely stateable. It is a research ticket, so it runs as a background agent alongside the numbered sessions rather than taking a slot — but it gates the *choice* of typefaces, which in turn gates the OG/social image question and the last open section of `docs/design-direction.md`. **Still open** — it is the only thing standing between the map and closing. [#14](https://github.com/imecoulter/coulterheiberger-com/issues/14) built the OG/Twitter metadata substrate without an image for exactly this reason: the image strategy can't be decided until #21 resolves.
+[#21](https://github.com/imecoulter/coulterheiberger-com/issues/21) graduated out of the map's fog when [#11](https://github.com/imecoulter/coulterheiberger-com/issues/11) closed and the question became precisely stateable. It ran as a background agent alongside the numbered sessions rather than taking a slot, and it was the last thing standing between the map and closing — it gated the *choice* of typefaces, which gated the OG/social image question and the last open section of `docs/design-direction.md`. [#14](https://github.com/imecoulter/coulterheiberger-com/issues/14) built the OG/Twitter metadata substrate without an image for exactly this reason.
+
+**Closed.** Three roles, two webfonts — Montserrat display, JetBrains Mono spec, body serif demoted to a system stack because it was 73% of the type stack for the least distinctive role. Shipped at 13,648 B. The research left the *taste* deliberately un-pre-sliced, and it was settled on a rendered page rather than the byte table: Montserrat over Archivo, 944 B apart. OG image strategy is now unblocked and is filed as its own issue.
 
 [#17](https://github.com/imecoulter/coulterheiberger-com/issues/17) (asset delivery tooling) **is done**, having run off the numbered order — it was never on the critical path to the map's destination, being the tooling you need to publish real Projects. It landed `npm run assets`, `npm run publish`, the `Asset spec` CI gate, the Project collection, and three scaffold Projects on `main` behind the existing `noindex`.
 
@@ -165,7 +167,11 @@ Either way, decide where the tokens live and how they're consumed.
 
 **Outcome:** the gate is now LCP-Path-specific — `scripts/assert-lcp-path.mjs` sums transfer bytes finishing at or before observed LCP, `throttlingMethod` is `devtools`, `aggregationMethod` is `median`, and total page weight is demoted to a warn-level backstop. `npm run perf` is now three steps so the primary budget reports before the loose one. **Both judgement calls landed in ADR-0002:** byte figures are over the wire, and the 2.5s clock binds at ~240 KB — less than half the 500 KB ceiling — so the timing assertion, not the byte budget, is what a hero image hits first. No threshold was raised.
 
-**Note for later sessions:** `npm run perf` cannot run locally on Windows. `chrome-launcher` throws `EPERM` removing Chrome's temp profile after every Lighthouse run, so `lhci collect` exits 1 with no LHRs written. CI is `ubuntu-latest` and unaffected; this is the machine, not the config. To measure locally, run the `lighthouse` CLI directly with `--output-path` — results are saved before the failing cleanup.
+**Note for later sessions — ~~`npm run perf` cannot run locally on Windows~~. Corrected by [#21](https://github.com/imecoulter/coulterheiberger-com/issues/21).** `npm run perf` as invoked does fail here, but the reason is narrower than "Lighthouse does not run on this machine", and the difference matters: **the audit completes and the LHR is generated**, then `chrome-launcher`'s `destroyTmp()` throws `EPERM` on Chrome's temp profile during teardown and `lhci collect` exits 1 having discarded good results.
+
+`destroyTmp` returns early when it is given an explicit `userDataDir` — chrome-launcher only cleans up a temp dir it created itself. Launching with a profile directory you own skips the `rmSync` and the numbers come back. `scripts/research/lh-runner.mjs` on branch `research/typography-lcp-path` does exactly that and is otherwise identical to the gate (same `devtools` throttling, same median-of-3, LCP Path cut lifted verbatim from `scripts/assert-lcp-path.mjs`); it reproduced #13's own 300 KB fixture to **1 ms** (2872 vs 2871), which is what made a 93-run matrix affordable locally.
+
+CI remains the source of truth, but local measurement is available and was wrongly written off here for two sessions.
 
 **Pulled forward, ahead of motion strategy.** This was scheduled late on the reasoning that a gate rewritten against a holding page gets rewritten again. Research #5 undercut that: it delivered verified working code rather than a direction, and it found **two live defects in the current config** — `aggregationMethod` defaulting to `optimistic`, so the gate passes on the best of three runs rather than the median, and the near-fold lazy-loading leak at Chrome's 1250 px threshold. Neither depends on design direction, and #12 is a bundle-cost decision against a hard budget, so it should not be taken against a gate that grades on its best run.
 
@@ -237,3 +243,16 @@ before you call it done.
 The map's destination is a locked decision set and a working substrate — not a shipped site. Building v1's pages, writing its content, and producing the Rendered Assets are downstream and start here, with every architectural question already answered.
 
 The items in the map's **Out of scope** section return only if the destination is redrawn — as a fresh effort, not a resumption of this one.
+
+### Where it actually ended
+
+The map closed after a final audit pass that verified every ticket's deliverables against `main` rather than against its own resolution comments. Twelve of thirteen checked out. What did not:
+
+- **The launch switch had never worked.** `Base.astro` carried an unconditional `noindex` *in addition to* the conditional prop, so the documented switch — remove `noindex` from the page — would have changed nothing. Shipped by session 9 and live in production for both pages.
+- **#21's findings had never reached `main`.** Every other closed ticket landed its doc; that one existed only on its research branch, and with it the only record of Montserrat's pricing.
+- **This file claimed #21 was still open**, and carried a note about local perf measurement that #21 had disproved.
+- **`404.astro` was outside the design** — pre-Datum scoped styles overriding a derived token and setting a fourth font family, on a live page.
+
+None of these were visible from the tickets, which is the point: **a ticket's resolution comment records what a session decided, not what is true of `main` today.** The two drift, and they drifted here in the direction of "closed" being more optimistic than "shipped". If this repo grows another map, audit against the tree.
+
+**The placeholder went live at the end of it** — `/` indexable, `/404` permanently not, one honest page saying the portfolio is in progress.

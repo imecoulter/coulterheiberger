@@ -15,35 +15,26 @@ import Base from '../layouts/Base.astro';
 </Base>
 
 <style>
-  :root {
-    color-scheme: light dark;
-    --bg: #0e0e10;
-    --fg: #f4f4f5;
-    --muted: #8b8b93;
-  }
+  /* Ground, ink, families and muted all come from tokens.css. This page used to
+     declare its own — a pre-Datum :root block with hex literals for --bg/--fg/
+     --muted plus font-family: ui-sans-serif — which issue #21 caught rendering a
+     FOURTH family on a live page.
 
-  @media (prefers-color-scheme: light) {
-    :root {
-      --bg: #fafaf9;
-      --fg: #18181b;
-      --muted: #6b6b74;
-    }
-  }
-
+     Astro does not scope `:root`, so that block was emitted unscoped and
+     overrode the derived --muted site-wide on this document, replacing a
+     color-mix() with a hard-coded hex. That is the one thing docs/styling.md
+     forbids outright: a component never hard-codes a value a token names, and
+     never redefines a derived token. Nothing here paints a colour now. */
   main {
     min-height: 100dvh;
     display: grid;
     place-items: center;
-    padding: 2rem;
-    background: var(--bg);
-    color: var(--fg);
-    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    padding: var(--gutter);
+    text-align: center;
   }
 
   h1 {
-    margin: 0;
     font-size: clamp(2rem, 8vw, 3.25rem);
-    font-weight: 500;
     letter-spacing: -0.03em;
   }
 
@@ -52,6 +43,7 @@ import Base from '../layouts/Base.astro';
   }
 
   a {
-    color: inherit;
+    border-bottom: 1px solid var(--rule);
+    text-decoration: none;
   }
 </style>
