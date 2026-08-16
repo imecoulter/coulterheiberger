@@ -22,6 +22,14 @@ _Avoid_: static asset, image, still, pre-render
 The source-resolution output of a 3D authoring toolchain, from which a Rendered Asset is made. Kept outside the repository; never shipped and never committed.
 _Avoid_: original, raw, full-res, source image
 
+**Plate**:
+A single Rendered Asset as presented on the site — the image together with the metadata rows that travel with it. The unit the index and the Project page are built from. Distinct from the Rendered Asset itself: the asset is a file, the Plate is that file composed into the page at a given crop.
+_Avoid_: card, tile, slide, image
+
+**Framing**:
+The composition decision a Rendered Asset carries so that a crop recomposes the image rather than cutting it. Stated per asset, because it cannot be derived from the file.
+_Avoid_: focal point, crop hint, gravity, anchor, art direction
+
 **Gate**:
 An explicit user action required before an Exhibit loads. Distinguishes a deliberate opt-in from an automatic load.
 _Avoid_: trigger, lazy load, interaction

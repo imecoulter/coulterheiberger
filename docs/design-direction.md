@@ -178,5 +178,39 @@ collapsed to an illegible 140 px band at 390.
 
 `docs/asset-delivery.md` produces crops at build time from one native-aspect export, so the
 mechanism exists — but Astro crops from **centre**, and centre-cropping a wide elevation to 4:5 cuts
-the composition instead of recomposing it. **Framing is unresolved** and is tracked as fog on the
-map; it needs an answer before the first real Project ships.
+the composition instead of recomposing it. **Framing is the answer to that**, and it is below.
+
+## Framing
+
+Decided in [issue #30](https://github.com/imecoulter/coulterheiberger-com/issues/30).
+
+**Every image carries a required `framing` keyword in frontmatter**, one of nine, passed through to
+sharp unchanged. It is a Plate's composition decision, stated once by whoever looked at the image.
+
+It works because of a measured property of *these two ratios*. Every plate's native aspect sits
+between 4:5 and 21:9, so reaching 21:9 is a purely **vertical** cut and reaching 4:5 a purely
+**horizontal** one. A single two-axis keyword is therefore already a per-ratio pair — in `left top`,
+`top` answers the 21:9 crop and `left` answers the 4:5 crop, and neither can disturb the other. One
+field, no per-ratio structure, no arithmetic.
+
+The keyword is horizontal-first (`left top`; `top left` throws) and British (`centre`, never
+`center`). `attention` and `entropy` are refused: they are not stable across libvips versions, and a
+content-derived anchor destroys the axis decomposition the model rests on. The full set and the
+reasoning sit in the schema comment in `src/content.config.ts`, where the next person will be
+standing when they ask.
+
+**The window is 4:5 to 21:9, and it is checked.** Outside it both crops read the same axis and one
+keyword cannot serve both. `npm run assets` warns when a master lands outside — a warning, not a
+failure: the master is spec-compliant and the consequence is a harder composition call, not a
+defect. If the two ratios above ever change, re-check that they still straddle native aspect.
+
+### Rejected
+
+| | |
+| --- | --- |
+| **Compose every plate for a centre crop** | The cheapest option, and the one to reject by name. It re-couples layout to re-render: moving the 4:5 breakpoint sends you back into the 3D toolchain. Breaking that coupling is the whole purpose of `asset-delivery.md` §1 |
+| **A second export per plate** | Contradicts [#6](https://github.com/imecoulter/coulterheiberger-com/issues/6)'s single committed dimension, and doubles repo weight to store a decision one word can hold |
+| **Accept the centre crop on mobile** | Free, and wrong for exactly the plates art direction exists for — the prototype's un-art-directed plate collapsed to a 140 px band |
+| **Normalized `{x, y}` focal points** | Impossible through the stock pipeline (`"20% 40%"` throws); it needs a custom image service owning crop maths forever. Kept as the **upgrade path** — the field name survives a change of value type |
+| **A per-ratio `{wide, tall}` shape** | Can express states with no effect: `{wide: 'left'}` is a silent `centre`. The one-keyword form cannot be written wrong in that way |
+| **A contact-sheet proof route** | Would be the first route rendering a Project, flipping the indexability switch `content-architecture.md` §5.2 warns about. It would need excluding from the build, not merely `noindex` |

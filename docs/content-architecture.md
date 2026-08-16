@@ -64,12 +64,19 @@ const projects = defineCollection({
           z.object({
             src: image(),
             alt: z.string().min(1),
+            framing: z.enum([
+              'centre', 'top', 'bottom', 'left', 'right',
+              'left top', 'left bottom', 'right top', 'right bottom',
+            ]),
           }),
         )
         .min(1),
     }),
 });
 ```
+
+(Abridged: the schema in `src/content.config.ts` carries a long comment on `framing` that is not
+reproduced here.)
 
 Six fields. Every one is required, and every one is rendered by a page.
 
@@ -81,6 +88,7 @@ Six fields. Every one is required, and every one is rendered by a page.
 | `year` | index card, detail fact block | Display only. Not the sort key |
 | `order` | index sort, ascending | Curation, not chronology |
 | `images` | detail gallery; `images[0]` on the index card | `images[0]` **is** the hero — there is no separate hero field |
+| `images[].framing` | every build-time crop, as sharp's `position` — **once the Project page lands** | Nine keywords, required per image. Knowingly the one field ahead of its page (issue #30): it cannot be derived from the file, so it is collected while someone is looking at the image. See `design-direction.md`, "Framing" |
 
 ### `credit` is required, and it is one line
 
