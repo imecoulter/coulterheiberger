@@ -1,0 +1,47 @@
+---
+title: 'Cecret'
+summary: 'A snowy alpine visualisation built on real terrain near Cecret Lake, Utah — public elevation and satellite data driving a procedural landscape layered with hand-authored material masks.'
+credit: 'Personal work'
+year: 2023
+order: 1
+images:
+  - src: ./c-render-img-cam01-01.jpg
+    alt: 'A snowbound alpine basin under broken cloud. Snow-laden conifers run along the left shore of a frozen lake, bare rock breaks through the drifts on the right, and a fox lies on a low cantilevered platform in the middle distance with wind-driven snow blowing past.'
+    framing: 'centre'
+  - src: ./c-render-img-cam01-02.jpg
+    alt: 'The same alpine basin rendered into flat, blown-out overcast light. The mountains, lake and treeline are reduced to pale grey silhouettes with the sun burning through the cloud just above the ridgeline.'
+    framing: 'centre'
+  - src: ./c-terrain-color.jpg
+    alt: 'A top-down satellite colour image of the mountain range the terrain was built from, showing dark green forested slopes, bare tan ridges, and a broad snowfield through the middle of the frame.'
+    framing: 'centre'
+  - src: ./c-terrain-height.jpg
+    alt: 'A greyscale heightfield of the same range, elevation read as brightness — ridgelines picked out white, valley floors falling away to near black.'
+    framing: 'centre'
+  - src: ./c-terrain-soil.jpg
+    alt: 'A near-white soil distribution mask, with fine dark drainage lines and slope textures branching across almost the entire terrain.'
+    framing: 'centre'
+  - src: ./c-terrain-limestone.jpg
+    alt: 'A limestone distribution mask reading as fine pale filigree on black, catching the broken, high-frequency rock faces across the range.'
+    framing: 'centre'
+  - src: ./c-terrain-sandstone.jpg
+    alt: 'A sandstone distribution mask, sparser and coarser than the limestone, its white strokes following the larger bedding planes and cliff bands.'
+    framing: 'centre'
+  - src: ./c-terrain-gravel.jpg
+    alt: 'A gravel distribution mask, mostly black, with bright fans of scree spreading below the steeper slopes.'
+    framing: 'centre'
+  - src: ./c-terrain-sediment.jpg
+    alt: 'A sediment distribution mask, the sparsest of the set — thin branching white channels tracing where material settles along the drainage network.'
+    framing: 'centre'
+---
+
+Built in Unreal Engine and Houdini, Cecret is a snowy alpine visualisation based
+on the terrain around Cecret Lake in Utah. Public elevation and satellite data
+drove a procedurally generated landscape, which was then layered with custom
+masks for colour, soil, sediment, limestone, sandstone and gravel.
+
+The work was in the blending: getting material transitions to read as believable
+geology rather than as textures meeting, and composing the frame so attention
+lands where it should.
+
+The masks are included here because they are the actual project. The two camera
+renders are what the terrain looks like; the seven maps are what it is made of.
