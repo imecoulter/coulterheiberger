@@ -1,0 +1,14 @@
+# /projects/ has no page of its own — people truncate URLs, so send it to `/`,
+# which IS the Project index (docs/content-architecture.md §1).
+#
+# This is here rather than in Astro's `redirects` config, and that contradicts
+# what §1 originally said. The reason is that a static Astro build cannot emit a
+# real 301: it writes an HTML page carrying <meta http-equiv="refresh">
+# (node_modules/astro/dist/core/routing/3xx.js). That is a 200 with a client-side
+# hop, it costs a round trip, and — because @astrojs/sitemap's filter excludes
+# only /404/ — it would be listed in the sitemap as a canonical URL.
+#
+# Cloudflare's static assets serve _redirects natively from the asset directory,
+# so this is a real edge 301 at zero bytes. public/ is copied verbatim into dist/,
+# which is exactly what this file needs and the reason it cannot live in src/.
+/projects/* / 301

@@ -1,0 +1,387 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { getCollection, render } from 'astro:content';
+import { Picture, getImage } from 'astro:assets';
+import Base from '../../layouts/Base.astro';
+import Plate from '../../components/Plate.astro';
+import {
+  bodyWidth,
+  bodySizes,
+  EXPANDED_WIDTH,
+  FRAME_FORMATS,
+  FRAME_FALLBACK,
+} from '../../layout';
+
+export const getStaticPaths = (async () => {
+  const projects = await getCollection('projects');
+  return projects.map((project) => ({ params: { slug: project.id }, props: { project } }));
+}) satisfies GetStaticPaths;
+
+const { project } = Astro.props;
+const { title, summary, credit, spec, year, images } = project.data;
+const { Content } = await render(project);
+
+/* Frames 1..n, then the hero again LAST and at its native aspect.
+
+   It is not a repeat. The thing at the top of this page is a 21:9 band cut out
+   of the hero, and closing the sequence with the whole image is what that band
+   was taken from — the crop opens the page, the full frame resolves it. Last
+   rather than first because first would put it directly under its own crop,
+   with only the prose between, which reads as the image failing to load rather
+   than as a sequence.
+
+   `images` is `.min(1)` in the schema, so this is never empty. A one-image
+   Project is exactly its hero shown uncropped, which is the right answer. */
+const frames = [...images.slice(1), images[0]];
+
+/* The Expanded View's source, one per Frame, resolved at build time so the
+   markup can be a plain link.
+
+   `layout: 'none'` for the reason Base.astro spells out on the Social Card:
+   astro.config.mjs sets a global 'constrained' default that applies to getImage
+   too, and without this each of these becomes a six-width srcset where exactly
+   one URL is read.
+
+   Clamped to the source width so a portrait Frame is never upscaled. Every
+   committed asset is 3200 px on its LONG edge (docs/asset-delivery.md §2), so a
+   tall one can be well under 2000 px wide and sharp would happily enlarge it. */
+const expanded = await Promise.all(
+  frames.map((frame) =>
+    getImage({
+      src: frame.src,
+      width: Math.min(EXPANDED_WIDTH, frame.src.width),
+      format: 'webp',
+      layout: 'none',
+    }),
+  ),
+);
+---
+
+<Base title={`${title} | Coulter Heiberger`} description={summary} image={images[0]}>
+  <main>
+    {/* The hero leads. This page IS the Plate in its second presentation, and
+        putting the work first is the same argument content-architecture.md §1
+        makes for `/` not being a landing page.
+
+        It also keeps the page image-LCP, which is the regime ADR-0002 costed
+        the ~220 KB hero crossover in. Three hundred pixels of heading above it
+        would hand the LCP to an <h1> on mobile and quietly move the page into
+        the other regime.
+
+        NO data-anim, and no Registration: first screen. */}
+    <div class="hero">
+      <Plate frame={images[0]} slug={project.id} context="detail" priority />
+    </div>
+
+    <h1>{title}</h1>
+    <p class="summary">{summary}</p>
+
+    {/* Credit and the Specification Line together — provenance and
+        construction, the pair CONTEXT.md defines against each other. `credit`
+        appears here and nowhere else on the site (content-architecture.md §2). */}
+    <dl class="facts">
+      <div>
+        <dt class="t-label">Credit</dt>
+        <dd class="t-spec">{credit}</dd>
+      </div>
+      <div>
+        <dt class="t-label">Year</dt>
+        <dd class="t-spec">{year}</dd>
+      </div>
+      <div>
+        <dt class="t-label">Specification</dt>
+        <dd class="t-spec">{spec}</dd>
+      </div>
+    </dl>
+
+    <div class="prose" data-anim="rise">
+      <Content />
+    </div>
+
+    {/* The gallery. Frames at NATIVE ASPECT — no crop, no `framing`, because
+        nothing here is being fitted to a band: the two art-directed crops exist
+        for the Plate, which has a layout to satisfy, and a Frame does not.
+
+        No Registration on any of them. An image the visitor scrolled to is not
+        information arriving, it is the thing they came to see — and twelve
+        wipes in a column is precisely the "performing" the motion spec exists
+        to refuse.
+
+        No captions and no process/finished label. ~15 of the 47 Frames are
+        working images rather than finished camera renders and they render
+        identically; the body prose above makes that argument better than a
+        badge would. See content-architecture.md §4.
+
+        EACH FRAME IS A LINK TO ITS OWN FULL-SIZE FILE, and Base.astro's script
+        intercepts the click into the Expanded View. A link rather than a button
+        on purpose: with scripting off, or on a cmd-click, it still does the
+        thing a visitor wanted, and its accessible name comes from the alt text
+        already on the image inside it. A <button> here would be a control that
+        does nothing when the script does not run, and lighthouserc.cjs asserts
+        `link-name` and `button-name` alike without being able to tell the
+        difference. */}
+    <ul class="gallery">
+      {frames.map((frame, i) => (
+        <li>
+          <a class="expand" href={expanded[i].src}>
+            {/* <Picture>, and here it IS the right tool — which is worth saying
+                because Plate.astro argues at length for hand-assembling one.
+                That argument is about COMPOSITION: a Plate needs a different
+                crop per breakpoint, and <Picture> switches format, not framing.
+                A Frame is one crop at one aspect and needs exactly the format
+                switch, so the component that does only that is the correct one.
+
+                AVIF WITH A WEBP FALLBACK, where this was WebP alone. The Plate
+                pipeline has always led with AVIF and the gallery never did, and
+                on mobile that is not a cosmetic gap: `loading="lazy"` does not
+                mean "not now" — Chrome's lazy threshold widens as the connection
+                slows, so on the throttled 4G the perf gate emulates, the first
+                few Frames are fetched WHILE the hero is still arriving and take
+                bandwidth from the LCP element. Cecret's terrain map was the
+                largest single asset on its page at 199.1 KB, landing at 2.8s.
+                Measured through sharp at the width actually served, AVIF q50
+                against WebP q80: 199.1 KB -> 93.6 KB, and 122.4 -> 57.4 at the
+                rung below. A 53% cut on the thing that was crowding the hero. */}
+            <Picture
+              src={frame.src}
+              alt={frame.alt}
+              width={bodyWidth}
+              sizes={bodySizes}
+              formats={FRAME_FORMATS}
+              fallbackFormat={FRAME_FALLBACK}
+              layout="constrained"
+              loading="lazy"
+              decoding="async"
+            />
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    {/* ONE dialog per page, not one per Frame. The script sets its src from the
+        link that was clicked, so the file is fetched on demand and nothing is
+        downloaded for a Frame nobody opens — a Gate in CONTEXT.md's sense.
+
+        The <img> ships with no src and an empty alt, and both are replaced at
+        open time. Empty rather than absent because an image with no alt is an
+        `image-alt` failure the moment it has a src, and the window between
+        those two assignments is not somewhere to be clever.
+
+        Close is a word, not a glyph: it needs no aria-label, it renders in the
+        specification line's own type role, and there is no icon set on this
+        site for it to be the first member of. */}
+    <dialog class="expanded">
+      <button type="button" class="t-spec close" data-close>Close</button>
+      <img alt="" />
+    </dialog>
+  </main>
+</Base>
+
+<style>
+  /* ONE DATUM EDGE. Everything on this page — hero, heading, facts, prose and
+     every Frame — starts on the same left edge, and only the right edges vary.
+     That is the literal reading of the direction's own name, and it is what
+     makes Cecret's seven near-identical terrain masks read as a sequence rather
+     than as seven competing heroes. It is also what gives a 5-Frame Project and
+     a 12-Frame Project the same rhythm.
+
+     Recorded honestly: this is a READING of docs/design-direction.md, not a
+     measurement. The repo holds no layout geometry from the precedent analysis
+     — the prototype is gone (issue #11) — so the only numbers behind it are
+     tokens.css and the page shell. */
+  main {
+    max-width: var(--measure-page);
+    margin-inline: auto;
+    padding: var(--rhythm) var(--gutter);
+  }
+
+  .hero {
+    margin-bottom: 40px;
+  }
+
+  /* ONE COLUMN BELOW THE HERO. Heading, summary, prose and every Frame share
+     --body-col, which is half the page shell. The hero above runs the full
+     shell, so the page is one wide plate over one half-width column, both
+     starting on the same left edge.
+
+     This replaced two measures with one: the text used to sit at --measure
+     (64ch) and the Frames at --gallery-col (1080px), which drew two right edges
+     down the page for no reason a reader could see. What it costs the reading
+     measure is recorded on the token itself, in tokens.css. */
+  h1 {
+    font-size: var(--t-h2);
+    line-height: 1.02;
+    max-width: var(--body-col);
+  }
+
+  .summary {
+    margin: 20px 0 0;
+    max-width: var(--body-col);
+    color: var(--muted);
+  }
+
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 48px;
+    margin: 40px 0 0;
+    padding: 20px 0 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  .facts div {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .facts dd {
+    margin: 0;
+  }
+
+  .prose {
+    margin-top: var(--rhythm);
+    max-width: var(--body-col);
+  }
+
+  /* Capped by the same token layout.ts composes `sizes` from, so the width the
+     CSS draws and the width the browser fetches cannot drift apart. */
+  .gallery {
+    list-style: none;
+    margin: var(--rhythm) 0 0;
+    padding: 0;
+    max-width: var(--body-col);
+  }
+
+  .gallery li + li {
+    margin-top: 40px;
+  }
+
+  /* The link is a block wrapper and nothing else. No underline, no border, no
+     colour change: base.css gives every <a> `color: inherit` and there is no
+     text inside this one to distinguish. The cursor is the affordance. */
+  .expand {
+    display: block;
+  }
+
+  /* <picture> is inline by default, which would put a descender's worth of gap
+     under every Frame inside its block-level link. */
+  .gallery :global(picture) {
+    display: block;
+  }
+
+  .gallery :global(img) {
+    width: 100%;
+    height: auto;
+  }
+
+  /* ---- the Expanded View -------------------------------------------------
+     CONTEXT.md names it. One Frame at the size of the window, over the rest of
+     the page blurred back.
+
+     THE BLUR IS ON THE DIALOG, NOT ON ::backdrop, and that is not a stylistic
+     choice. Custom properties only began inheriting into ::backdrop recently
+     and unevenly, and where they do not, `var(--ground)` resolves to nothing
+     and the UA's own translucent black lands over a paper site. A real element
+     resolves the token normally in every engine. So the dialog is sized to the
+     whole viewport, carries the ground itself, and ::backdrop is cleared out
+     from under it.
+
+     `overflow: hidden` because backdrop-filter establishes a containing block
+     and a large Frame must not be able to scroll the page underneath. */
+  dialog.expanded {
+    width: 100vw;
+    height: 100dvh;
+    max-width: 100vw;
+    max-height: 100dvh;
+    margin: 0;
+    border: 0;
+    padding: var(--gutter);
+    overflow: hidden;
+    background: color-mix(in oklab, var(--ground) 82%, transparent);
+    /* Safari needed the prefix until 18. The design degrades to a plain tint
+       without it, which is legible but not the effect. */
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+  }
+
+  dialog.expanded::backdrop {
+    background: transparent;
+  }
+
+  /* LOCK THE DOCUMENT WHILE THE VIEW IS OPEN. `showModal()` makes the rest of
+     the page inert, but it does NOT stop it scrolling — measured here, not
+     assumed: with the dialog open, one PageDown moved the document from 3233 to
+     4020 while the image stayed put, so the visitor closes the view and finds
+     themselves somewhere else on the page.
+
+     `:has()` is the right tool and this is the case docs/styling.md permits it
+     for: a state toggle, not structure. Nothing is laid out by this rule; it
+     only stops something moving.
+
+     It also removes the scrollbar, which makes the dialog's own `100vw` exact.
+     While the bar is present `100vw` includes it, so the dialog would overhang
+     by its width and put a horizontal scrollbar on the document underneath. One
+     rule, both problems. */
+  :global(html:has(dialog.expanded[open])) {
+    overflow: hidden;
+  }
+
+  /* [open] rather than the bare selector: the UA rule is `dialog:not([open])
+     { display: none }`, so declaring `display` unconditionally would leave the
+     dialog on the page permanently. */
+  dialog.expanded[open] {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 16px;
+    justify-items: end;
+  }
+
+  dialog.expanded img {
+    justify-self: center;
+    align-self: center;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+  }
+
+  /* --ink, not the --muted that .t-spec supplies. This is the only control in
+     the view, it sits over a translucent ground whose effective contrast is
+     whatever image happens to be behind it, and 4.90:1 against a flat ground is
+     not a number that survives that. --ink is 15.6:1 and survives anything. */
+  .close {
+    margin: 0;
+    padding: 8px 0;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  /* A short fade, declared only under no-preference, so `reduce` gets the
+     dialog appearing with no transition rather than a transition switched off.
+     Same inversion as every other move on this site.
+
+     `allow-discrete` and @starting-style are what let an element that goes
+     display:none animate at all. Where they are unsupported the dialog simply
+     appears and disappears, which is the correct failure. */
+  @media (prefers-reduced-motion: no-preference) {
+    dialog.expanded {
+      opacity: 0;
+      transition:
+        opacity 0.24s ease-out,
+        display 0.24s ease-out allow-discrete,
+        overlay 0.24s ease-out allow-discrete;
+    }
+
+    dialog.expanded[open] {
+      opacity: 1;
+    }
+
+    @starting-style {
+      dialog.expanded[open] {
+        opacity: 0;
+      }
+    }
+  }
+</style>

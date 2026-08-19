@@ -22,8 +22,11 @@ import { EMAIL, LINKEDIN } from '../site';
 </footer>
 
 <style>
-  /* Aligned to the same 1600px measure and gutter as index.astro's <main>, so
-     the footer sits on the page's left edge rather than the viewport's.
+  /* Aligned to the same measure and gutter as every page's <main>, so the
+     footer sits on the page's left edge rather than the viewport's. That
+     measure is now the --measure-page token rather than 1600px written out
+     here and again in the page — it was two copies of one number, and
+     src/layout.ts composes `sizes` from the token as well.
 
      `width: 100%` for the reason spelled out in base.css: <body> is a flex
      column, and `margin-inline: auto` on a flex item beats `align-items:
@@ -33,7 +36,7 @@ import { EMAIL, LINKEDIN } from '../site';
     flex-wrap: wrap;
     gap: 12px 28px;
     width: 100%;
-    max-width: 1600px;
+    max-width: var(--measure-page);
     margin-inline: auto;
     padding: calc(var(--rhythm) * 0.5) var(--gutter);
   }
@@ -47,17 +50,23 @@ import { EMAIL, LINKEDIN } from '../site';
     border-bottom: 1px solid var(--rule);
   }
 
-  /* Same reasoning as the home page's old email line, which this replaces: an
-     address is data you read and type, not a phrase set in caps, and
-     IME@COULTERHEIBERGER.COM was the least readable actionable string on the site.
+  /* NO .address RULE. The address is set exactly like the LinkedIn link beside
+     it, which means uppercase and --track-spec, because both are .t-spec and a
+     type style that reads one way in one place and another way next to it is not
+     a style. Reversed on owner review; the previous rule set this one line in
+     lowercase at normal tracking, which made it a tenth type treatment on a site
+     trying to hold six.
 
-     THIS LINE DEPENDS ON THE FONT CUT. MONO_SPEC was uppercase-only, and
-     `text-transform: none` against that subset does not lowercase the line, it
-     shatters it — `@` and `.` from JetBrains Mono, every letter from Consolas.
-     U+0061-007A is in the cut for exactly this line (docs/styling.md#fonts). If
-     the mono subset is ever narrowed again, this breaks silently and visibly. */
-  .address {
-    text-transform: none;
-    letter-spacing: normal;
-  }
+     The lowercase is not lost, it just is not the rendering: `text-transform`
+     changes glyphs, never the DOM, so the `mailto:` still carries the real
+     lowercase address from src/site.ts and so does the copied text.
+
+     WHAT THIS ORPHANS: U+0061-007A was added to MONO_SPEC in
+     scripts/dev/subset-fonts.mjs for this line and no other — every remaining
+     mono role is uppercase, and unicode-range is matched POST-text-transform, so
+     nothing on the site can now reach a lowercase mono glyph. That is 1,208 B of
+     dead weight in a file on the LCP Path. Left in rather than regenerated here:
+     the subset needs the upstream font sources, which are deliberately not
+     committed, and 1,208 B is about 6 ms against a gate we are 200+ ms over.
+     Drop the range at the next regeneration. */
 </style>

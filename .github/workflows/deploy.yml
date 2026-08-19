@@ -16,7 +16,18 @@ jobs:
   deploy:
     name: Verify and deploy
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # 10 until the gallery moved to AVIF, and the number was set when this repo
+    # held three scaffold Projects. It now holds six real ones and emits 679
+    # image variants, and a COLD build measured 7m11s here — against a budget
+    # step that is ~6 minutes of Lighthouse by design, 15 runs across 5 URLs.
+    # The two together cannot fit in 10, so the job was killed mid-budget and
+    # reported `cancelled`, which is not a word any gate says on its own.
+    #
+    # A cold build is not an anomaly to be tuned away: it happens by design
+    # every time the source images or the variant set change, and the cache
+    # below exists to stop it happening on every OTHER push. The timeout is
+    # meant to catch a runaway build, not to cap legitimate encoding.
+    timeout-minutes: 20
     permissions:
       contents: read
       pull-requests: write
@@ -40,6 +51,37 @@ jobs:
 
       - name: Type check
         run: npm run check
+
+      # Astro's processed-image cache, moved out of node_modules by
+      # astro.config.mjs so `npm ci` above cannot delete it. Content-addressed
+      # per variant, so the restore-keys prefix gives partial reuse: adding one
+      # Project re-encodes that Project's variants and restores the rest. The
+      # first run on any new key is cold regardless — that is the case this
+      # exists to stop happening on EVERY push. See issue #3.
+      #
+      # THE KEY COVERS THE SOURCES *AND* THE TWO FILES THAT DECIDE WHAT COMES
+      # OUT OF THEM. It used to hash the images alone, and that has one failure
+      # mode which is silent and permanent: change the width ladders or the
+      # delivery formats without touching a single .jpg, and the key still
+      # matches. actions/cache only SAVES on a primary-key miss, so the build
+      # encodes every new variant, throws them away at the end, and the next run
+      # does it again. Measured: the gallery's move to AVIF cost 7m11s of
+      # encoding that was never persisted, on a key that hit.
+      #
+      # A miss is the cheap case, not the expensive one — restore-keys still
+      # restores the newest cache, so only the genuinely new variants encode,
+      # and this time they are kept. Both files are stable by nature; if a third
+      # one starts deciding what gets encoded, it belongs in this list or its
+      # decision belongs in src/layout.ts. See FRAME_FORMATS there.
+      - name: Restore processed image cache
+        uses: actions/cache@v4
+        with:
+          path: .astro-cache
+          key: >-
+            astro-assets-${{ hashFiles('src/**/*.{jpg,jpeg,png,svg}',
+            'astro.config.mjs', 'src/layout.ts') }}
+          restore-keys: |
+            astro-assets-
 
       - name: Build
         run: npm run build

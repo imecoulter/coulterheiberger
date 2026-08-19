@@ -22,8 +22,18 @@ The governing rule, applied throughout: **if no page renders a field, the field 
 | `/404` | Keeps its `noindex` |
 | `/log/`, `/log/<slug>/` | Build Log. Shape decided in §3, **not built** |
 
-`/projects/` has no page of its own. Send it to `/` via Astro's `redirects` config rather than letting it
-404 — people truncate URLs.
+`/projects/` has no page of its own. Send it to `/` rather than letting it 404 — people truncate URLs.
+
+**It is `public/_redirects`, not Astro's `redirects` config.** This document said the opposite until the
+Project routes were built, and the correction is recorded here rather than applied silently.
+
+A static Astro build **cannot emit a 301**. `redirects` compiles to an HTML page carrying
+`<meta http-equiv="refresh">` (`node_modules/astro/dist/core/routing/3xx.js`), which is a 200 with a
+client-side hop: it costs a round trip, it passes no link equity, and — because `@astrojs/sitemap`'s
+filter excludes only `/404/` — the redirect stub would be **listed in the sitemap as a canonical URL**.
+Cloudflare serves `_redirects` natively from the static-asset directory, so the file is a real edge 301
+at zero bytes. `public/` is copied verbatim into `dist/`, which is exactly the behaviour this needs and
+the reason the file cannot live under `src/`.
 
 **The vocabulary is not incidental.** `CONTEXT.md` defines **Project** and lists `work` under `_Avoid_`,
 so the path segment is `projects`. URLs are the most expensive thing in this document to change — once
@@ -98,6 +108,7 @@ const projects = defineCollection({
       title: z.string().min(1),
       summary: z.string().min(1).max(200),
       credit: z.string().min(1),
+      spec: z.string().min(1),
       year: z.number().int(),
       order: z.number().int(),
       images: z
@@ -119,16 +130,17 @@ const projects = defineCollection({
 (Abridged: the schema in `src/content.config.ts` carries a long comment on `framing` that is not
 reproduced here.)
 
-Six fields. Every one is required, and every one is rendered by a page.
+Seven fields. Every one is required, and every one is rendered by a page.
 
 | Field | Rendered by | Notes |
 | --- | --- | --- |
 | `title` | index card, detail `<h1>`, `<title>` | |
 | `summary` | index card, detail intro, `<meta name="description">` | `max(200)` is a **guard**, not a target — meta descriptions truncate around 155 |
 | `credit` | detail fact block | See below. Required on purpose |
+| `spec` | index metadata, detail fact block | The Specification Line. Free text, required, **authored not derived** — [ADR-0006](./adr/0006-the-specification-line-is-authored.md) |
 | `year` | index card, detail fact block | Display only. Not the sort key |
 | `order` | index sort, ascending | Curation, not chronology |
-| `images` | detail gallery; `images[0]` on the index card | `images[0]` **is** the hero — there is no separate hero field |
+| `images` | detail gallery; `images[0]` on the index card | `images[0]` **is** the hero — there is no separate hero field, and it appears twice on the detail page: cropped at the top, then uncropped as the last Frame |
 | `images[].framing` | every build-time crop, as sharp's `position` — **once the Project page lands** | Nine keywords, required per image. Knowingly the one field ahead of its page (issue #30): it cannot be derived from the file, so it is collected while someone is looking at the image. See `design-direction.md`, "Framing" |
 
 ### `credit` is required, and it is one line
@@ -154,11 +166,47 @@ in a hurry about, which is the Project where forgetting matters. Required means 
 until provenance has been stated out loud — the same instinct as `alt: z.string().min(1)` and the CI image
 checks in `docs/asset-delivery.md`: put the honest answer on a rail instead of in your memory.
 
+### `spec` is the Specification Line, and it is not on the index by accident
+
+`credit` and `spec` are the pair `CONTEXT.md` defines against each other — **provenance** and
+**construction**. Both are required on every Project and they answer different questions.
+
+They are not rendered in the same places. `spec` appears on **both** presentations, because
+`docs/design-direction.md` is named after it: the specification line is the datum every piece of work is
+measured against, and an index that showed it on only some Plates would have no datum. `credit` appears
+**only** on the detail page. An index that states where every piece was made is an index about
+employment, and the equivalence thesis is about the work.
+
+Free text for `credit`'s exact reason: the real cases do not fit a union. The toolchains differ per
+Project, one Project's honest answer is that it was made in everything *except* the engine, and the
+set is open — a physical model is on one of these lines.
+
+**It states the toolchain and stops there.** Resolution was on it and was cut in review: a viewer
+judges an image by how sharp it looks, not by a number claiming it, and the number was a fact about a
+master that never ships and that nothing could check. See the amendment on
+[ADR-0006](./adr/0006-the-specification-line-is-authored.md), which the cut strengthens rather than
+overturns. The known cost is that two Projects now read `UNREAL ENGINE` and nothing else; the fix for
+that is a second tool on the line, not a number nobody can verify.
+
+**Required is the load-bearing part**, again for `credit`'s reason — and see
+[ADR-0006](./adr/0006-the-specification-line-is-authored.md) for why the build never computes it.
+
 ### `images` is an ordered list, not named roles
 
 One entry per camera, matching the export preset — hero, grid thumbnail, and gallery are the **same file**
 cropped at build time, never separate exports. Order and role live here, never in filenames. Promoting a
 different image to hero is a one-line reorder.
+
+**The hero is shown twice on the detail page, and the second one is the point.** The band at the top
+is a 21:9 crop; the sequence closes with the whole image it was cut from. Last rather than first,
+because first puts it directly under its own crop with only the prose between, which reads as the
+image failing to load rather than as a sequence. So a Project with *n* images renders *n* Frames, not
+*n − 1*, and a one-image Project is exactly its hero shown uncropped.
+
+The `alt` string therefore appears twice on the page. That is accurate — it is the same picture, so
+it is the same description — and `image-alt` checks presence, not uniqueness. Do not invent a second
+alt for the uncropped one; a description that changes between two views of one image is a description
+of the crop, which is not what alt text is for.
 
 `alt: z.string().min(1)` is not stylistic. The `assets` command scaffolds `alt: ''` stubs, so a plain
 `z.string()` would let an unwritten stub ship an empty `alt`. `min(1)` turns that into a build failure.
@@ -238,6 +286,7 @@ Each of these was on the table and failed the "name the page that renders it" te
 | per-image `caption` | The detail page is image-led. No page renders captions |
 | frontmatter `slug` override | The folder name is the slug. Two sources of truth for a URL is one too many |
 | `draft` | See §5 |
+| per-image `kind` (process / finished) | Considered when the Project routes were built, and rejected. ~15 of the 47 Frames are working images rather than finished camera renders — 7 Cecret terrain masks, 3 Wilderness axonometrics, 3 Residence One lookdev passes, 2 Not Unreal model photographs. **They render identically.** This is `role`'s cut applied one level down: the distinction is a sentence, and the body prose already makes it better than a badge would — *"they are the actual project"*, *"how the finished images were arrived at"*. A label would also re-introduce the status difference the Plate contract exists to remove. `alt` stays alt text |
 
 ---
 
@@ -303,7 +352,7 @@ bare link is not a saving.
 `Base.astro` takes one optional prop:
 
 ```ts
-image?: { src: ImageMetadata; alt: string }
+image?: { src: ImageMetadata; alt: string; framing?: string }
 ```
 
 and does everything else itself — `getImage({ width: 1200, height: 630, format: 'jpeg' })`, then
@@ -330,13 +379,24 @@ defines, in the faces [#21](https://github.com/imecoulter/coulterheiberger-com/i
 
 The site-wide default below is typographic precisely because it has no plate to stand in front of.
 
-### The framing is provisional, and it is issue #30's third ratio
+### The framing was provisional. It is now settled, and it is the same mechanism
 
 Astro crops from **centre**, and a centre crop recomposes nothing — the same defect
 [#30](https://github.com/imecoulter/coulterheiberger-com/issues/30) tracks for the 21:9 desktop and 4:5
-at 390 px crops named in `docs/design-direction.md`. 1200×630 is **that issue's third ratio**, recorded
-here so its eventual framing mechanism covers the card too, rather than a second mechanism appearing
-beside it.
+at 390 px crops named in `docs/design-direction.md`. 1200×630 was **that issue's third ratio**, and it
+closed when the Project routes landed and there was finally a page with a `framing` keyword to pass.
+
+`Base.astro` now hands `card.framing` to the same `getImage` call as `position`. This is deliberately
+**not** a second mechanism: the page still says only *which* image and states its composition, the
+layout still owns the ratio, and there is still exactly one place a Social Card is cropped. A Project's
+card recomposes on the axis its author chose; the site-wide default passes `centre`, which takes nothing
+off any edge because the card is authored at 2400×1260 — already 1200×630's ratio.
+
+One trap worth keeping written down. `astro.config.mjs` sets a global `image.layout: 'constrained'`
+so no component ships a single-width image by oversight, and **that default applies to `getImage` too**:
+the moment it was added, this one card became a six-width `srcset` while only `.src` is ever read. The
+call passes `layout: 'none'` for that reason. Deleting it costs five orphan encodes per build and
+nothing will report it.
 
 ### The site-wide default card
 
@@ -377,3 +437,10 @@ documentation.
 | `reference()` self-reference resolves via `getEntry` | Confirmed (then cut — see §4) |
 | `render(entry)` on MDX | Confirmed |
 | MDX needs a separate integration | Confirmed. `@astrojs/mdx`, build-time only |
+| `getImage` with explicit `width` + `height` + a `widths` ladder crops **every** srcset entry | Confirmed. cecret's hero emitted 2.333 at 960/1280/1920/2560 |
+| `getImage` with `aspectRatio` + a `widths` ladder **does not crop** | Confirmed, and it fails silently: the same hero emitted the source's 1.778 at every width while *reporting* `aspectRatio: 2.333` in the attributes. This is why `src/components/Plate.astro` passes both dimensions |
+| `position` reaches sharp and changes the output | Confirmed. `top` and `left bottom` emit different content hashes — `position` is one of `DEFAULT_HASH_PROPS` |
+| `view-transition-name: var(--vt)` substitutes, and the unset case computes to `none` | **Confirmed in Chrome.** `--vt: probe-name` computes `probe-name`; the same rule with `--vt` unset computes `none`. Closes the first of `docs/styling.md`'s two recorded unverified items |
+| The Carry's LCP delta on real plates | **Confirmed: +20 ms**, median of 11 interleaved runs, 4× CPU throttle, real `/` → `/projects/cecret/` navigation with all six Plates named. Under the ~70 ms threshold. Closes the second item — see `docs/styling.md` |
+| Under `prefers-reduced-motion: reduce` the Plate is the plain document | Confirmed on a real navigation: `view-transition-name: none`, `clip-path: none`, `opacity: 1`, `transition-duration: 0s` |
+| Astro's static `redirects` emits `<meta http-equiv="refresh">`, not a 301 | Confirmed by source (`core/routing/3xx.js`). See §1 |

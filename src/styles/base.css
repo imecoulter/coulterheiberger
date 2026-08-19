@@ -69,11 +69,21 @@ h3 {
 }
 
 /* ---- type roles ----------------------------------------------------------
-   Three roles, three classes. Serif body is the element default and has no
+   Three roles, two classes. Serif body is the element default and has no
    class — and as of issue #21 it is also the only role with no webfont, a
    system stack rather than a shipped face. These exist because the mono recipe
    was otherwise restated in five components (issue #11) — that repetition is
    where drift starts.
+
+   `.t-display` WAS THE THIRD CLASS AND IS DELETED. It had exactly one user,
+   `/`'s "Technical Artist" line, and it carried a font-size nothing else in the
+   site shared — the fourth heading size, on a page that already had two. That
+   line is now `.t-label`, which is what it always was: a caption naming the
+   role, in the same mono the Social Card has always set it in
+   (`SPEC` in scripts/dev/build-social-card.mjs). The display ROLE is untouched
+   and still reaches h1-h3 through the element rule above; only the accessor for
+   putting it on a non-heading is gone, and it was the thing letting a page mint
+   a heading size without writing a heading.
 
    `font-variant-numeric: tabular-nums` used to sit on `body` and was removed in
    #21: it was a no-op on all three roles. Source Serif 4's defaults were
@@ -83,15 +93,15 @@ h3 {
    are ever needed, set them on the element that needs them and verify by
    rendering, not by reading the CSS.
 
-   HARD CAP: three. A fourth type role is a change to the design direction,
-   not a styling decision. Do not add one here without amending
-   docs/design-direction.md first. */
-.t-display {
-  font-family: var(--f-display);
-  font-weight: 500;
-  letter-spacing: -0.02em;
-}
+   HARD CAP: three roles, and six styles across them (tokens.css). A fourth type
+   role is a change to the design direction, not a styling decision. Do not add
+   one here without amending docs/design-direction.md first.
 
+   `text-transform` IS PART OF THE STYLE AND IS SET ONLY HERE. Both mono styles
+   are uppercase, both serif and display styles are sentence case, and no page or
+   component overrides either. The one that did — the footer address, set in
+   lowercase at normal tracking — was the site's tenth type treatment for the
+   sake of one string, and it is gone. */
 .t-label {
   font-family: var(--f-mono);
   font-size: var(--t-label);
@@ -156,6 +166,21 @@ h3 {
     transform: none;
   }
 
+  /* `wipe` and `rule` HAVE NO USER TODAY. `/` used to wipe every Plate in and
+     owner review removed it, on the argument that six entrances down a page
+     made of six Plates is the work announcing itself before it shows itself.
+     They stay declared because the vocabulary is the design direction's, not
+     this file's, and `rule` has never had one.
+
+     IF YOU WIRE `wipe` BACK UP, PUT IT ON A WRAPPER, NEVER ON AN <img> THAT A
+     COMPONENT ALSO STYLES. It was on the Plate's <img>, which Plate.astro also
+     gives `transition: object-position, transform` for the Traverse. `transition`
+     is a shorthand and the scoped rule compiles to `img.astro-<hash>` at (0,1,1)
+     against this selector's (0,1,0) — so it did not merge, it replaced, and
+     every Plate that should have wiped snapped instead. Confirmed in a browser
+     as `transitionProperty: object-position` on five images sitting at
+     `clip-path: inset(100% 0 0 0)`. Silent both ways: nothing warns, and the
+     page looks like a page with no animation rather than a broken one. */
   [data-anim='wipe'] {
     clip-path: inset(100% 0 0 0);
     transition: clip-path 0.56s ease-out var(--d, 0ms);

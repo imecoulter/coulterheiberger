@@ -1,0 +1,297 @@
+---
+/* The Plate's image, and the one place the two art-directed crops are produced.
+
+   docs/design-direction.md requires every Plate to carry two crops — 21:9 wide,
+   4:5 at 390 px — because the prototype's one un-art-directed plate collapsed to
+   an illegible 140 px band. `<Picture>` cannot express that: it switches FORMAT
+   across <source>, not COMPOSITION across a breakpoint. So the <picture> is
+   assembled here from getImage() calls, and this component exists so that it is
+   assembled exactly once.
+
+   THE WIDE CROP IS CUT AT 16:9 AND SHOWN AT 21:9. That is not a mismatch, it is
+   the Traverse: the excess is the overscan the pointer travels through, and the
+   band a visitor sees is produced by `object-fit: cover` in the style block
+   below rather than by sharp. Two crops still, and the wide one is now cut in
+   two stages. src/layout.ts holds the pair and the reasoning.
+
+   That is the whole reason it is a component rather than markup on two pages.
+   `/` and `/projects/<slug>/` must emit the IDENTICAL crop: the Carry
+   interpolates one image between the two documents, and a Plate cut 21:9 on one
+   page and 16:9 on the other does not travel, it distorts. Two copies of this
+   markup would agree on the day they were written and diverge on the day one
+   route's ratio was tuned.
+
+   VERIFIED BY BUILDING, not read (this repo's ethic, and the trap is silent):
+   passing `aspectRatio` alongside a `widths` ladder does NOT crop — Astro emits
+   the SOURCE ratio at every width and reports the requested aspectRatio in the
+   attributes while doing it. Only explicit `width` + `height` reaches sharp's
+   `fit: 'cover'`. Measured on cecret's hero: explicit gave 2.333 at all four
+   widths, `aspectRatio` gave 1.778 at all four. */
+import { getImage } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+import {
+  WIDE,
+  WIDE_SOURCE,
+  TALL,
+  WIDE_WIDTHS,
+  TALL_WIDTHS,
+  WIDE_FALLBACK,
+  TALL_FALLBACK,
+  cssRatio,
+  heightFor,
+  restY,
+  indexWideSizes,
+  indexTallSizes,
+  detailWideSizes,
+  detailTallSizes,
+} from '../layout';
+
+type Frame = CollectionEntry<'projects'>['data']['images'][number];
+
+interface Props {
+  frame: Frame;
+  /** The Project slug. Becomes the Carry's <custom-ident>, `plate-<slug>`. The
+      shape of that string is gated by SLUG_RE — see content-architecture.md §2
+      for why an ident that may not begin with a digit is a URL constraint. */
+  slug: string;
+  /** Which presentation. The crops are identical either way; only the width the
+      image is laid out at, and therefore `sizes`, differs. */
+  context: 'index' | 'detail';
+  /** The LCP element. At most one per page. */
+  priority?: boolean;
+}
+
+/* NO `anim` PROP. A Plate used to accept Registration's `wipe` and `/` was its
+   only caller; owner review removed the Plates' entrance, which left this
+   parameter with nothing to pass it. The move itself is still declared in
+   base.css, where the vocabulary lives — see the note there before wiring it
+   back up, because doing so on the <img> silently breaks it. */
+const { frame, slug, context, priority = false } = Astro.props;
+
+const wideSizes = context === 'index' ? indexWideSizes : detailWideSizes;
+const tallSizes = context === 'index' ? indexTallSizes : detailTallSizes;
+
+/** One tier: a format at one crop, across a width ladder. The `src` is the
+    ladder's top entry and `srcSet` carries the rest; `position` is the Plate's
+    own `framing`, passed to sharp unchanged (issue #30). */
+const tier = (
+  crop: { readonly w: number; readonly h: number },
+  widths: number[],
+  format: 'avif' | 'webp' | 'jpeg',
+) => {
+  const width = widths[widths.length - 1];
+  return getImage({
+    src: frame.src,
+    width,
+    height: heightFor(width, crop),
+    widths,
+    format,
+    position: frame.framing,
+  });
+};
+
+/* WIDE_SOURCE, not WIDE. The wide file is cut looser than the band it is shown
+   in, and the difference is the overscan the Traverse travels through. The
+   TALL tiers are cut at exactly what they are shown at, because there is no
+   hover on a phone. See src/layout.ts for the pair and what it costs. */
+const wideAvif = await tier(WIDE_SOURCE, WIDE_WIDTHS, 'avif');
+const wideWebp = await tier(WIDE_SOURCE, WIDE_WIDTHS, 'webp');
+const wideJpeg = await tier(WIDE_SOURCE, WIDE_FALLBACK, 'jpeg');
+const tallAvif = await tier(TALL, TALL_WIDTHS, 'avif');
+const tallWebp = await tier(TALL, TALL_WIDTHS, 'webp');
+const tallJpeg = await tier(TALL, TALL_FALLBACK, 'jpeg');
+
+/* 720px is the boundary tokens.css already turns --gutter and --rhythm over on,
+   and layout.ts exports it as BREAKPOINT. It is written literally in the media
+   query below and in these attributes because neither a `media` attribute nor a
+   CSS @media prelude can read a custom property. Change it in one place and the
+   crops and the gutters disagree — which is why there is only one boundary. */
+const WIDE_MEDIA = '(min-width: 720px)';
+
+/* Set once on the <picture> and inherited by the <img>, rather than through
+   `define:vars` — which stamps the same properties onto every element the
+   component emits, six per Plate, on a document that is itself on the LCP Path.
+   The point of routing these through layout.ts at all is that the ratio the box
+   is drawn at comes from the same pair as the height sharp cut the file to.
+
+   --rest-y is where the wide crop sits when nothing is pointing at it, and it
+   is the author's own `framing` keyword. It is not decoration: the wide file is
+   now larger than its box, so without this the browser would centre the
+   overscan and throw away the composition decision sharp had just honoured. */
+const vars = [
+  `--wide-ratio: ${cssRatio(WIDE)}`,
+  `--tall-ratio: ${cssRatio(TALL)}`,
+  `--rest-y: ${restY(frame.framing)}`,
+].join('; ');
+---
+
+{/* No data-reveal here. The Traverse binds to the whole Plate, and on `/` that
+    is the <li> in src/pages/index.astro — the link overlay there sits above this
+    image, so a pointer over it never targets this element. What this component
+    owns is the geometry: the 16:9 file, the 21:9 box, --rest-y, and the
+    transition in the style block below.
+
+    So `/projects/<slug>/` emits the identical file at the identical crop, which
+    the Carry requires and would distort without, and simply rests at its framing
+    anchor because nothing there ever sets --py or --tx. */}
+<picture style={vars}>
+  <source media={WIDE_MEDIA} type="image/avif" srcset={wideAvif.srcSet.attribute} sizes={wideSizes} />
+  <source media={WIDE_MEDIA} type="image/webp" srcset={wideWebp.srcSet.attribute} sizes={wideSizes} />
+  {/* The wide JPEG is a single width, not a ladder — see WIDE_FALLBACK. */}
+  <source media={WIDE_MEDIA} type="image/jpeg" srcset={wideJpeg.src} sizes={wideSizes} />
+  <source type="image/avif" srcset={tallAvif.srcSet.attribute} sizes={tallSizes} />
+  <source type="image/webp" srcset={tallWebp.srcSet.attribute} sizes={tallSizes} />
+  {/* The <img> carries the TALL crop deliberately. It is reached only when no
+      <source> above matched — i.e. no AVIF and no WebP — and if any device is
+      still in that population it is far likelier to be an old phone than an old
+      desktop. Serving it the 21:9 band would hand exactly that visitor the
+      140 px collapse the two crops exist to prevent. */}
+  <img
+    src={tallJpeg.src}
+    alt={frame.alt}
+    width={TALL_FALLBACK[0]}
+    height={heightFor(TALL_FALLBACK[0], TALL)}
+    style={`--vt: plate-${slug}`}
+    loading={priority ? 'eager' : 'lazy'}
+    decoding={priority ? 'sync' : 'async'}
+    fetchpriority={priority ? 'high' : undefined}
+  />
+</picture>
+
+<style>
+  /* THE CLIP BOX. `overflow: hidden` is what makes the horizontal half of the
+     Traverse possible: that travel comes from an <img> laid out wider than this
+     element, and without a clip it would simply hang over the metadata column.
+     Inert at rest and on every other page, where the image is exactly this size.
+
+     It is also the element Registration's clip-path now lands on. */
+  picture {
+    display: block;
+    overflow: hidden;
+  }
+
+  /* TALL: the box is drawn at the same ratio the file was cut to, so `cover` is
+     doing nothing but absorbing rounding.
+
+     WIDE: the box is 21:9 and the file is 16:9, so `cover` is doing real work —
+     it is the crop that produces the band, and `object-position` chooses where
+     in the file that band falls. That is the whole mechanism.
+
+     THE TRAVEL IS RELATIVE TO THE ANCHOR, NOT ABSOLUTE. --py is the pointer, -1
+     at the top edge to +1 at the bottom, and it moves --reach either side of the
+     author's `framing` keyword. It used to be an absolute 0-100%, which ignored
+     the anchor entirely while the pointer was down: a Plate framed `bottom`
+     rested at 100% and then travelled the same full range as one framed centre,
+     so the keyword described where it sat and nothing about where it went.
+
+     --reach is 0% here and is only given a value where the Traverse is live, so
+     everywhere else this collapses to the anchor exactly. The clamp keeps a
+     Plate whose anchor is already at an edge from being pushed past it, where
+     `object-position` would happily leave the box short of picture. */
+  img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: var(--tall-ratio);
+    object-fit: cover;
+    object-position: 50% clamp(0%, calc(var(--rest-y, 50%) + var(--py, 0) * var(--reach, 0%)), 100%);
+  }
+
+  @media (min-width: 720px) {
+    img {
+      aspect-ratio: var(--wide-ratio);
+    }
+  }
+
+  /* ---- the Traverse ------------------------------------------------------
+     The pointer moves the band through the overscan. CONTEXT.md names it; the
+     mechanics and the byte cost are in docs/styling.md.
+
+     TWO AXES, AND THEY DO NOT SHARE A MECHANISM, because the file cannot supply
+     slack on both. `cover` scales a 16:9 file to a 21:9 box by WIDTH, so all of
+     the spare picture is vertical and the horizontal edges are flush. That gives:
+
+       vertical    object-position, travelling the real Overscan. No upscale,
+                   and it travels --reach either side of the author's `framing`
+                   keyword. ~64 px on a 961 px Plate.
+       horizontal  a small constant zoom, translated. There is no spare picture
+                   sideways, so this borrows it: --zoom lays the image out 5%
+                   wider than the box and --sweep spends exactly half of that
+                   each way. ~48 px of travel, and the cost is a 5% upscale.
+
+     HALVED AT OWNER REVIEW, both axes, from ±50% of the Overscan and a 10% zoom.
+     The zoom came down with the sweep rather than staying put: the enlargement
+     exists only to create the sideways travel, so holding it at 10% while
+     spending 5% would be paying the whole quality cost for half the movement.
+
+     THE Y-ONLY VERSION SHIPPED AND WAS UNREACHABLE. A cursor crossing a 21:9
+     band moves along it, not down it, and the resting position is the midpoint —
+     so a full-width sweep produced six samples of `50% 50%` and the effect an
+     owner review asked for was, correctly, reported as absent.
+
+     The upscale is priced, not waved through: the wide tier's `sizes` asks for
+     ~1232 px and the ladder answers 1280 at 1x, so a 10% enlargement still
+     resolves above 1:1 and costs nothing on the wire. It does mean the band
+     rests 5% inside each edge of what sharp cut. `framing`'s HORIZONTAL half
+     could re-anchor that — it is already in OBJECT_POSITION — but all six
+     Plates are horizontally centred today, so a map with no consumer would be
+     the thing this repo argues against. Add it with the first off-centre Plate.
+
+     --sweep IS DERIVED, NOT WRITTEN. "5% wider" and "2.5% each way" are the same
+     fact, and two copies of one fact drift — halving the move at review would
+     otherwise have been two edits with one easy to miss. Both amplitudes live
+     here: the script sets --py and --tx as UNITLESS -1..1 and knows neither
+     --reach nor --zoom, so tuning the move never means editing Base.astro.
+
+     THE GUARDS MUST MATCH THE SCRIPT'S. It does not attach unless hover, a fine
+     pointer and no-preference are all true — so this query and that guard have
+     to agree. Stated twice on purpose: CSS cannot ask whether the listener
+     bound, and a transition left declared for a pointer that never moves is
+     harmless, while a position set for a page that cannot transition it would
+     snap.
+
+     `min-width` is the fourth condition and is only here. The tall crop is cut
+     and shown at 4:5, so it has no overscan to travel and a zoom on it would be
+     a crop with nothing bought for it. Below the breakpoint this whole block is
+     simply absent, which is also why the script needs no width check: --pan and
+     --tx are inert against a box the image exactly fills.
+
+     `hover: hover` and `pointer: fine` keep it off touch, where a "hover" is
+     the first half of a tap and the Traverse would fire on the way to a link.
+     no-preference is declared as the positive case for the same reason every
+     other move on this site is: `reduce` is the plain document, not a branch
+     that switches something off. */
+  @media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) and
+    (min-width: 720px) {
+    img {
+      --zoom: 1.05;
+      --sweep: calc((var(--zoom) - 1) * 50%);
+      --reach: 25%;
+
+      transform: translate3d(calc(var(--tx, 0) * var(--sweep)), 0, 0) scale(var(--zoom));
+      transition:
+        object-position 0.4s ease-out,
+        transform 0.4s ease-out;
+    }
+  }
+
+  /* ---- the Carry ---------------------------------------------------------
+     docs/styling.md specifies this and says it lands on the Plate component
+     rather than in base.css, which is why base.css still has nothing to say
+     about it. THE IMAGE ONLY is named: the Plate is one unit, but a group
+     snapshot rasterizes and stretches the specification line, and mono text
+     scaled by a transform is the one artefact the datum cannot afford.
+
+     `plate-<slug>` is unique per document by construction and matches across
+     the two documents for free, which is also what makes back-navigation
+     reverse with no extra declaration.
+
+     Gated on no-preference, and the value ships inert via the var() fallback,
+     so the reduced-motion path is the plain document rather than a branch that
+     switches motion off. Failure here is SILENT by design — an invalid
+     <custom-ident> is no transition at all, and nothing throws. */
+  @media (prefers-reduced-motion: no-preference) {
+    img {
+      view-transition-name: var(--vt, none);
+    }
+  }
+</style>
