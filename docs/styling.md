@@ -316,9 +316,9 @@ property, and a component that does not emit `--vt` is not silently opted in.
 
 | | |
 | --- | --- |
-| Named element | **The image only.** The Plate is one unit, but a group snapshot rasterizes and stretches the specification line — mono text scaled by a transform is exactly the artefact the datum cannot afford |
+| Named element | **The `<picture>`, which is the clip box.** No text is named: the Plate is one unit, but a group snapshot rasterizes and stretches the specification line — mono text scaled by a transform is exactly the artefact the datum cannot afford — and a `<picture>` holds the image and nothing else. It was on the `<img>` and the Carry visibly popped: the `<img>` is laid out 5% larger than its box at all times (`--zoom`, which is what creates the Traverse's sideways travel) and the `overflow: hidden` hiding that bleed lives on the `<picture>` **above** it. A named element is lifted into the top layer, where its own clip still applies and its ancestors' do not, so the 5% became the visible edge for the length of the transition and snapped back at the end. Measured at 1600×900: the group's left edge sat at **x=17 against a 48px gutter**, which is `1121 × 0.05 / 2`. **Anything that clips a Plate belongs on the `<picture>`** |
 | Name | `plate-<slug>`, derived from the Project slug. Unique per document by construction, matches across the two documents for free, and reverses on back-navigation for free |
-| Declaration | `style={\`--vt: plate-${slug}\`}` on the `<img>`; `view-transition-name: var(--vt, none)` **inside** `@media (prefers-reduced-motion: no-preference)`, in `Plate.astro`'s scoped style. The value ships inert and the declaration stays gated, which preserves the fail-safe inversion below |
+| Declaration | `--vt: plate-<slug>` in the `<picture>`'s inline vars; `view-transition-name: var(--vt, none)` **inside** `@media (prefers-reduced-motion: no-preference)`, in `Plate.astro`'s scoped style. The value ships inert and the declaration stays gated, which preserves the fail-safe inversion below |
 | Coverage | Every Plate on `/` is named, so one click carries all 3–8. That is deliberate — see the design direction — and it is what the threshold is measured against |
 | `reduce` | Unchanged. No transition at all; the fail-safe inversion is not reopened |
 
@@ -389,7 +389,7 @@ argues for it; this is how it is built.
 | driven by | `--py` and `--tx`, both **unitless −1..1**, set on the `<li class="plate">` on `pointermove` and inheriting down. The script carries no amplitude: halving the move did not touch it |
 | measured against | the `<picture>`. Not the `<img>`, whose rect is the transformed one, so the mapping would feed its output back into its input; and not the Plate, which on desktop is the image *plus* the 320px metadata column |
 | eased | `transition: object-position 0.4s ease-out, transform 0.4s ease-out`, so it follows the pointer rather than sticking to it |
-| gated | `(prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) and (min-width: 720px)`, in the CSS; the first three in the script. The width is not mirrored because below it the image exactly fills its box and both properties are inert rather than wrong |
+| gated | `(prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) and (min-aspect-ratio: 1 / 1)`, in the CSS; the first three in the script. The shape is not mirrored because in the mobile mode the image exactly fills its box and both properties are inert rather than wrong |
 | scope | `[data-reveal]` on the Plate itself, emitted by `src/pages/index.astro`. `Plate.astro` owns the geometry, not the binding |
 
 **It shipped on one axis and was unreachable.** Vertical-only, resting at the midpoint — and a cursor

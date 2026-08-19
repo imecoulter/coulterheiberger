@@ -89,13 +89,20 @@
   --body-col: 800px;
 }
 
-@media (min-width: 720px) {
+/* THE VIEWPORT SWITCH, and it is a shape rather than a width. Wider than tall
+   is the desktop arrangement, taller than wide is the stacked one — see
+   WIDE_MODE in src/layout.ts for why the boundary is 1:1 and not 720px. The
+   condition is written out here because a @media prelude cannot read a custom
+   property; layout.ts is where the one copy of the reasoning lives. */
+@media (min-aspect-ratio: 1 / 1) {
   :root {
     --gutter: 48px;
     --rhythm: 128px;
   }
 }
 
+/* Still a width, and deliberately: this one is not the mode switch, it is how
+   much air a genuinely large window gets once it is already in the wide mode. */
 @media (min-width: 1200px) {
   :root {
     --rhythm: 160px;

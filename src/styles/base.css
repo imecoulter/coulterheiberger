@@ -207,4 +207,37 @@ h3 {
   @view-transition {
     navigation: auto;
   }
+
+  /* ---- the Carry's handoff -----------------------------------------------
+     THE OLD SNAPSHOT IS HELD, NOT CROSS-FADED, and this is about a hole rather
+     than about taste.
+
+     `/` and `/projects/<slug>/` show the same hero at different widths, so they
+     resolve DIFFERENT rungs of the same ladder: measured on the built site at a
+     1600px window, the index takes the ~1136px variant and the Project page the
+     ~1504px one. On a first visit the Project page's file is therefore a real
+     network fetch, and the default cross-fade does not wait for it — the old
+     snapshot dissolves into a new one that is still empty, so the image
+     disappears and then pops back in when the bytes land. Verified by stalling
+     the response: at the end of the transition the hero measured
+     `complete: false` over an empty box.
+
+     Holding the old snapshot at full opacity means the new one fades in OVER a
+     picture rather than over nothing. When it is ready the handoff is invisible;
+     when it is late the visitor sees the old rung a moment longer instead of a
+     hole. There is no way to make the document wait for it — `blocking="render"`
+     is NOT honoured on `<link rel="preload" as="image">` (probed in Chrome: with
+     the image stalled 2500ms the page still painted at 36ms), and `rel="expect"`
+     waits for an element to be parsed, not for bytes.
+
+     So this is the safety net and the warming in Base.astro is the fix: warming
+     usually wins the race, and this makes losing it cheap instead of ugly.
+
+     Scoped by `view-transition-class: plate`, declared in Plate.astro. Not
+     `(*)`: that would hold the ROOT snapshot too and freeze the whole-page
+     cross-fade the rest of this section is about. */
+  ::view-transition-old(.plate) {
+    animation: none;
+    opacity: 1;
+  }
 }

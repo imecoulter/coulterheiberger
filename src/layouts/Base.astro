@@ -209,10 +209,12 @@ const ogImageURL = new URL(ogImage.src, Astro.site);
       // THE THREE GUARDS MUST MATCH THE MEDIA QUERY IN Plate.astro. If this
       // attaches where that query does not apply, --py jumps with no
       // transition; the reverse is merely inert. Queried once, not per element.
-      // The query's fourth condition, min-width, is deliberately NOT mirrored:
-      // below it the image exactly fills its box, so both properties are inert
-      // rather than wrong, and a width check here would be state to keep in sync
-      // across a resize for no behaviour.
+      // The query's fourth condition, the 1:1 aspect ratio, is deliberately NOT
+      // mirrored: in the mobile mode the image exactly fills its box, so both
+      // properties are inert rather than wrong, and a shape check here would be
+      // state to keep in sync across a resize for no behaviour. That matters
+      // more now than it did under a width threshold, because a window changes
+      // orientation more readily than it crosses 720px.
       //
       // `reduce` is checked as the negative of no-preference rather than as its
       // own branch, so a browser that reports neither is treated as still.
@@ -258,6 +260,59 @@ const ogImageURL = new URL(ogImage.src, Astro.site);
             el.style.removeProperty('--py');
             el.style.removeProperty('--tx');
           });
+        }
+      }
+
+      // ---- warming the Carry ------------------------------------------------
+      // Fetches the hero at the width the PROJECT page will lay it out, as soon
+      // as a pointer says a Plate is being considered.
+      //
+      // WHY THERE IS ANYTHING TO WARM. `/` and `/projects/<slug>/` show the
+      // same image at different widths, so they resolve different rungs of one
+      // ladder — ~1136px against ~1504px at a 1600px window, measured on the
+      // built site. The Carry therefore cross-fades to a file that is still on
+      // the wire, and base.css describes the hole that leaves. The document
+      // cannot be made to wait for it: `blocking="render"` does nothing on a
+      // preloaded image, which was probed rather than assumed.
+      //
+      // NO URL ARITHMETIC. The srcset is read off the <source> already in the
+      // page and handed to a detached Image with the Project page's `sizes`
+      // (data-hero-sizes, from layout.ts) — so the browser performs the same
+      // selection it will perform on arrival, and a ladder change needs no edit
+      // here. Setting `sizes` BEFORE `srcset` is load-bearing: the selection
+      // happens when srcset is assigned.
+      //
+      // ENTER AND DOWN, both, and neither is redundant. Enter buys the width of
+      // a deliberate movement toward the link; down is the floor for anyone who
+      // arrives already moving. Once per Plate — the browser cache is the state,
+      // so a second Image would be a second cache hit and nothing else.
+      //
+      // GATED ON A FINE POINTER, which is not a proxy for a screen size here.
+      // In the mobile mode both documents lay the hero out at the same width and
+      // take the SAME file, so there is nothing to warm and a phone would be
+      // spending real bytes on a file it already has.
+      const plates = document.querySelector<HTMLElement>('.plates');
+      if (plates?.dataset.heroSizes && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+        const heroSizes = plates.dataset.heroSizes;
+
+        for (const plate of plates.querySelectorAll<HTMLElement>('.plate')) {
+          let warmed = false;
+          const warm = () => {
+            if (warmed) return;
+            warmed = true;
+            // The wide AVIF tier, which is what a browser doing this transition
+            // at all will take. A browser without AVIF gets no warming and the
+            // plain, slightly slower handoff — it is already the population
+            // being served the single-width fallback.
+            const source = plate.querySelector<HTMLSourceElement>('source[type="image/avif"]');
+            if (!source) return;
+            const warmer = new Image();
+            warmer.sizes = heroSizes;
+            warmer.srcset = source.srcset;
+          };
+
+          plate.addEventListener('pointerenter', warm);
+          plate.addEventListener('pointerdown', warm);
         }
       }
 
