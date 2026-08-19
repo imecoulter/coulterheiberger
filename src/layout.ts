@@ -40,10 +40,27 @@ function pxAll(token: string): number[] {
 
 const px = (token: string) => pxAll(token)[0];
 
-/** The viewport switch. tokens.css already turns --gutter and --rhythm over
-    here; docs/design-direction.md's two art-directed crops reuse it rather than
-    minting a second breakpoint that would then have to be kept in step. */
-export const BREAKPOINT = 720;
+/** The viewport switch, AND IT IS A SHAPE RATHER THAN A WIDTH.
+
+    It was `(min-width: 720px)`. The thing the switch actually decides is
+    whether the page lays out horizontally — a wide band with a column beside
+    it — or vertically, and that is a question about the window's SHAPE, not its
+    size. A 700px-wide window that is 400px tall is a landscape window and wants
+    the desktop arrangement; a 900px-wide window that is 1400px tall is a
+    portrait one and wants the stacked arrangement. A width threshold got both
+    of those backwards, and it is the second case a tablet held upright lands in.
+
+    So the boundary is 1:1. Wider than tall is the desktop mode; taller than wide
+    is the mobile mode. Square is desktop, arbitrarily but consistently: the
+    query is `min-aspect-ratio`, which is inclusive.
+
+    tokens.css turns --gutter and --rhythm over on this same condition, and
+    docs/design-direction.md's two art-directed crops reuse it, rather than
+    minting a second boundary that would then have to be kept in step. It is
+    written literally in each `@media` prelude and in the `media` attribute on
+    every <source>, because neither can read a custom property — which is why
+    there is only ever one boundary to keep in step. */
+export const WIDE_MODE = '(min-aspect-ratio: 1 / 1)';
 
 /** The two art-directed crops, as SHOWN. Every Plate's native aspect sits
     between them, which is what makes one `framing` keyword a per-ratio pair —
@@ -117,17 +134,17 @@ const PLATE_META = px('--plate-meta');
 const PLATE_GAP = px('--plate-gap');
 const BODY_COL = px('--body-col');
 
-/** --gutter is declared twice: the base value, then the >=720px override. */
+/** --gutter is declared twice: the base value, then the wide-mode override. */
 const [GUTTER_SM, GUTTER_LG] = pxAll('--gutter');
 
 /** Width of the page shell's content box once the gutters are removed. */
 const SHELL_CAPS_AT = PAGE + GUTTER_LG * 2;
 
-/** Below the breakpoint every image is the full content width of a small
-    viewport, so all three cases share one string. */
+/** In the mobile mode every image is the full content width of the viewport, so
+    all three cases share one string. */
 const FULL_SM = `calc(100vw - ${GUTTER_SM * 2}px)`;
 
-/** Full content width at and above the breakpoint, capped by the page shell. */
+/** Full content width in the wide mode, capped by the page shell. */
 const FULL_LG = `(min-width: ${SHELL_CAPS_AT}px) ${PAGE}px, calc(100vw - ${GUTTER_LG * 2}px)`;
 
 /* ---- the three places a Rendered Asset appears --------------------------- */
@@ -157,7 +174,7 @@ export const detailTallSizes = FULL_SM;
 export const bodyWidth = BODY_COL;
 export const bodySizes =
   `(min-width: ${BODY_COL + GUTTER_LG * 2}px) ${BODY_COL}px, ` +
-  `(min-width: ${BREAKPOINT}px) calc(100vw - ${GUTTER_LG * 2}px), ` +
+  `${WIDE_MODE} calc(100vw - ${GUTTER_LG * 2}px), ` +
   FULL_SM;
 
 /** The Expanded View's source width (CONTEXT.md). Fetched only when a visitor

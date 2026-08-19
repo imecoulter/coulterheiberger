@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import Plate from '../components/Plate.astro';
+import { detailWideSizes } from '../layout';
 import { EMAIL, LINKEDIN } from '../site';
 
 /* sameAs is legal here because the footer renders the link — the governing rule
@@ -51,7 +52,20 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
         with a specific replacement — "a column beside it on desktop, the same
         rows stacked above it at 390 px" — so the metadata belongs to the Plate
         and travels with it. One Plate per row, six rows. */}
-    <ol class="plates">
+    {/* data-hero-sizes is what the PROJECT PAGE lays its hero out at, parked on
+        `/` for the warming in Base.astro to read. The two pages share one
+        srcset and differ only in `sizes`, so this one string is the whole
+        difference between the file a visitor already has and the one the next
+        document will ask for — the script hands it to a detached Image and lets
+        the browser pick the rung itself, rather than doing that arithmetic
+        twice in two languages.
+
+        ONE COPY, ON THE LIST, not one per Plate: it is the same string for all
+        six, and this document is on the LCP Path. It comes from layout.ts for
+        the reason every other `sizes` does — a hand-copied number here would
+        drift from the CSS silently and warm the wrong file, which looks exactly
+        like no warming at all. */}
+    <ol class="plates" data-hero-sizes={detailWideSizes}>
       {
         projects.map((project, i) => {
           /* NO REGISTRATION ON THIS PAGE. Every Plate used to arrive on scroll —
@@ -188,7 +202,7 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
      reader gets: the Project's name before its picture. On desktop the two are
      placed into an explicit grid rather than reordered with `order`, so the
      visual arrangement is a placement instead of a contradiction of the DOM. */
-  @media (min-width: 720px) {
+  @media (min-aspect-ratio: 1 / 1) {
     .plate {
       grid-template-columns: minmax(0, 1fr) var(--plate-meta);
       gap: var(--plate-gap);

@@ -37,6 +37,7 @@ import {
   TALL_WIDTHS,
   WIDE_FALLBACK,
   TALL_FALLBACK,
+  WIDE_MODE,
   cssRatio,
   heightFor,
   restY,
@@ -101,12 +102,13 @@ const tallAvif = await tier(TALL, TALL_WIDTHS, 'avif');
 const tallWebp = await tier(TALL, TALL_WIDTHS, 'webp');
 const tallJpeg = await tier(TALL, TALL_FALLBACK, 'jpeg');
 
-/* 720px is the boundary tokens.css already turns --gutter and --rhythm over on,
-   and layout.ts exports it as BREAKPOINT. It is written literally in the media
-   query below and in these attributes because neither a `media` attribute nor a
-   CSS @media prelude can read a custom property. Change it in one place and the
-   crops and the gutters disagree — which is why there is only one boundary. */
-const WIDE_MEDIA = '(min-width: 720px)';
+/* Which crop a window gets is the same question as which way the page lays out,
+   so it asks the same condition: wider than tall takes the band, taller than
+   wide takes the 4:5. layout.ts exports it as WIDE_MODE and tokens.css turns
+   --gutter and --rhythm over on it. Imported rather than restated so the crops
+   and the gutters cannot disagree — a `media` attribute cannot read a custom
+   property, but it can read a build-time constant. */
+const WIDE_MEDIA = WIDE_MODE;
 
 /* Set once on the <picture> and inherited by the <img>, rather than through
    `define:vars` — which stamps the same properties onto every element the
@@ -122,6 +124,7 @@ const vars = [
   `--wide-ratio: ${cssRatio(WIDE)}`,
   `--tall-ratio: ${cssRatio(TALL)}`,
   `--rest-y: ${restY(frame.framing)}`,
+  `--vt: plate-${slug}`,
 ].join('; ');
 ---
 
@@ -151,7 +154,6 @@ const vars = [
     alt={frame.alt}
     width={TALL_FALLBACK[0]}
     height={heightFor(TALL_FALLBACK[0], TALL)}
-    style={`--vt: plate-${slug}`}
     loading={priority ? 'eager' : 'lazy'}
     decoding={priority ? 'sync' : 'async'}
     fetchpriority={priority ? 'high' : undefined}
@@ -196,7 +198,7 @@ const vars = [
     object-position: 50% clamp(0%, calc(var(--rest-y, 50%) + var(--py, 0) * var(--reach, 0%)), 100%);
   }
 
-  @media (min-width: 720px) {
+  @media (min-aspect-ratio: 1 / 1) {
     img {
       aspect-ratio: var(--wide-ratio);
     }
@@ -249,10 +251,10 @@ const vars = [
      harmless, while a position set for a page that cannot transition it would
      snap.
 
-     `min-width` is the fourth condition and is only here. The tall crop is cut
-     and shown at 4:5, so it has no overscan to travel and a zoom on it would be
-     a crop with nothing bought for it. Below the breakpoint this whole block is
-     simply absent, which is also why the script needs no width check: --pan and
+     The aspect-ratio is the fourth condition and is only here. The tall crop is
+     cut and shown at 4:5, so it has no overscan to travel and a zoom on it would
+     be a crop with nothing bought for it. In the mobile mode this whole block is
+     simply absent, which is also why the script needs no shape check: --pan and
      --tx are inert against a box the image exactly fills.
 
      `hover: hover` and `pointer: fine` keep it off touch, where a "hover" is
@@ -261,7 +263,7 @@ const vars = [
      other move on this site is: `reduce` is the plain document, not a branch
      that switches something off. */
   @media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) and
-    (min-width: 720px) {
+    (min-aspect-ratio: 1 / 1) {
     img {
       --zoom: 1.05;
       --sweep: calc((var(--zoom) - 1) * 50%);
@@ -277,9 +279,29 @@ const vars = [
   /* ---- the Carry ---------------------------------------------------------
      docs/styling.md specifies this and says it lands on the Plate component
      rather than in base.css, which is why base.css still has nothing to say
-     about it. THE IMAGE ONLY is named: the Plate is one unit, but a group
-     snapshot rasterizes and stretches the specification line, and mono text
-     scaled by a transform is the one artefact the datum cannot afford.
+     about it. NO TEXT IS NAMED: the Plate is one unit, but a group snapshot
+     rasterizes and stretches the specification line, and mono text scaled by a
+     transform is the one artefact the datum cannot afford. A <picture> holds
+     the image and nothing else, so naming it keeps that intact.
+
+     THE NAME IS ON THE <picture>, NOT THE <img>, AND THE CLIP IS WHY. It was on
+     the <img> and the Carry visibly popped: the frame jumped ~28px wider on each
+     side for the length of the transition and snapped back at the end.
+
+     The <img> is laid out 5% larger than its box at all times — --zoom exists to
+     create the Traverse's sideways travel — and the thing that hides that
+     overflow is `overflow: hidden` on the <picture> ABOVE it. A named element is
+     lifted into the top layer for the transition, where its own clip still
+     applies and its ANCESTORS' clips do not. So naming the <img> named the one
+     element whose correct size depends entirely on a clip it does not own, and
+     the 5% it normally hides became the visible edge. Measured at 1600x900: the
+     group's left edge sat at x=17 against a 48px gutter, which is 1121 * 0.05 / 2.
+
+     Naming the <picture> names the clip box instead. The snapshot is the 21:9
+     band a visitor actually sees, the zoom stays inside it because the element
+     clips its own overflow, and the geometry the transition interpolates is the
+     geometry the two pages lay out. Anything that clips a Plate belongs on this
+     element for the same reason — put a clip on the <img> and this returns.
 
      `plate-<slug>` is unique per document by construction and matches across
      the two documents for free, which is also what makes back-navigation
@@ -290,8 +312,18 @@ const vars = [
      switches motion off. Failure here is SILENT by design — an invalid
      <custom-ident> is no transition at all, and nothing throws. */
   @media (prefers-reduced-motion: no-preference) {
-    img {
+    picture {
       view-transition-name: var(--vt, none);
+      /* Groups every Plate under one selector the root can reach. The NAME is
+         per-Plate by construction, so `::view-transition-old(plate-cecret)`
+         would be six near-identical rules that a seventh Project silently does
+         not get. The rule that uses this lives in base.css, next to
+         @view-transition: Astro's scoping rewrites a selector against this
+         component's elements, and these pseudo-elements are on the ROOT — a
+         scoped `::view-transition-old(.plate)` compiles to something that
+         matches nothing, silently. Declared here, used there, and the comment
+         at each end says so. */
+      view-transition-class: plate;
     }
   }
 </style>
