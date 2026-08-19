@@ -41,6 +41,57 @@ export default defineConfig({
       assetsInlineLimit: (filePath) => (filePath.endsWith('.woff2') ? false : undefined),
     },
   },
+  // Astro's default is ./node_modules/.astro, and `npm ci` deletes node_modules
+  // wholesale — so before this line every CI build re-encoded every variant from
+  // scratch. Verified on issue #3: 44 cache files before `npm ci`, directory gone
+  // after. setup-node's `cache: npm` does not help; it caches ~/.npm, not
+  // node_modules. Moving the directory out is what lets actions/cache restore it
+  // (see .github/workflows/deploy.yml), and the cache is content-addressed per
+  // variant, so a restore-keys prefix match gives partial reuse: add a Project
+  // and only that Project's variants encode.
+  cacheDir: './.astro-cache',
+
+  // Delivery configuration. The findings are in issue #3 and deliberately NOT in
+  // docs/asset-delivery.md, which specifies the committed export and stops there.
+  image: {
+    // Astro 7 defaults `layout` to 'none', which emits NO srcset and a single
+    // width — so an image-heavy site ships one size to every device unless this
+    // is set. Both routes state their own layout explicitly; this is the safety
+    // net for the next component that forgets to.
+    layout: 'constrained',
+
+    // Trimmed from the 8-width LIMITED_RESOLUTIONS default. The top breakpoint
+    // sits below the 3200 px committed source on purpose, so 2560 is a real
+    // downscale and there is headroom to raise it without re-exporting.
+    // Variants per image is the multiplicative lever on build cost: this is
+    // ~295 variants ((6 heroes x 15) + (41 Frames x 5)) against the workflow's
+    // timeout-minutes: 10.
+    breakpoints: [640, 960, 1280, 1920, 2560],
+
+    // Rendered Assets are styled here, not by Astro. The data-astro-image-*
+    // attributes still ship as hooks.
+    responsiveStyles: false,
+
+    service: {
+      entrypoint: 'astro/assets/services/sharp',
+      config: {
+        // PER-FORMAT quality, never a single `quality` prop. One number across
+        // formats pushes AVIF to q80, where it is LARGER than the WebP it is
+        // supposed to undercut — the tier ordering silently inverts and nothing
+        // reports it. sharp's own defaults are already per-format (AVIF 50,
+        // WebP 80) and these restate them rather than relying on them.
+        //
+        // NOTE the schema for this block is z.record(z.string(), z.any()) —
+        // unvalidated. A typo like `qualtiy: 50` is accepted and ignored with no
+        // build error, so changes here are confirmed by looking at emitted file
+        // sizes, not by reading the config back.
+        avif: { quality: 50, effort: 4 },
+        webp: { quality: 80, effort: 4 },
+        jpeg: { quality: 80, mozjpeg: true },
+      },
+    },
+  },
+
   // Static output, no adapter. See docs/adr/0001-astro-static-on-cloudflare-workers.md
   build: {
     format: 'directory',

@@ -2,18 +2,29 @@
 title: 'Atmosphere'
 summary: 'Real-time lighting studies in Unreal Engine 5, testing how light, shadow and materiality carry emotional tone across three unrelated interiors and one structure in the woods.'
 credit: 'Personal work'
+spec: 'UNREAL ENGINE'
 year: 2023
 order: 5
 images:
+  # The bedroom leads, not the stair. Both masters are 3200x3200, and a square
+  # hero cropped to the index's 21:9 band keeps 43% of its height. The stair is
+  # a vertically-composed subject — ground to opening — so that band cuts off
+  # both ends of the only thing in the frame, and no `framing` keyword can
+  # answer it: the keyword chooses WHERE the cut lands, never whether there is
+  # one. The bedroom is a horizontal subject and crops to a band intact.
+  # Residence One's square hero is landscape too, and stays where it is.
+  - src: ./a-render-img-cam01-01.jpg
+    alt: 'A bedroom corner in daylight. An oak headboard panel runs the width of the frame behind white and grey bedding with a checked throw; at the left a black slatted nightstand carries a rattan vase of dracaena and a bare globe bulb on an oak block, lit warm against a plain white wall.'
+    framing: 'left bottom'
+  # The stair pair stays adjacent — the body prose below turns on the two being
+  # read one after the other — and follows as the first two gallery Frames,
+  # where the gallery's native aspect gives them back their full height.
   - src: ./a-render-img-cam03-01.jpg
     alt: 'A cast-concrete stair standing free in a night forest, climbing from the leaf-littered ground to a dark rectangular opening at its top. Bare branches and low foliage surround it in near-darkness.'
     framing: 'centre'
   - src: ./a-render-img-cam03-02.jpg
     alt: 'The same concrete forest stair, unchanged except for two small points of light in the dark opening at the top, reading as a pair of eyes.'
     framing: 'centre'
-  - src: ./a-render-img-cam01-01.jpg
-    alt: 'A bedroom corner in daylight. An oak headboard panel runs the width of the frame behind white and grey bedding with a checked throw; at the left a black slatted nightstand carries a rattan vase of dracaena and a bare globe bulb on an oak block, lit warm against a plain white wall.'
-    framing: 'left bottom'
   - src: ./a-render-img-cam02-01.jpg
     alt: 'A dining room in low sun. A copper linear pendant hangs over a dark-framed table set with bowls and a single red poppy; long bars of light rake across the timber floor from a window out of frame, and scattered red petals lie in them.'
     framing: 'centre'
@@ -27,5 +38,5 @@ studies exploring emotional tone through real-time rendering. The work was
 importing assets, staging scenes, and pushing light, shadow and materiality
 until each space carried a mood rather than merely describing a room.
 
-The two stair plates are the argument in miniature: the same geometry, the same
+The two stair frames are the argument in miniature: the same geometry, the same
 lighting, one pair of eyes added in the opening at the top.

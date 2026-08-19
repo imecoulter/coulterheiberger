@@ -1,5 +1,7 @@
 ---
+import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
+import Plate from '../components/Plate.astro';
 import { EMAIL, LINKEDIN } from '../site';
 
 /* sameAs is legal here because the footer renders the link — the governing rule
@@ -11,6 +13,11 @@ import { EMAIL, LINKEDIN } from '../site';
 // schema.org enrichment and they are wrong: this site describes an independent
 // practice, and an organization edge would assert something it does not claim.
 // See ADR-0005.
+//
+// There is deliberately no CreativeWork graph for the Projects below. No
+// document asks for one, and the rule at the top of content-architecture.md
+// cuts both ways: structured data nobody consumes is a second description of
+// the page to keep in sync with the first.
 const person = {
   '@context': 'https://schema.org',
   '@type': 'Person',
@@ -20,31 +27,96 @@ const person = {
   email: `mailto:${EMAIL}`,
   sameAs: [LINKEDIN],
 };
+
+// `order` is curation, not chronology — see content-architecture.md §2. `year`
+// is display only and is never the sort key.
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+
+const ordinal = (n: number) => String(n).padStart(2, '0');
 ---
 
 <Base
-  title="Coulter Heiberger — Technical Artist"
-  description="Real-time systems for spatial environments: terrain, architecture, simulation, and interactive experiences. Portfolio in progress."
+  title="Coulter Heiberger | Technical Artist"
+  description="Real-time systems for spatial environments: terrain, architecture, simulation, and interactive experiences."
   structuredData={person}
 >
   <main>
-    <span class="t-label eyebrow">Portfolio in progress</span>
-    <h1>Coulter Heiberger</h1>
-    <p class="t-display role">Technical Artist</p>
+    <header class="intro">
+      <span class="t-label eyebrow">Selected work</span>
+      <h1>Coulter Heiberger</h1>
+      <p class="t-display role">Technical Artist</p>
+    </header>
+
+    {/* Not a card grid. design-direction.md cut the persistent metadata rail
+        with a specific replacement — "a column beside it on desktop, the same
+        rows stacked above it at 390 px" — so the metadata belongs to the Plate
+        and travels with it. One Plate per row, six rows. */}
+    <ol class="plates">
+      {
+        projects.map((project, i) => {
+          /* The first Plate is on the first screen: it is the LCP element, it
+             takes `priority`, and it carries NO data-anim. An element that is
+             clipped or at opacity 0 is not an LCP candidate, so animating it
+             would make the paint wait on the observer instead of the decode.
+             docs/design-direction.md, and base.css says it again. */
+          const first = i === 0;
+          return (
+            /* data-reveal is the Traverse's hover target, and it is the WHOLE
+               Plate rather than the image. It has to be: the link overlay above
+               sits on top of the image, so a pointer over the image targets the
+               <a> in the metadata column, not the <picture>. `.plate` is the one
+               element both of those are inside.
+
+               It reads correctly too. CONTEXT.md defines a Plate as one image
+               and one specification line, "a single unit" — so the unit
+               responding to the pointer is the Plate, not one of its parts.
+               --pan is a custom property and inherits down to the <img> from
+               here. */
+            <li class="plate" data-reveal>
+              <div class="plate-meta" data-anim={first ? undefined : 'rise'}>
+                {/* The Plate index: a rule, then the zero-padded ordinal in
+                    .t-spec like every other mono line. Both in ink. */}
+                <p class="t-spec ordinal">{ordinal(project.data.order)}</p>
+
+                <h2 class="title">
+                  <a href={`/projects/${project.id}/`}>{project.data.title}</a>
+                </h2>
+
+                <p class="summary">{project.data.summary}</p>
+
+                {/* The Specification Line. `credit` is deliberately NOT here —
+                    content-architecture.md §2 puts provenance on the detail
+                    page's fact block, and an index that states where every
+                    piece was made is an index about employment. */}
+                <p class="t-spec spec">{project.data.spec}</p>
+                <p class="t-spec year">{project.data.year}</p>
+              </div>
+
+              <div class="plate-media">
+                <Plate
+                  frame={project.data.images[0]}
+                  slug={project.id}
+                  context="index"
+                  priority={first}
+                  anim={first ? undefined : 'wipe'}
+                />
+              </div>
+            </li>
+          );
+        })
+      }
+    </ol>
   </main>
 </Base>
 
 <style>
-  /* TWO of the three type roles, not three. A handful of lines do not need
-     three families: this page is Montserrat (name, role) and JetBrains Mono
-     (the eyebrow, and the footer below it). The serif is not absent from the
-     site — /404 still sets prose in it — it is absent from a page that has no
-     prose to read, which is the only job the direction kept it for.
-
-     This is a page-level choice, not a change to docs/design-direction.md. The
-     hard cap of three roles is a ceiling, not a quota. */
+  /* All THREE type roles are live on this page now, where before it was two.
+     The serif arrives with the summaries: docs/design-direction.md says `/` is
+     Montserrat and mono only "because four lines with no prose on them have
+     nothing for the serif to do", and six summaries are prose. Three is the
+     cap, not a quota, and the serif is a system stack — 0 B on the wire. */
   main {
-    max-width: 1600px;
+    max-width: var(--measure-page);
     margin-inline: auto;
     padding: var(--rhythm) var(--gutter);
   }
@@ -69,8 +141,137 @@ const person = {
     line-height: 1.5;
   }
 
-  /* The email address used to be a fourth line here. Issue #34 moved it into
-     src/components/Footer.astro, where it is on every page instead of one, and
-     it is NOT duplicated back — the address appears once per page. The notes
-     that used to live here about the lowercase mono cut moved with it. */
+  .intro {
+    margin-bottom: var(--rhythm);
+  }
+
+  /* An <ol> because the Plates are ordered and `order` is the curation. The
+     list markers go; the semantics stay. */
+  .plates {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* `isolation: isolate` confines the z-index below to this Plate. Without it
+     the overlay's `z-index: 1` competes in the root stacking context, because
+     `position: relative` with `z-index: auto` does not open one. Plates do not
+     overlap today so nothing would look wrong, which is exactly why it is worth
+     one declaration now rather than a puzzle later. */
+  .plate {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    gap: 20px;
+    margin-bottom: var(--rhythm);
+  }
+
+  .plate:last-child {
+    margin-bottom: 0;
+  }
+
+  /* DOM order is metadata then image, which is also the reading order a screen
+     reader gets: the Project's name before its picture. On desktop the two are
+     placed into an explicit grid rather than reordered with `order`, so the
+     visual arrangement is a placement instead of a contradiction of the DOM. */
+  @media (min-width: 720px) {
+    .plate {
+      grid-template-columns: minmax(0, 1fr) var(--plate-meta);
+      gap: var(--plate-gap);
+      align-items: start;
+    }
+
+    .plate-media {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .plate-meta {
+      grid-column: 2;
+      grid-row: 1;
+    }
+  }
+
+  .ordinal {
+    margin: 0;
+  }
+
+  /* THE PLATE INDEX MARK, in ink. It was signal red, and the change is a
+     direction call rather than a compliance one: the site is greyscale
+     everywhere the images are not, so that the eye goes to the work instead of
+     to the furniture around it. A red tick above every heading is the most
+     chromatic thing on a page full of renders, and it was competing.
+
+     WHAT THIS LEAVES BEHIND: --signal is now used by exactly one selector on
+     the whole site, the :focus-visible outline in base.css. That is the state
+     docs/design-direction.md now records. The token stays and its 3:1 floor in
+     scripts/check-css.mjs stays with it — a focus ring is the one affordance
+     that has to be unmistakable, and it is only ever on screen for a visitor
+     who is navigating by keyboard.
+
+     A background, never a colour, and that part is unchanged: --signal fails
+     4.5:1 as text and check-css.mjs refuses it in a `color:` declaration by
+     name. Nothing about going to ink relaxes that. */
+  .ordinal::before {
+    content: '';
+    display: block;
+    width: 26px;
+    height: 2px;
+    margin-bottom: 12px;
+    background: var(--ink);
+  }
+
+  .title {
+    margin: 14px 0 0;
+    font-size: clamp(1.5rem, 2.6vw, 2rem);
+    line-height: 1.1;
+  }
+
+  /* One link per Plate, and it covers the whole row. The <a> is on the title so
+     its accessible name is the Project's name; the pseudo-element extends the
+     hit area over the image without adding a second link to the same URL for a
+     screen reader to read out twice.
+
+     `z-index: 1` IS LOAD-BEARING AND THE BUG IT FIXES IS SILENT. Without it the
+     overlay covered the image and the image still took the click, so the single
+     largest, most obviously clickable thing on the page did nothing. Confirmed
+     with elementsFromPoint over the image centre, which returned
+     [IMG, A, PICTURE, .plate-media, .plate] — the overlay present, and under.
+
+     The cause is grid painting order, not a mistake in the geometry. Grid items
+     paint as atomic units in document order (CSS Grid §6), and `.plate-media`
+     follows `.plate-meta` in the DOM — the order the screen-reader argument
+     above chose deliberately. So the later item painted over the earlier item's
+     positioned descendant. Do not "fix" this by reordering the DOM; that trades
+     a silent mouse bug for a reading-order one.
+
+     It is also what makes the Traverse work. The overlay owns the pointer over
+     the image, so `pointermove` targets this <a>; the listener is on `.plate`,
+     which both the overlay and the image sit inside, and the events reach it by
+     bubbling either way. */
+  .title a {
+    text-decoration: none;
+  }
+
+  .title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .summary {
+    margin: 14px 0 0;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+
+  .spec {
+    margin: 18px 0 0;
+  }
+
+  .year {
+    margin: 6px 0 0;
+  }
 </style>

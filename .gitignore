@@ -2,6 +2,9 @@
 dist/
 # generated types
 .astro/
+# processed-image cache. Outside node_modules so it survives `npm ci` and CI can
+# restore it with actions/cache — see astro.config.mjs and issue #3.
+.astro-cache/
 # wrangler local state
 .wrangler/
 # lighthouse ci run output — untracked but unignored until now (found by

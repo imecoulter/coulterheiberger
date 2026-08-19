@@ -54,6 +54,20 @@ Cross-fade, and the one place on the site where an element scales. Absent under
 `prefers-reduced-motion: reduce`, and absent wherever the Cross-fade itself is.
 _Avoid_: morph, shared element, hero transition, magic move
 
+**Traverse**:
+The pointer-driven travel of a Plate's wide image through its Overscan, on the index only. A fourth
+motion category, and the only one a visitor drives directly: Registration and the Carry happen to
+them, the Traverse happens because of them. Present only where hover and a fine pointer are real,
+and absent under `prefers-reduced-motion: reduce`.
+_Avoid_: parallax, hover effect, tilt, holographic, pan
+
+**Overscan**:
+The part of a Plate's wide crop that falls outside the band it is shown in. It exists so the
+Traverse has somewhere to go: a file cut to exactly the ratio it is displayed at hides nothing, so
+the wide crop is cut looser than the band on purpose. Not a mistake in the crop, and not slack to be
+tightened.
+_Avoid_: bleed, margin, padding, slack, extra crop
+
 ### Site structure
 
 **Project**:
@@ -63,6 +77,22 @@ _Avoid_: work, piece, case study, entry
 **Plate**:
 A Project as it is presented: one image and one specification line, a single unit. Every piece of work on the site is a Plate under an identical metadata contract, so plates differ in subject rather than in status. The index and the detail page show the same Plate in two presentations, not two different objects.
 _Avoid_: card, tile, thumbnail, item, hero
+
+**Expanded View**:
+A single Frame shown at the size of the window, over the rest of the page blurred back. Opened by the
+visitor and closed by them; it is a way of looking at one Frame, not a gallery mode, so it holds no
+sequence, no next and previous, and no state the page keeps afterwards.
+_Avoid_: lightbox, modal, overlay, popup, zoom
+
+**Frame**:
+A single Rendered Asset as composed into a Project page — one image among the several a Project shows. A Project has one Plate and many Frames, and the Plate's image is the first of them. Finished renders and working images alike are Frames: the difference between them is made in prose, never in status.
+_Avoid_: plate (for one image), image, slide, gallery item, shot
+
+**Specification Line**:
+The line of technical facts a Plate carries: what the work was made with. Authored per Project rather than derived, because the facts worth reading are not recoverable from the files. Distinct from a Credit, which states provenance rather than construction — every Plate carries both, and they answer different questions.
+
+It used to read "what the work was made with, at what size, at what cost". Resolution was cut in review: a viewer judges an image by how sharp it looks, not by a number claiming it, and ADR-0006 records that the number was also the one fact on the line that could not be verified from anything in the repository. Cost was never shipped. What remains is the toolchain, which is the half nothing else on the page says.
+_Avoid_: caption, metadata, credits, tagline, subtitle, spec sheet
 
 **Social Card**:
 The image a link to the site unfurls into when it is shared. Two kinds, and they are made differently: a Project's is a build-time crop of its own hero, and the site-wide default is a typographic card authored once and built by `scripts/dev/`.

@@ -16,9 +16,15 @@ interface Props {
   /** JSON-LD, e.g. a Person or CreativeWork graph. Omit if the page has none. */
   structuredData?: Record<string, unknown>;
   /** The page's Social Card source — for a Project, `images[0]`. A page says
-      WHICH image; it never says how to crop it. See docs/content-architecture.md
-      §6. Omit to get the site-wide card. */
-  image?: { src: ImageMetadata; alt: string };
+      WHICH image and states its composition; it never says how to crop it. See
+      docs/content-architecture.md §6. Omit to get the site-wide card.
+
+      `framing` joined this prop when the Project routes landed. It is the same
+      per-image keyword the two art-directed crops use, not a second mechanism:
+      the page still hands over a composition decision and the layout still owns
+      the ratio. It closes §6's "provisional framing" note, which was issue
+      #30's third ratio waiting for the first page that had one to pass. */
+  image?: { src: ImageMetadata; alt: string; framing?: string };
 }
 
 const { title, description, noindex = false, structuredData, image } = Astro.props;
@@ -34,7 +40,13 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
  * alt comes through `alt: z.string().min(1)` on the Project collection. It is a
  * constant here because the card is a constant.
  */
-const card = image ?? { src: socialCard, alt: 'Coulter Heiberger — Technical Artist' };
+const card = image ?? {
+  src: socialCard,
+  alt: 'Coulter Heiberger | Technical Artist',
+  /* The typographic default is composed for its own frame at 2400x1260, which
+     is already 1200x630's ratio, so this crop takes nothing off any edge. */
+  framing: 'centre',
+};
 
 /**
  * THE LAYOUT OWNS THE CROP. `getImage` with both dimensions resizes `fit: 'cover'`
@@ -42,17 +54,30 @@ const card = image ?? { src: socialCard, alt: 'Coulter Heiberger — Technical A
  * exists. Keeping it here is what stops a second, divergent card mechanism
  * appearing the first time a page wants a different aspect.
  *
- * 1200x630 is provisional framing, not a settled one. Astro crops from centre and
- * a centre crop recomposes nothing — the same defect
- * [#30](https://github.com/imecoulter/coulterheiberger-com/issues/30) tracks for
- * the 21:9 and 4:5 art-directed crops. This is that issue's THIRD ratio, and
- * whatever framing mechanism it lands must cover the card too.
+ * 1200x630 was issue #30's THIRD ratio and it is no longer provisional. `position`
+ * carries the page's own `framing` keyword into the same crop this layout was
+ * already performing, so a Project's card recomposes on the axis its author chose
+ * instead of cutting from centre. One mechanism, not two: the page still only says
+ * WHICH image, and the ratio still lives here.
  *
  * `format: 'jpeg'` rather than the delivery pipeline's AVIF/WebP: crawler support
  * for modern formats is uneven and a card that some scrapers cannot decode is
  * worse than a slightly larger one nobody's LCP Path pays for.
+ *
+ * `layout: 'none'` is load-bearing and easy to delete by accident. astro.config.mjs
+ * sets a global default of 'constrained' so no page ships a single-width image by
+ * oversight — and that default applies to getImage too, which turned this ONE card
+ * into a six-width srcset the moment it was added. Only `.src` is ever read here;
+ * the other five encodes were pure build cost and five orphan files in dist.
  */
-const ogImage = await getImage({ src: card.src, width: 1200, height: 630, format: 'jpeg' });
+const ogImage = await getImage({
+  src: card.src,
+  width: 1200,
+  height: 630,
+  format: 'jpeg',
+  position: card.framing,
+  layout: 'none',
+});
 const ogImageURL = new URL(ogImage.src, Astro.site);
 ---
 
@@ -61,7 +86,25 @@ const ogImageURL = new URL(ogImage.src, Astro.site);
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {/* Four links, one mark. All of them are generated from a single SVG by
+        scripts/dev/build-favicons.mjs, which is dev-only and committed like the
+        social card — CI never runs it.
+
+        The .ico is first and unconditional: browsers request /favicon.ico
+        whether it is declared or not, so the choice is between serving the mark
+        there and serving a 404 there. The SVG follows and wins in every engine
+        that supports it, which is where the dark-tab-strip inversion lives.
+
+        The 192px PNG is not redundant with either. Google Search wants a square
+        favicon that is a MULTIPLE OF 48 and reachable from a rel="icon", and it
+        does not read SVG for this. 192 is 48 x 4.
+
+        No `sizes` on the SVG: it is resolution-independent, and declaring a size
+        on it invites an engine to treat it as one raster among several. */}
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalURL} />
@@ -103,15 +146,28 @@ const ogImageURL = new URL(ogImage.src, Astro.site);
     <slot />
     <Footer />
     <script>
-      // Registration — the only JavaScript authored for this site (the beacon
-      // below is Cloudflare's, verbatim). It adds .is-in once per element and
-      // stops watching; the moves themselves are CSS in base.css.
+      // THE ONE AUTHORED SCRIPT. Three behaviours live in it — Registration,
+      // the Traverse, and the Expanded View — and that is deliberate: the rule
+      // in docs/styling.md is one authored <script>, not one behaviour. A
+      // second file, or an island, is an amendment to docs/design-direction.md
+      // first. The Cloudflare beacon below is not authored here and is not a
+      // precedent for one.
       //
-      // Inline on purpose. Issue #12 measured this at 195 B gzip with ZERO
-      // extra requests: Astro inlines a script that imports nothing. Every
-      // library candidate emitted an _astro/*.js file instead, which under the
-      // perf gate's devtools throttling costs 562.5ms of latency before
+      // Inline on purpose. Issue #12 measured Registration alone at 195 B gzip
+      // with ZERO extra requests: Astro inlines a script that imports nothing.
+      // Every library candidate emitted an _astro/*.js file instead, which under
+      // the perf gate's devtools throttling costs 562.5ms of latency before
       // anything it reveals can paint — and lands on the LCP Path besides.
+      // Adding to this block keeps that property; adding a file loses it.
+      //
+      // Everything below degrades to the plain document with scripting off:
+      // [data-anim] is unhidden by the <noscript> block above, [data-reveal]
+      // simply rests at its framing anchor, and every Frame is a real link to
+      // its own full-size image.
+
+      // ---- Registration -----------------------------------------------------
+      // Adds .is-in once per element and stops watching; the moves themselves
+      // are CSS in base.css.
       //
       // No reduced-motion check here. base.css declares the hidden state only
       // under (prefers-reduced-motion: no-preference), so under `reduce` this
@@ -134,6 +190,80 @@ const ogImageURL = new URL(ogImage.src, Astro.site);
       );
 
       for (const el of document.querySelectorAll('[data-anim]')) io.observe(el);
+
+      // ---- the Traverse -----------------------------------------------------
+      // Sets --pan from the pointer's position within a Plate; Plate.astro's
+      // scoped CSS turns that into object-position and eases it. See CONTEXT.md
+      // for the term and docs/styling.md for the mechanics.
+      //
+      // THE TWO GUARDS MUST MATCH THE MEDIA QUERY IN Plate.astro. If this
+      // attaches where that query does not apply, --pan jumps with no
+      // transition; the reverse is merely inert. Queried once, not per element.
+      //
+      // `reduce` is checked as the negative of no-preference rather than as its
+      // own branch, so a browser that reports neither is treated as still.
+      //
+      // No listener removal and no matchMedia change handler: these are page
+      // lifetime, and every navigation is a full document load — there is no
+      // client-side router to tear anything down for.
+      if (
+        matchMedia('(hover: hover) and (pointer: fine)').matches &&
+        matchMedia('(prefers-reduced-motion: no-preference)').matches
+      ) {
+        for (const el of document.querySelectorAll<HTMLElement>('[data-reveal]')) {
+          el.addEventListener('pointermove', (event) => {
+            const box = el.getBoundingClientRect();
+            const t = Math.min(1, Math.max(0, (event.clientY - box.top) / box.height));
+            el.style.setProperty('--pan', `${(t * 100).toFixed(1)}%`);
+          });
+          // Removed, not set to the resting value: the fallback chain in the CSS
+          // already ends at --rest-y, so deleting the property IS the rest state
+          // and the framing keyword stays the single source of it.
+          el.addEventListener('pointerleave', () => el.style.removeProperty('--pan'));
+        }
+      }
+
+      // ---- the Expanded View ------------------------------------------------
+      // Frames on a Project page are links to their own full-size file. This
+      // intercepts the click and shows it in a <dialog> instead; with scripting
+      // off, or on a modified click, the link does what a link does.
+      //
+      // <dialog>.showModal() is carrying the accessibility here: focus moves
+      // into the dialog, the rest of the document goes inert, Escape closes,
+      // and focus returns to the Frame that was opened. Hand-rolling any of
+      // that is how a keyboard trap gets shipped — and ADR-0003 notes that a
+      // keyboard trap is precisely what the Lighthouse score cannot see.
+      const expanded = document.querySelector<HTMLDialogElement>('dialog.expanded');
+      if (expanded) {
+        const view = expanded.querySelector('img')!;
+
+        for (const link of document.querySelectorAll<HTMLAnchorElement>('a.expand')) {
+          link.addEventListener('click', (event) => {
+            // Let the browser have cmd/ctrl/shift-click and anything with a
+            // modifier. Opening a new tab is a reasonable thing to want from a
+            // link to an image, and taking it away is the cost of hijacking one.
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            // The alt travels with the image. It is the same picture, so it is
+            // the same description, and the dialog would otherwise present an
+            // unlabelled one.
+            view.alt = link.querySelector('img')?.alt ?? '';
+            view.src = link.href;
+            expanded.showModal();
+          });
+        }
+
+        // A click that lands on the dialog itself rather than on its contents is
+        // a click on the blurred ground around the image. Nothing else in the
+        // top layer can be that target.
+        expanded.addEventListener('click', (event) => {
+          if (event.target === expanded) expanded.close();
+        });
+
+        expanded
+          .querySelector('[data-close]')!
+          .addEventListener('click', () => expanded.close());
+      }
     </script>
     {/* Cloudflare Web Analytics — the site's only third-party script, and the
         only one that is not authored here. See ADR-0004.

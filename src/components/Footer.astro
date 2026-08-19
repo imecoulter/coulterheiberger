@@ -22,8 +22,11 @@ import { EMAIL, LINKEDIN } from '../site';
 </footer>
 
 <style>
-  /* Aligned to the same 1600px measure and gutter as index.astro's <main>, so
-     the footer sits on the page's left edge rather than the viewport's.
+  /* Aligned to the same measure and gutter as every page's <main>, so the
+     footer sits on the page's left edge rather than the viewport's. That
+     measure is now the --measure-page token rather than 1600px written out
+     here and again in the page — it was two copies of one number, and
+     src/layout.ts composes `sizes` from the token as well.
 
      `width: 100%` for the reason spelled out in base.css: <body> is a flex
      column, and `margin-inline: auto` on a flex item beats `align-items:
@@ -33,7 +36,7 @@ import { EMAIL, LINKEDIN } from '../site';
     flex-wrap: wrap;
     gap: 12px 28px;
     width: 100%;
-    max-width: 1600px;
+    max-width: var(--measure-page);
     margin-inline: auto;
     padding: calc(var(--rhythm) * 0.5) var(--gutter);
   }

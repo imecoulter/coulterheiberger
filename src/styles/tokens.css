@@ -35,7 +35,32 @@
 
   --gutter: 20px;
   --rhythm: 64px;
-  --measure: 64ch;
+
+  /* Layout measures. Declared in px, and deliberately not in rem or ch, because
+     src/layout.ts PARSES THEM OUT OF THIS FILE at build time to compose the
+     `sizes` attribute on every Rendered Asset. `sizes` is HTML and cannot say
+     var(--body-col), so without that the same number would be written twice
+     and the copy in the markup would drift silently — the page still looks
+     right and the browser just fetches the wrong width. Renaming one of these
+     is a build error in layout.ts, which is the point. */
+  --measure-page: 1600px;
+  --plate-meta: 320px;
+  --plate-gap: 48px;
+
+  /* HALF THE PAGE SHELL, and the number is not a coincidence: 800 is
+     --measure-page / 2. Everything in a Project's body sits in this column —
+     heading, summary, prose and every Frame — while the hero above it runs the
+     full shell. One wide plate over one half-width column, sharing the left
+     datum edge.
+
+     It replaced --gallery-col (1080px, images only) and --measure (64ch, text
+     only) together, because the request was one column for both. That costs
+     something real and it is recorded rather than hidden: 800px of Georgia at
+     17px runs to roughly 78 characters a line, above the 45-75 a reading
+     measure wants. The Project bodies are two to four short paragraphs, which
+     is what makes that affordable here. It would not be on a long essay, so if
+     the Build Log ever ships prose at length it wants its own measure back. */
+  --body-col: 800px;
 }
 
 @media (min-width: 720px) {

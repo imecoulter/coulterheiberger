@@ -41,6 +41,20 @@ jobs:
       - name: Type check
         run: npm run check
 
+      # Astro's processed-image cache, moved out of node_modules by
+      # astro.config.mjs so `npm ci` above cannot delete it. Content-addressed
+      # per variant, so the restore-keys prefix gives partial reuse: adding one
+      # Project re-encodes that Project's variants and restores the rest. The
+      # first run on any new key is cold regardless — that is the case this
+      # exists to stop happening on EVERY push. See issue #3.
+      - name: Restore processed image cache
+        uses: actions/cache@v4
+        with:
+          path: .astro-cache
+          key: astro-assets-${{ hashFiles('src/**/*.{jpg,jpeg,png,svg}') }}
+          restore-keys: |
+            astro-assets-
+
       - name: Build
         run: npm run build
 
