@@ -1,6 +1,13 @@
 # /projects/ has no page of its own — people truncate URLs, so send it to `/`,
 # which IS the Project index (docs/content-architecture.md §1).
 #
+# EXACT PATHS ONLY, NEVER A SPLAT. `/projects/*` was the rule here and it matched
+# every Project page too, so clicking a Plate on `/` 301'd straight back to `/`
+# and read as the landing page reloading. Redirects are evaluated BEFORE assets,
+# so a splat here beats every real route under it. Both spellings are listed
+# because html_handling: auto-trailing-slash never gets to run on a path a
+# redirect already claimed.
+#
 # This is here rather than in Astro's `redirects` config, and that contradicts
 # what §1 originally said. The reason is that a static Astro build cannot emit a
 # real 301: it writes an HTML page carrying <meta http-equiv="refresh">
@@ -11,4 +18,5 @@
 # Cloudflare's static assets serve _redirects natively from the asset directory,
 # so this is a real edge 301 at zero bytes. public/ is copied verbatim into dist/,
 # which is exactly what this file needs and the reason it cannot live in src/.
-/projects/* / 301
+/projects / 301
+/projects/ / 301
