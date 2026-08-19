@@ -20,6 +20,7 @@
    means editing a token re-runs this in dev instead of serving a stale number.
 
    This is build-time only. Nothing here reaches the client. */
+import type { ImageOutputFormat } from 'astro';
 import css from './styles/tokens.css?raw';
 
 /** Every px value declared for `token`, in source order. */
@@ -198,6 +199,27 @@ export const TALL_WIDTHS = [640, 768, 960, 1280];
     because <img> needs a src regardless; it does not stay a ladder. */
 export const WIDE_FALLBACK = [1280];
 export const TALL_FALLBACK = [960];
+
+/** A Frame's delivery formats, in the gallery on `/projects/<slug>/`.
+
+    HERE RATHER THAN IN THE PAGE, and the reason is CI rather than tidiness.
+    `.github/workflows/deploy.yml` keys the processed-image cache on the source
+    images plus the two files that decide how many variants come out of them —
+    astro.config.mjs and this one. A format chosen in a page is a format the
+    cache key cannot see, and the failure is expensive and silent: the key still
+    matches, so the restored cache is missing every new variant, the build
+    re-encodes them, and because the key MATCHED nothing is saved. Every run
+    after pays the same cost. That is exactly how the gallery's move to AVIF
+    blew a 10-minute job.
+
+    So: if a third file ever decides what gets encoded, either move that decision
+    here or add the file to the key. AVIF first, WebP for the rest.
+
+    Typed, not `as const`: <Picture> wants a mutable ImageOutputFormat[], and a
+    readonly tuple does not assign to one. Astro exports the type, so the legal
+    set is the library's rather than a union restated here and left to drift. */
+export const FRAME_FORMATS: ImageOutputFormat[] = ['avif'];
+export const FRAME_FALLBACK: ImageOutputFormat = 'webp';
 
 /** Pixel height for a crop at a given width. */
 export const heightFor = (width: number, crop: Crop) => Math.round((width * crop.h) / crop.w);

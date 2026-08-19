@@ -63,9 +63,15 @@ export default defineConfig({
     // Trimmed from the 8-width LIMITED_RESOLUTIONS default. The top breakpoint
     // sits below the 3200 px committed source on purpose, so 2560 is a real
     // downscale and there is headroom to raise it without re-exporting.
-    // Variants per image is the multiplicative lever on build cost: this is
-    // ~295 variants ((6 heroes x 15) + (41 Frames x 5)) against the workflow's
-    // timeout-minutes: 10.
+    //
+    // Variants per image is the multiplicative lever on build cost, and the
+    // count is now 679, not the ~295 this comment used to state. Two things
+    // moved it: the Frames gained an AVIF tier alongside WebP, and the tall
+    // ladder gained a 768 rung. A COLD build of that is 7m11s on a CI runner,
+    // which is why .github/workflows/deploy.yml carries timeout-minutes: 20 and
+    // why its cache key hashes this file. Changing anything here changes what
+    // gets encoded, so the key has to see it — read the comment on that step
+    // before editing the ladders.
     breakpoints: [640, 960, 1280, 1920, 2560],
 
     // Rendered Assets are styled here, not by Astro. The data-astro-image-*

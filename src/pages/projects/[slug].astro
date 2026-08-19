@@ -4,7 +4,13 @@ import { getCollection, render } from 'astro:content';
 import { Picture, getImage } from 'astro:assets';
 import Base from '../../layouts/Base.astro';
 import Plate from '../../components/Plate.astro';
-import { bodyWidth, bodySizes, EXPANDED_WIDTH } from '../../layout';
+import {
+  bodyWidth,
+  bodySizes,
+  EXPANDED_WIDTH,
+  FRAME_FORMATS,
+  FRAME_FALLBACK,
+} from '../../layout';
 
 export const getStaticPaths = (async () => {
   const projects = await getCollection('projects');
@@ -141,8 +147,8 @@ const expanded = await Promise.all(
               alt={frame.alt}
               width={bodyWidth}
               sizes={bodySizes}
-              formats={['avif']}
-              fallbackFormat="webp"
+              formats={FRAME_FORMATS}
+              fallbackFormat={FRAME_FALLBACK}
               layout="constrained"
               loading="lazy"
               decoding="async"
