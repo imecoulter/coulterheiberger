@@ -44,7 +44,7 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
     <header class="intro">
       <span class="t-label eyebrow">Selected work</span>
       <h1>Coulter Heiberger</h1>
-      <p class="t-display role">Technical Artist</p>
+      <p class="t-label role">Technical Artist</p>
     </header>
 
     {/* Not a card grid. design-direction.md cut the persistent metadata rail
@@ -54,11 +54,18 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
     <ol class="plates">
       {
         projects.map((project, i) => {
-          /* The first Plate is on the first screen: it is the LCP element, it
-             takes `priority`, and it carries NO data-anim. An element that is
-             clipped or at opacity 0 is not an LCP candidate, so animating it
-             would make the paint wait on the observer instead of the decode.
-             docs/design-direction.md, and base.css says it again. */
+          /* NO REGISTRATION ON THIS PAGE. Every Plate used to arrive on scroll —
+             the metadata `rise`, the image `wipe` — and it is gone at owner
+             review: six of them firing down a page whose entire content is six
+             Plates meant the work announced itself before it showed itself.
+
+             The substrate stays in base.css because the design direction still
+             defines it, and `/projects/<slug>/` still registers its body prose.
+             What is gone is the usage here, which was all of the `wipe`'s.
+
+             `first` survives it. It is now only about `priority`: the LCP
+             element takes eager, sync and fetchpriority high, and there is at
+             most one per page. */
           const first = i === 0;
           return (
             /* data-reveal is the Traverse's hover target, and it is the WHOLE
@@ -73,7 +80,7 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
                --pan is a custom property and inherits down to the <img> from
                here. */
             <li class="plate" data-reveal>
-              <div class="plate-meta" data-anim={first ? undefined : 'rise'}>
+              <div class="plate-meta">
                 {/* The Plate index: a rule, then the zero-padded ordinal in
                     .t-spec like every other mono line. Both in ink. */}
                 <p class="t-spec ordinal">{ordinal(project.data.order)}</p>
@@ -98,7 +105,6 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
                   slug={project.id}
                   context="index"
                   priority={first}
-                  anim={first ? undefined : 'wipe'}
                 />
               </div>
             </li>
@@ -126,19 +132,27 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
     margin-bottom: 20px;
   }
 
+  /* The only --t-h1 on the site. Tracking comes from base.css at -0.02em; this
+     rule used to restate it as -0.022em, a difference of two thousandths of an
+     em that no one could see and that made the site's largest heading the one
+     place the shared value did not apply. */
   h1 {
-    font-size: clamp(2.4rem, 7.4vw, 5.25rem);
+    font-size: var(--t-h1);
     line-height: 0.96;
-    letter-spacing: -0.022em;
   }
 
-  /* Montserrat, not the serif. "Technical Artist" is a title, not reading —
-     it belongs to the same voice as the name directly above it.
-     Tracking comes from .t-display and matches the h1 at -0.02em. */
+  /* THE ROLE IS A LABEL, and it now says so. It was Montserrat at its own size,
+     which made it a fourth heading size on a page that already had two — and the
+     argument for it ("a title, not reading, in the same voice as the name") is
+     equally an argument for the mono datum voice, which is where the Social Card
+     has always set this exact string.
+
+     So the eyebrow and the role now bracket the name in the same style: what the
+     page is above it, who the site is below it, and one very large name between.
+     Everything else here is furniture in the same 11-12px mono, which is the
+     whole point of a datum. */
   .role {
     margin: 24px 0 0;
-    font-size: clamp(1.125rem, 1.9vw, 1.375rem);
-    line-height: 1.5;
   }
 
   .intro {
@@ -223,7 +237,7 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
 
   .title {
     margin: 14px 0 0;
-    font-size: clamp(1.5rem, 2.6vw, 2rem);
+    font-size: var(--t-h3);
     line-height: 1.1;
   }
 
@@ -260,10 +274,13 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
     z-index: 1;
   }
 
+  /* No font-size and no line-height. This is body prose and it is now set like
+     body prose — the 15px it used to carry was the site's only second serif
+     size, and it existed so that a summary would fit the metadata column, which
+     is a layout problem being solved in the type scale. The column is 320px and
+     these run two to four lines at 17px, which it has room for. */
   .summary {
     margin: 14px 0 0;
-    font-size: 0.9375rem;
-    line-height: 1.55;
     color: var(--muted);
   }
 

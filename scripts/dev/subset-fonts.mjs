@@ -102,6 +102,18 @@ const SITE =
  * as an uppercase face — that rule now lives only in the role classes, so a new
  * lowercase mono line will render happily instead of falling back and telling
  * you. Check base.css before adding one.
+ *
+ * THAT LINE IS GONE AND THIS RANGE NOW HAS NO CONSUMER. Owner review put the
+ * footer address back into caps so that it matches the LinkedIn link beside it,
+ * which returns mono to being an uppercase-only face everywhere. Nothing on the
+ * site can reach a lowercase mono glyph any more.
+ *
+ * Drop `U+0061-007A` on the next regeneration and take the 1,208 B back off the
+ * LCP Path. It is still here only because regenerating needs FONT_SRC and the
+ * upstream files are deliberately not committed, so removing it is a job for
+ * whoever next has them rather than a one-line edit. Doing so also restores the
+ * enforcement above: a lowercase mono line would once again fall back visibly
+ * instead of rendering as though it were intended.
  */
 const MONO_SPEC =
   'U+0020-0040,' + // space, digits, and ASCII punctuation up to @
@@ -118,7 +130,8 @@ const MONO_SPEC =
  * Weights are what issue #21's browser audit found actually resolves, not what
  * the prototype claimed:
  *
- *   display — 500 only. `h1-h3` and `.t-display`. Nothing reaches 400 or 600.
+ *   display — 500 only. `h1-h3`; `.t-display` was deleted when the type scale
+ *             was capped at six styles. Nothing reaches 400 or 600.
  *   mono    — 500 only, since `.t-spec` was given `font-weight: 500` to match
  *             `.t-label`. That one line collapsed mono from two files to one,
  *             for -3,956 B.

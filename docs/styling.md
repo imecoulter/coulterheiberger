@@ -109,16 +109,54 @@ correct in the editor and wrong in the browser.
 
 ## Type roles
 
-Three families, three classes. **Serif body is the element default and has no class.**
+Three families, two classes. **Serif body is the element default and has no class.**
 
 | class | family | use |
 | --- | --- | --- |
-| `.t-display` | grotesk | non-heading display text (`h1`–`h3` already get it from `base.css`) |
-| `.t-label` | mono | section labels |
+| `.t-label` | mono | section labels, and the role line under the name on `/` |
 | `.t-spec` | mono | the specification line, metadata terms, captions, footer |
 
 **Hard cap: three.** A fourth type role is a change to the design direction, not a styling decision.
 Amend `docs/design-direction.md` first.
+
+`.t-display` was a third class and is gone. It had one user, `/`'s "Technical Artist" line, and it
+carried a font size nothing else shared. The display role is untouched: `h1`–`h3` still get it from
+the element rule in `base.css`. What went is the accessor that let a page put display type on a
+non-heading, which in practice meant minting a heading size without writing a heading.
+
+### Six sizes, and the cap is the point
+
+| token | style |
+| --- | --- |
+| `--t-h1` | the site's name on `/`, and nothing else |
+| `--t-h2` | a page's own title: a Project, and `/404` |
+| `--t-h3` | a Plate's title on `/` |
+| `--t-body` | all serif prose, summaries included |
+| `--t-label` | mono, uppercase, `--track-label` |
+| `--t-spec` | mono, uppercase, `--track-spec` |
+
+Owner review counted nine to ten treatments and set the cap at six, three headings and three for
+everything else. The three that went were near-duplicates rather than decisions: `/404`'s heading at
+`clamp(2rem, 8vw, 3.25rem)` against a Project's `clamp(2rem, 5.2vw, 3.5rem)`, `/`'s `h1` restating
+`-0.02em` as `-0.022em`, and a 15px serif that existed only so a summary would fit the metadata
+column — a layout problem being solved in the type scale.
+
+**A page picks one of the six; it does not write a `font-size`.** Four of the five heading sizes used
+to be declared inside a page's own scoped block, so the question "how many sizes does this site have"
+could only be answered by reading every page. That is how it reached ten without anyone deciding to.
+
+**Casing is part of the style.** Both mono styles are uppercase, both serif and display styles are
+sentence case, and no page or component overrides either — there is no `text-transform` declaration
+outside `base.css`. The one that existed set the footer address in lowercase at normal tracking,
+which made one string its own type treatment sitting directly beside a link in the style it was
+supposed to share. `text-transform` changes glyphs and never the DOM, so the `mailto:` and anything
+copied off the page still carry the real lowercase address.
+
+That reversal orphans `U+0061-007A` in `MONO_SPEC` (`scripts/dev/subset-fonts.mjs`), which was added
+for that line alone: `unicode-range` is matched *post*-`text-transform`, so with every mono role
+uppercase nothing on the site can reach a lowercase mono glyph. It is 1,208 B on the LCP Path, still
+shipped, and should come out at the next regeneration — which needs the upstream font sources, and
+those are deliberately not committed.
 
 ## Modern CSS baseline
 
@@ -247,6 +285,19 @@ Motion section of [docs/design-direction.md](./design-direction.md).
 (`rise`, `rule`, `wipe`) live in `base.css`; one `IntersectionObserver` in `Base.astro` adds `.is-in`
 once and stops watching. The contract is three attributes and nothing else:
 
+**One user on the whole site**, the body prose on `/projects/<slug>/`. `/` used to register every
+Plate and was stripped at owner review — see the design direction for why. `wipe` and `draw rule` are
+declared with nothing using them.
+
+**If you re-enable `wipe` on a Plate, it goes on a wrapper, never on the `<img>`.** It was on the
+image, which `Plate.astro` also gives `transition: object-position, transform` for the Traverse.
+`transition` is a shorthand, and the scoped rule compiles to `img.astro-<hash>` at (0,1,1) against
+`[data-anim='wipe']` at (0,1,0) — so it did not merge with the wipe's `clip-path 0.56s`, it replaced
+it. Every Plate that should have wiped in snapped instead, silently: `transitionProperty` read
+`object-position` on five images sitting at `clip-path: inset(100% 0 0 0)`, and the page looked like
+a page with no animation rather than a broken one. Found by reading computed style off the built
+page, not off the source.
+
 | | |
 | --- | --- |
 | `data-anim="rise\|rule\|wipe"` | opts an element in and picks its move |
@@ -326,18 +377,27 @@ they were checked. Both are in `docs/content-architecture.md`'s "Verified mechan
    is a local comparison of two builds that differ in one declaration, which is what the threshold asks
    for — "the same page and the same device class" — and it is not a claim about field LCP.
 
-**The Traverse** — the pointer moves a Plate's wide image through its Overscan on `/`. The direction
+**The Traverse** — the pointer moves a Plate's wide image beneath the cursor on `/`. The direction
 argues for it; this is how it is built.
 
 | | |
 | --- | --- |
-| what moves | `object-position` on the `<img>` only. No transform, no layer, nothing composited |
-| how far | the wide file is cut **16:9** and shown **21:9**, leaving 23.8% of the file's height outside the box |
-| resting place | `--rest-y`, mapped from the Plate's own `framing` keyword in `src/layout.ts` |
-| driven by | `--pan`, set on the `<li class="plate">` by the one authored script on `pointermove`, inheriting down to the `<img>` |
-| eased | `transition: object-position 0.4s ease-out`, so it follows the pointer rather than sticking to it |
-| gated | `(prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine)`, in the CSS **and** in the script |
+| vertical | `object-position` on the `<img>`, travelling the real Overscan: the wide file is cut **16:9** and shown **21:9**, leaving 23.8% of its height outside the box. No upscale |
+| horizontal | `transform: translate3d()` with a constant `scale(1.05)`. There is no sideways Overscan to travel — `cover` fits the file to the box by width — so the enlargement creates the slack and the translate spends it |
+| how far | `--reach: 25%` either side of the anchor, and `--sweep`, **derived** as `(--zoom - 1) * 50%`. Halved at review from a full sweep and a 10% zoom |
+| resting place | `--rest-y`, mapped from the Plate's own `framing` keyword in `src/layout.ts`. The travel is **relative to it** and `clamp()`ed to the file, so a Plate framed `bottom` moves up from its anchor and is never pushed past it |
+| driven by | `--py` and `--tx`, both **unitless −1..1**, set on the `<li class="plate">` on `pointermove` and inheriting down. The script carries no amplitude: halving the move did not touch it |
+| measured against | the `<picture>`. Not the `<img>`, whose rect is the transformed one, so the mapping would feed its output back into its input; and not the Plate, which on desktop is the image *plus* the 320px metadata column |
+| eased | `transition: object-position 0.4s ease-out, transform 0.4s ease-out`, so it follows the pointer rather than sticking to it |
+| gated | `(prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) and (min-width: 720px)`, in the CSS; the first three in the script. The width is not mirrored because below it the image exactly fills its box and both properties are inert rather than wrong |
 | scope | `[data-reveal]` on the Plate itself, emitted by `src/pages/index.astro`. `Plate.astro` owns the geometry, not the binding |
+
+**It shipped on one axis and was unreachable.** Vertical-only, resting at the midpoint — and a cursor
+crosses a 21:9 band along it, not down it. A full-width horizontal sweep on the built page returned
+six samples of `50% 50%`, and a 40px vertical nudge moved the image 12px on a 961px-wide photograph.
+The review that reported "no hover effect" was reading the page correctly. **The lesson is about
+where an effect is reachable, not whether it is present:** every unit-level check passed the whole
+time, because each one drove the axis that worked.
 
 **The hover target is the whole Plate, and it has to be — this is not a reading of the vocabulary,
 it is forced.** The index gives each Plate one link whose `::after` covers the row, so a pointer over
@@ -361,9 +421,9 @@ Project name before Project picture — so the fix is the z-index, never a reord
 entirely and reports success on a target no real cursor can reach. Drive the Traverse and the Plate
 link with a real mouse, or the test is measuring the listener rather than the page.
 
-**The two guards are stated twice and have to agree.** CSS cannot ask whether a listener bound, and
-the script cannot ask whether a rule applied. If the script attaches where the media query does not
-match, `--pan` jumps with no transition; the reverse is merely inert. Change one, change the other.
+**The guards are stated twice and have to agree.** CSS cannot ask whether a listener bound, and the
+script cannot ask whether a rule applied. If the script attaches where the media query does not
+match, `--py` jumps with no transition; the reverse is merely inert. Change one, change the other.
 
 **`--pan` is removed on `pointerleave`, never set back to a value.** The CSS fallback chain is
 `var(--pan, var(--rest-y, 50%))`, so deleting the property *is* the rest state and `framing` stays
@@ -403,7 +463,7 @@ visitor closes the view and finds themselves somewhere else on the page. The fix
 while the scrollbar is present, `100vw` includes it and the dialog overhangs. One rule, both problems.
 
 **What the script now costs.** Registration alone was 195 B gzip. All three behaviours together are
-**588 B gzip**, 1,145 B raw, still one inline block and still zero extra requests — 1.1% of ADR-0002's
+**641 B gzip**, 1,315 B raw, still one inline block and still zero extra requests — 1.1% of ADR-0002's
 50 KB. The rule that mattered was one authored `<script>`, not one behaviour, and it is intact.
 
 ### Two rules that are invisible until something breaks
@@ -443,10 +503,10 @@ Whole substrate on the wire when that table was built: **+426 B gzip on the docu
 3,954 B raw, 1,230 → 1,656 B gzip), zero extra requests.
 
 **The 195 B row is the comparison basis, not today's shipped figure.** The same inline block now also
-carries the Traverse and the Expanded View, and measures **588 B gzip / 1,145 B raw — 1.1% of the
+carries the Traverse and the Expanded View, and measures **641 B gzip / 1,315 B raw — 1.1% of the
 budget**, still zero extra requests. The row is left as it was because it is what the libraries were
 priced against: every one of them replaces Registration and none of them would have made the other
-two smaller. Re-run the comparison against 588 B, not 195 B, if it is ever reopened.
+two smaller. Re-run the comparison against 641 B, not 195 B, if it is ever reopened.
 
 Three things that table doesn't show:
 

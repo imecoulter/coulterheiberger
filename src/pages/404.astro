@@ -36,9 +36,13 @@ import Base from '../layouts/Base.astro';
     text-align: center;
   }
 
+  /* --t-h2, the same size a Project's title takes, because this is the same
+     thing: the page's own heading. It used to be a third clamp and a third
+     letter-spacing, both within a few hundredths of the shared pair and both
+     invisible as a difference — a bespoke type size on the one page nobody
+     designs. */
   h1 {
-    font-size: clamp(2rem, 8vw, 3.25rem);
-    letter-spacing: -0.03em;
+    font-size: var(--t-h2);
   }
 
   p {

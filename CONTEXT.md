@@ -35,10 +35,12 @@ _Avoid_: trigger, lazy load, interaction, CI check, gate (for a build check)
 ### Motion
 
 **Registration**:
-The one-time entrance of an element as it first enters the viewport — the site's only element-level
-motion. It marks the arrival of a piece of information rather than performing for the visitor: it
-never repeats on scroll back, and never applies to the first screen. The term is free because the
-corner registration *marks* it might have collided with were cut as costume.
+The one-time entrance of an element as it first enters the viewport. It marks the arrival of a piece
+of information rather than performing for the visitor: it never repeats on scroll back, and never
+applies to the first screen. Scoped hard at review to a piece of writing arriving — the Plates on `/`
+used to register and no longer do, because a page made of six Plates that announces each one is
+performing whatever the marks are called. The term is free because the corner registration *marks* it
+might have collided with were cut as costume.
 _Avoid_: reveal, fade-in, scroll animation, entrance effect
 
 **Navigation Cross-fade**:
@@ -55,10 +57,12 @@ Cross-fade, and the one place on the site where an element scales. Absent under
 _Avoid_: morph, shared element, hero transition, magic move
 
 **Traverse**:
-The pointer-driven travel of a Plate's wide image through its Overscan, on the index only. A fourth
+The pointer-driven travel of a Plate's wide image beneath the cursor, on the index only. A fourth
 motion category, and the only one a visitor drives directly: Registration and the Carry happen to
-them, the Traverse happens because of them. Present only where hover and a fine pointer are real,
-and absent under `prefers-reduced-motion: reduce`.
+them, the Traverse happens because of them. It moves on both axes and it is deliberately slight —
+vertically through the Overscan, horizontally through a small constant enlargement, since the
+Overscan is vertical only. Present only where hover and a fine pointer are real, and absent under
+`prefers-reduced-motion: reduce`.
 _Avoid_: parallax, hover effect, tilt, holographic, pan
 
 **Overscan**:

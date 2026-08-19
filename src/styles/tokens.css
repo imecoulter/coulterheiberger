@@ -27,9 +27,35 @@
   --f-body: Georgia, 'Times New Roman', 'Nimbus Roman', serif;
   --f-mono: 'JetBrains Mono', 'Cascadia Mono', Consolas, ui-monospace, monospace;
 
-  --t-spec: 0.6875rem;
-  --t-label: 0.75rem;
+  /* SIX TYPE STYLES, AND SIX IS THE CAP. Three headings, three for everything
+     else. Set on owner review, which found nine or ten in use: three heading
+     sizes that differed by a few tenths of a rem, a summary size that existed
+     only on `/`, and an address that broke its own style's casing.
+
+     THE POINT IS THE CAP, NOT THE NUMBERS. A page picks one of these six; it
+     does not write a font-size. Before this, four of the five heading sizes were
+     declared inside a page's own scoped block, so "how many sizes does this site
+     have" could only be answered by reading every page — which is how it got to
+     ten without anyone deciding to.
+
+     Sizes only. Family, weight, casing and tracking belong to the role that uses
+     the size (src/styles/base.css), and CASING IS PART OF THE STYLE: the two
+     mono styles are uppercase everywhere or they are not a style. There is no
+     `text-transform` override anywhere on this site, and adding one is how the
+     footer address ended up being a tenth treatment.
+
+     Headings share the display face, sentence case, and -0.02em from base.css,
+     so what varies between them is exactly the size. h1 is the site's name on
+     `/` and appears once; h2 is a page's own title, on a Project and on /404;
+     h3 is a Plate's title. Nothing needs a fourth, and a fourth is a change to
+     docs/design-direction.md rather than a value added here. */
+  --t-h1: clamp(2.4rem, 7.4vw, 5.25rem);
+  --t-h2: clamp(2rem, 5.2vw, 3.5rem);
+  --t-h3: clamp(1.5rem, 2.6vw, 2rem);
+
   --t-body: 1.0625rem;
+  --t-label: 0.75rem;
+  --t-spec: 0.6875rem;
   --track-spec: 0.07em;
   --track-label: 0.09em;
 

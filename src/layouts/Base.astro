@@ -192,13 +192,27 @@ const ogImageURL = new URL(ogImage.src, Astro.site);
       for (const el of document.querySelectorAll('[data-anim]')) io.observe(el);
 
       // ---- the Traverse -----------------------------------------------------
-      // Sets --pan from the pointer's position within a Plate; Plate.astro's
-      // scoped CSS turns that into object-position and eases it. See CONTEXT.md
-      // for the term and docs/styling.md for the mechanics.
+      // Sets --py and --tx from the pointer's position over a Plate;
+      // Plate.astro's scoped CSS turns those into object-position and a
+      // transform, and owns both amplitudes. See CONTEXT.md for the term and
+      // docs/styling.md for the mechanics.
       //
-      // THE TWO GUARDS MUST MATCH THE MEDIA QUERY IN Plate.astro. If this
-      // attaches where that query does not apply, --pan jumps with no
+      // BOTH AXES, and the second one is not decoration. Y alone shipped and was
+      // unreachable: a cursor crosses a 21:9 band sideways, and Y rests at the
+      // midpoint, so the gesture people actually make moved nothing at all.
+      //
+      // BOTH ARE UNITLESS -1..+1 and neither carries an amplitude. The CSS
+      // multiplies --py by --reach and --tx by --sweep, so how far the picture
+      // travels is a design decision that lives with the design: it was halved
+      // on review without this file changing at all.
+      //
+      // THE THREE GUARDS MUST MATCH THE MEDIA QUERY IN Plate.astro. If this
+      // attaches where that query does not apply, --py jumps with no
       // transition; the reverse is merely inert. Queried once, not per element.
+      // The query's fourth condition, min-width, is deliberately NOT mirrored:
+      // below it the image exactly fills its box, so both properties are inert
+      // rather than wrong, and a width check here would be state to keep in sync
+      // across a resize for no behaviour.
       //
       // `reduce` is checked as the negative of no-preference rather than as its
       // own branch, so a browser that reports neither is treated as still.
@@ -211,15 +225,39 @@ const ogImageURL = new URL(ogImage.src, Astro.site);
         matchMedia('(prefers-reduced-motion: no-preference)').matches
       ) {
         for (const el of document.querySelectorAll<HTMLElement>('[data-reveal]')) {
+          // MEASURE THE <picture>, WHICH IS NEITHER OF THE OBVIOUS TWO.
+          //
+          // Not the <img>: it carries the Traverse's own transform, so
+          // getBoundingClientRect returns the moved rect and the mapping would
+          // feed its output back into its input.
+          //
+          // Not `el` either, though that is the element being listened to. On
+          // desktop a Plate is the image PLUS the 320px metadata column, so the
+          // horizontal fraction would reach 1 somewhere out in the text and the
+          // picture would never see the end of its travel.
+          const box = el.querySelector('picture');
+          if (!box) continue;
+
           el.addEventListener('pointermove', (event) => {
-            const box = el.getBoundingClientRect();
-            const t = Math.min(1, Math.max(0, (event.clientY - box.top) / box.height));
-            el.style.setProperty('--pan', `${(t * 100).toFixed(1)}%`);
+            const r = box.getBoundingClientRect();
+            const y = Math.min(1, Math.max(0, (event.clientY - r.top) / r.height));
+            const x = Math.min(1, Math.max(0, (event.clientX - r.left) / r.width));
+            // The two signs are opposite ON PURPOSE, and they produce the same
+            // movement. object-position names the part of the picture the box
+            // shows, so it rises with the pointer; translate moves the picture
+            // itself, so it falls against it. Both mean "point at a thing and it
+            // comes to you", which is the only way the two axes read as one.
+            el.style.setProperty('--py', ((y - 0.5) * 2).toFixed(3));
+            el.style.setProperty('--tx', ((0.5 - x) * 2).toFixed(3));
           });
-          // Removed, not set to the resting value: the fallback chain in the CSS
-          // already ends at --rest-y, so deleting the property IS the rest state
-          // and the framing keyword stays the single source of it.
-          el.addEventListener('pointerleave', () => el.style.removeProperty('--pan'));
+          // Removed, not set to the resting value: both CSS fallback chains end
+          // at 0, which resolves to the author's `framing` anchor and an
+          // untranslated image, so deleting the properties IS the rest state and
+          // the keyword stays the single source of it.
+          el.addEventListener('pointerleave', () => {
+            el.style.removeProperty('--py');
+            el.style.removeProperty('--tx');
+          });
         }
       }
 

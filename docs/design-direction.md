@@ -192,6 +192,14 @@ an undocumented exception is not a hard rule, and the cost of the Carry is preci
 
 Staggered in groups of four at 60 ms. Fully disabled under `prefers-reduced-motion: reduce`.
 
+**`/` registers nothing, as of owner review.** Every Plate used to arrive on scroll, the metadata on
+`rise` and the image on `wipe`. On a page whose entire content *is* six Plates, six entrances meant
+the work announced itself before it showed itself — which is the thing this section already refuses,
+one scroll position lower than where the rule was looking. The only surviving user of Registration on
+the site is the body prose on `/projects/<slug>/`, which is a paragraph arriving under a heading and
+is what the mark was described for. `wipe` and `draw rule` therefore have no user at all; both stay
+declared, because this table is the vocabulary and `draw rule` never had one.
+
 **Nothing on the first screen registers.** Content above the fold paints in its final state. This
 started as an LCP constraint — a hidden hero is not an LCP candidate, so it would make the paint
 wait on a script — but it is also the right call for the direction: a mark that fires on content the
@@ -239,17 +247,38 @@ detail. The threshold, the mechanism, and what remains unverified are in
 [docs/styling.md](./styling.md).
 
 The **Traverse** is the fourth motion category, and the first one a visitor drives. Hovering a Plate
-on `/` moves its wide image vertically through the Overscan its crop carries beyond the band, so the
-pointer uncovers what the 21:9 cut took off the top and the bottom. Registration and the Carry happen
-*to* a visitor; the Traverse happens *because of* one, and that is the distinction that makes it a
-category rather than a fifth Registration move.
+on `/` moves its wide image under the pointer, so that the cursor uncovers what the 21:9 cut took off
+the edges. Registration and the Carry happen *to* a visitor; the Traverse happens *because of* one,
+and that is the distinction that makes it a category rather than a fifth Registration move.
+
+**Two axes, because one was unreachable.** It shipped vertical-only, travelling the Overscan and
+resting at the midpoint — and a cursor crosses a 21:9 band *along* it, not down it. Measured on the
+built page: a full-width horizontal sweep produced six samples of `50% 50%`, and the effect was
+correctly reported at review as absent. The axes do not share a mechanism, because the file cannot
+supply slack on both: `cover` fits a 16:9 file to a 21:9 box by width, so the spare picture is all
+vertical. Vertical is therefore `object-position` travelling the real Overscan; horizontal is a
+constant 5% enlargement, translated, which buys the sideways travel at the cost of a 5% upscale.
+
+**Halved at review, both axes**, from a full sweep of the Overscan and a 10% zoom. The zoom came down
+with the sweep rather than staying put: the enlargement exists only to create the sideways travel, so
+holding it while spending half of it would pay the whole quality cost for half the movement.
+
+**The vertical travel is relative to `framing`, not absolute.** It moves 25% either side of the
+anchor the author chose, clamped at the edges of the file, so a Plate framed `bottom` travels up from
+its anchor and is never pushed past it. Before, the anchor described where a Plate sat and nothing
+about where it went.
 
 **"Nothing parallaxes" still holds, and this is not a quiet exception to it.** Parallax is
 scroll-linked differential movement between layers: two things moving at different rates to fake
-depth the page does not have. The Traverse is one element, one axis, and the input is the pointer
-rather than the scroll position. Nothing is layered and nothing pretends to be behind anything. That
-distinction is written here rather than assumed, for the same reason the scaling narrowing above is
-written into the rule instead of granted beside it.
+depth the page does not have. The Traverse is one element and the input is the pointer rather than
+the scroll position. Nothing is layered and nothing pretends to be behind anything.
+
+**"Never scales" is narrowed a second time, and here is the narrowing.** The rule above is about
+Registration, and it is about *animating* size: no move changes the size of content while it plays.
+The Traverse's 5% is a constant — the image is laid out enlarged and stays that way, hovered or not,
+on `/` and on `/projects/<slug>/` alike, which is also what keeps the Carry's two ends identical.
+Nothing scales *during* the move; the move is a translation. That is a real narrowing and it is
+written into the rule rather than granted beside it, for the same reason the Carry's was.
 
 It is off wherever it would be a lie or a nuisance: `(hover: hover) and (pointer: fine)`, because on
 touch a hover is the first half of a tap, and `reduce`, like everything else. It is on `/` only. The

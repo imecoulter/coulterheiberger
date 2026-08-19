@@ -57,14 +57,16 @@ interface Props {
   /** Which presentation. The crops are identical either way; only the width the
       image is laid out at, and therefore `sizes`, differs. */
   context: 'index' | 'detail';
-  /** The LCP element. At most one per page, and it must not also carry
-      data-anim — a clipped element is not an LCP candidate. */
+  /** The LCP element. At most one per page. */
   priority?: boolean;
-  /** Registration. Omitted on the first screen, per docs/design-direction.md. */
-  anim?: 'wipe' | undefined;
 }
 
-const { frame, slug, context, priority = false, anim } = Astro.props;
+/* NO `anim` PROP. A Plate used to accept Registration's `wipe` and `/` was its
+   only caller; owner review removed the Plates' entrance, which left this
+   parameter with nothing to pass it. The move itself is still declared in
+   base.css, where the vocabulary lives — see the note there before wiring it
+   back up, because doing so on the <img> silently breaks it. */
+const { frame, slug, context, priority = false } = Astro.props;
 
 const wideSizes = context === 'index' ? indexWideSizes : detailWideSizes;
 const tallSizes = context === 'index' ? indexTallSizes : detailTallSizes;
@@ -131,7 +133,7 @@ const vars = [
 
     So `/projects/<slug>/` emits the identical file at the identical crop, which
     the Carry requires and would distort without, and simply rests at its framing
-    anchor because nothing there ever sets --pan. */}
+    anchor because nothing there ever sets --py or --tx. */}
 <picture style={vars}>
   <source media={WIDE_MEDIA} type="image/avif" srcset={wideAvif.srcSet.attribute} sizes={wideSizes} />
   <source media={WIDE_MEDIA} type="image/webp" srcset={wideWebp.srcSet.attribute} sizes={wideSizes} />
@@ -150,7 +152,6 @@ const vars = [
     width={TALL_FALLBACK[0]}
     height={heightFor(TALL_FALLBACK[0], TALL)}
     style={`--vt: plate-${slug}`}
-    data-anim={anim}
     loading={priority ? 'eager' : 'lazy'}
     decoding={priority ? 'sync' : 'async'}
     fetchpriority={priority ? 'high' : undefined}
@@ -158,8 +159,15 @@ const vars = [
 </picture>
 
 <style>
+  /* THE CLIP BOX. `overflow: hidden` is what makes the horizontal half of the
+     Traverse possible: that travel comes from an <img> laid out wider than this
+     element, and without a clip it would simply hang over the metadata column.
+     Inert at rest and on every other page, where the image is exactly this size.
+
+     It is also the element Registration's clip-path now lands on. */
   picture {
     display: block;
+    overflow: hidden;
   }
 
   /* TALL: the box is drawn at the same ratio the file was cut to, so `cover` is
@@ -167,15 +175,25 @@ const vars = [
 
      WIDE: the box is 21:9 and the file is 16:9, so `cover` is doing real work —
      it is the crop that produces the band, and `object-position` chooses where
-     in the file that band falls. That is the whole mechanism. --pan is set by
-     the pointer and is absent by default, so the resting position is the
-     author's `framing` keyword and the fallback chain ends at centre. */
+     in the file that band falls. That is the whole mechanism.
+
+     THE TRAVEL IS RELATIVE TO THE ANCHOR, NOT ABSOLUTE. --py is the pointer, -1
+     at the top edge to +1 at the bottom, and it moves --reach either side of the
+     author's `framing` keyword. It used to be an absolute 0-100%, which ignored
+     the anchor entirely while the pointer was down: a Plate framed `bottom`
+     rested at 100% and then travelled the same full range as one framed centre,
+     so the keyword described where it sat and nothing about where it went.
+
+     --reach is 0% here and is only given a value where the Traverse is live, so
+     everywhere else this collapses to the anchor exactly. The clamp keeps a
+     Plate whose anchor is already at an edge from being pushed past it, where
+     `object-position` would happily leave the box short of picture. */
   img {
     width: 100%;
     height: auto;
     aspect-ratio: var(--tall-ratio);
     object-fit: cover;
-    object-position: 50% var(--pan, var(--rest-y, 50%));
+    object-position: 50% clamp(0%, calc(var(--rest-y, 50%) + var(--py, 0) * var(--reach, 0%)), 100%);
   }
 
   @media (min-width: 720px) {
@@ -188,22 +206,71 @@ const vars = [
      The pointer moves the band through the overscan. CONTEXT.md names it; the
      mechanics and the byte cost are in docs/styling.md.
 
-     ONLY THE TRANSITION IS HERE. The position itself is a custom property the
-     one authored script sets on pointermove, and the script does not attach
-     unless the same two conditions below are true — so this query and that
-     guard have to agree. Stated twice on purpose: CSS cannot ask whether the
-     listener bound, and a transition left declared for a pointer that never
-     moves is harmless, while a position set for a page that cannot transition
-     it would snap.
+     TWO AXES, AND THEY DO NOT SHARE A MECHANISM, because the file cannot supply
+     slack on both. `cover` scales a 16:9 file to a 21:9 box by WIDTH, so all of
+     the spare picture is vertical and the horizontal edges are flush. That gives:
+
+       vertical    object-position, travelling the real Overscan. No upscale,
+                   and it travels --reach either side of the author's `framing`
+                   keyword. ~64 px on a 961 px Plate.
+       horizontal  a small constant zoom, translated. There is no spare picture
+                   sideways, so this borrows it: --zoom lays the image out 5%
+                   wider than the box and --sweep spends exactly half of that
+                   each way. ~48 px of travel, and the cost is a 5% upscale.
+
+     HALVED AT OWNER REVIEW, both axes, from ±50% of the Overscan and a 10% zoom.
+     The zoom came down with the sweep rather than staying put: the enlargement
+     exists only to create the sideways travel, so holding it at 10% while
+     spending 5% would be paying the whole quality cost for half the movement.
+
+     THE Y-ONLY VERSION SHIPPED AND WAS UNREACHABLE. A cursor crossing a 21:9
+     band moves along it, not down it, and the resting position is the midpoint —
+     so a full-width sweep produced six samples of `50% 50%` and the effect an
+     owner review asked for was, correctly, reported as absent.
+
+     The upscale is priced, not waved through: the wide tier's `sizes` asks for
+     ~1232 px and the ladder answers 1280 at 1x, so a 10% enlargement still
+     resolves above 1:1 and costs nothing on the wire. It does mean the band
+     rests 5% inside each edge of what sharp cut. `framing`'s HORIZONTAL half
+     could re-anchor that — it is already in OBJECT_POSITION — but all six
+     Plates are horizontally centred today, so a map with no consumer would be
+     the thing this repo argues against. Add it with the first off-centre Plate.
+
+     --sweep IS DERIVED, NOT WRITTEN. "5% wider" and "2.5% each way" are the same
+     fact, and two copies of one fact drift — halving the move at review would
+     otherwise have been two edits with one easy to miss. Both amplitudes live
+     here: the script sets --py and --tx as UNITLESS -1..1 and knows neither
+     --reach nor --zoom, so tuning the move never means editing Base.astro.
+
+     THE GUARDS MUST MATCH THE SCRIPT'S. It does not attach unless hover, a fine
+     pointer and no-preference are all true — so this query and that guard have
+     to agree. Stated twice on purpose: CSS cannot ask whether the listener
+     bound, and a transition left declared for a pointer that never moves is
+     harmless, while a position set for a page that cannot transition it would
+     snap.
+
+     `min-width` is the fourth condition and is only here. The tall crop is cut
+     and shown at 4:5, so it has no overscan to travel and a zoom on it would be
+     a crop with nothing bought for it. Below the breakpoint this whole block is
+     simply absent, which is also why the script needs no width check: --pan and
+     --tx are inert against a box the image exactly fills.
 
      `hover: hover` and `pointer: fine` keep it off touch, where a "hover" is
      the first half of a tap and the Traverse would fire on the way to a link.
      no-preference is declared as the positive case for the same reason every
      other move on this site is: `reduce` is the plain document, not a branch
      that switches something off. */
-  @media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  @media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) and
+    (min-width: 720px) {
     img {
-      transition: object-position 0.4s ease-out;
+      --zoom: 1.05;
+      --sweep: calc((var(--zoom) - 1) * 50%);
+      --reach: 25%;
+
+      transform: translate3d(calc(var(--tx, 0) * var(--sweep)), 0, 0) scale(var(--zoom));
+      transition:
+        object-position 0.4s ease-out,
+        transform 0.4s ease-out;
     }
   }
 

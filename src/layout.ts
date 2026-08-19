@@ -174,7 +174,22 @@ export const EXPANDED_WIDTH = 2000;
    exist. Variants are the multiplicative term in build cost (issue #3 §7), so
    the ladders are trimmed rather than inherited. */
 export const WIDE_WIDTHS = [960, 1280, 1920, 2560];
-export const TALL_WIDTHS = [640, 960, 1280];
+
+/** 768 IS NOT IN astro.config.mjs's `breakpoints` AND IS DELIBERATE HERE.
+    The tall crop is the mobile hero, which makes it the LCP element on every
+    phone — the one image on this site where a rung landing badly is measured by
+    a gate rather than by taste. The ladder went 640 -> 960, a 2.25x jump in
+    pixels, and the common phones land just above the bottom rung: 372 CSS px at
+    the 1.75 DPR the perf gate emulates asks for 651, and a 390 px iPhone at 2x
+    asks for 700. Both were being served 960.
+
+    Measured on the built files: cecret's hero is 34.9 KB at 640 and 80.3 KB at
+    960, so those devices were paying more than double for about 15% more pixels
+    than they could show. A 768 rung costs 12 encodes across six Plates.
+
+    The wide ladder gets no equivalent. Its consumers are desktops at the top of
+    the ladder, where the rungs are already close in relative terms. */
+export const TALL_WIDTHS = [640, 768, 960, 1280];
 
 /** The JPEG tier gets ONE width, not a ladder. Issue #3's own correction found
     that tier is reached only by browsers older than Safari 14 / Firefox 65 /

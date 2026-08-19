@@ -1,7 +1,7 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import { getCollection, render } from 'astro:content';
-import { Image, getImage } from 'astro:assets';
+import { Picture, getImage } from 'astro:assets';
 import Base from '../../layouts/Base.astro';
 import Plate from '../../components/Plate.astro';
 import { bodyWidth, bodySizes, EXPANDED_WIDTH } from '../../layout';
@@ -118,12 +118,31 @@ const expanded = await Promise.all(
       {frames.map((frame, i) => (
         <li>
           <a class="expand" href={expanded[i].src}>
-            <Image
+            {/* <Picture>, and here it IS the right tool — which is worth saying
+                because Plate.astro argues at length for hand-assembling one.
+                That argument is about COMPOSITION: a Plate needs a different
+                crop per breakpoint, and <Picture> switches format, not framing.
+                A Frame is one crop at one aspect and needs exactly the format
+                switch, so the component that does only that is the correct one.
+
+                AVIF WITH A WEBP FALLBACK, where this was WebP alone. The Plate
+                pipeline has always led with AVIF and the gallery never did, and
+                on mobile that is not a cosmetic gap: `loading="lazy"` does not
+                mean "not now" — Chrome's lazy threshold widens as the connection
+                slows, so on the throttled 4G the perf gate emulates, the first
+                few Frames are fetched WHILE the hero is still arriving and take
+                bandwidth from the LCP element. Cecret's terrain map was the
+                largest single asset on its page at 199.1 KB, landing at 2.8s.
+                Measured through sharp at the width actually served, AVIF q50
+                against WebP q80: 199.1 KB -> 93.6 KB, and 122.4 -> 57.4 at the
+                rung below. A 53% cut on the thing that was crowding the hero. */}
+            <Picture
               src={frame.src}
               alt={frame.alt}
               width={bodyWidth}
               sizes={bodySizes}
-              format="webp"
+              formats={['avif']}
+              fallbackFormat="webp"
               layout="constrained"
               loading="lazy"
               decoding="async"
@@ -184,7 +203,7 @@ const expanded = await Promise.all(
      down the page for no reason a reader could see. What it costs the reading
      measure is recorded on the token itself, in tokens.css. */
   h1 {
-    font-size: clamp(2rem, 5.2vw, 3.5rem);
+    font-size: var(--t-h2);
     line-height: 1.02;
     max-width: var(--body-col);
   }
@@ -236,6 +255,12 @@ const expanded = await Promise.all(
      colour change: base.css gives every <a> `color: inherit` and there is no
      text inside this one to distinguish. The cursor is the affordance. */
   .expand {
+    display: block;
+  }
+
+  /* <picture> is inline by default, which would put a descender's worth of gap
+     under every Frame inside its block-level link. */
+  .gallery :global(picture) {
     display: block;
   }
 
