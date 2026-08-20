@@ -174,132 +174,31 @@ styling decision — and it is now also a change to the font build.
 
 ## Motion
 
-**Registration, not performance.** Line-level only. Fires once and never re-triggers on scroll back.
-Nothing parallaxes, and **element-level Registration never scales**. At most two elements animating
-at a time. (`draw rule` scales a hairline into existence, which is a draw rather than a zoom; no
-Registration move changes the size of content.)
+**The site does not move.** Nothing animates, nothing transitions, and nothing responds to a pointer.
+Pages paint in their final state, a navigation is an ordinary full page load, and the only state
+change on the site is the focus outline.
 
-That rule read a flat **"nothing scales"** until
-[#31](https://github.com/imecoulter/coulterheiberger-com/issues/31) adopted the Carry, below. The
-narrowing is written into the rule rather than granted as an exception beside it — a hard rule with
-an undocumented exception is not a hard rule, and the cost of the Carry is precisely this sentence.
+This is the current direction, not a gap waiting to be filled. It replaced five interlocking
+categories — Registration, the Navigation Cross-fade, the Carry, the Traverse, and a fade on the
+Expanded View — which were removed in one pass after clicking a Project put three of them on screen
+at once and the result read as artefacts rather than as craft.
 
-| name | move | duration |
-| --- | --- | --- |
-| rise | opacity 0→1, `translateY(10px)`→0 | 0.48 s ease-out |
-| draw rule | `scaleX(0)`→`scaleX(1)`, origin left | 0.62 s ease-out |
-| wipe | `clip-path: inset(100% 0 0 0)`→`inset(0)` | 0.56 s ease-out |
+**What that leaves is the argument the moves were always held to.** A mark that fires on content the
+visitor is already looking at is performing; a page whose entire content is six Plates does not need
+six entrances to introduce them. Every one of those refusals survives the removal, because a site
+with no motion refuses all of them by construction.
 
-Staggered in groups of four at 60 ms. Fully disabled under `prefers-reduced-motion: reduce`.
+**The refusals, if any of it returns.** Entrances are line-level, fire once, never re-trigger on
+scroll back, and never touch the first screen. Nothing parallaxes. At most two elements animate at a
+time. No animation library and no client-side router: [issue #12](https://github.com/imecoulter/coulterheiberger-com/issues/12)
+priced the router alone at 5,494 B gzip against 426 B for the entire hand-rolled substrate, on a site
+whose page loads already land in under 100 ms.
 
-**`/` registers nothing, as of owner review.** Every Plate used to arrive on scroll, the metadata on
-`rise` and the image on `wipe`. On a page whose entire content *is* six Plates, six entrances meant
-the work announced itself before it showed itself — which is the thing this section already refuses,
-one scroll position lower than where the rule was looking. The only surviving user of Registration on
-the site is the body prose on `/projects/<slug>/`, which is a paragraph arriving under a heading and
-is what the mark was described for. `wipe` and `draw rule` therefore have no user at all; both stay
-declared, because this table is the vocabulary and `draw rule` never had one.
-
-**Nothing on the first screen registers.** Content above the fold paints in its final state. This
-started as an LCP constraint — a hidden hero is not an LCP candidate, so it would make the paint
-wait on a script — but it is also the right call for the direction: a mark that fires on content the
-visitor is already looking at is performing, which is the thing this motion spec exists to refuse.
-
-**Two page-to-page moves, and no client-side router** — see
-[issue #12](https://github.com/imecoulter/coulterheiberger-com/issues/12), which priced one at
-5,494 B gzip against 426 B for this entire motion substrate, on a site whose page loads already
-land in under 100 ms.
-
-The **Navigation Cross-fade** is a brief cross-fade on ordinary navigation, present where the browser
-supports it and absent where it does not.
-
-The **Carry** is the second of them, and the site's third motion category overall, decided in
-[#31](https://github.com/imecoulter/coulterheiberger-com/issues/31): a Plate's image travels between
-`/` and `/projects/<slug>/`, holding its position and its scale across the navigation while the rest
-of the page cross-fades. It is a category of its own, not an extension of the Cross-fade — the
-Cross-fade is a property of the document swap, the Carry is element-level continuity through it, and
-collapsing the two is what would let the scaling narrowing above go unnoticed.
-
-**Every Plate on `/` carries, not only the one that was clicked. The reason is mechanical.** With no
-JavaScript, CSS cannot know which Plate was clicked — there is no `:active` state surviving a document
-swap, and no selector for "the link the visitor just followed". Naming all of them is therefore the only
-**stateless** way to guarantee the clicked one carries. The other five simply exit: a name with no
-counterpart in the incoming document animates out and costs nothing else.
-
-That it also reads as the equivalence thesis — naming just the first would say one piece of work is the
-way into the others — is true, and it is a reading, not the reason. The distinction matters because the
-two answers behave differently under pressure: if the equivalence argument were the load-bearing one, a
-future "name only the clicked plate" optimisation would look like a betrayal of the direction rather
-than what it actually is, which is **a second `<script>` and an amendment to this document**.
-
-At the scale this site runs at, one click moves 3–8 plates, and that is the thing to measure. It was
-measured: **+20 ms** with all six named, against the ~70 ms threshold — see `docs/styling.md`.
-
-**It is not free, and the record said it was.** #12 priced the cross-fade at 0 bytes and shipped it
-on that basis. Field RUM on cross-document view transitions reports roughly **+70 ms LCP on repeat
-mobile pageviews**, correlated with CPU
-([corewebvitals.io](https://www.corewebvitals.io/pagespeed/view-transition-web-performance)) — a cost
-the shipped Cross-fade already pays today, before the Carry adds a single named element. The Carry is
-therefore adopted on direction fit and carries a **threshold**, not a promise. Over it, the Carry is
-cut back to the plain cross-fade and **never rescued with JavaScript**: a small click handler is the
-tempting fix, and a second `<script>` is an amendment to this document, not an implementation
-detail. The threshold, the mechanism, and what remains unverified are in
-[docs/styling.md](./styling.md).
-
-The **Traverse** is the fourth motion category, and the first one a visitor drives. Hovering a Plate
-on `/` moves its wide image under the pointer, so that the cursor uncovers what the 21:9 cut took off
-the edges. Registration and the Carry happen *to* a visitor; the Traverse happens *because of* one,
-and that is the distinction that makes it a category rather than a fifth Registration move.
-
-**Two axes, because one was unreachable.** It shipped vertical-only, travelling the Overscan and
-resting at the midpoint — and a cursor crosses a 21:9 band *along* it, not down it. Measured on the
-built page: a full-width horizontal sweep produced six samples of `50% 50%`, and the effect was
-correctly reported at review as absent. The axes do not share a mechanism, because the file cannot
-supply slack on both: `cover` fits a 16:9 file to a 21:9 box by width, so the spare picture is all
-vertical. Vertical is therefore `object-position` travelling the real Overscan; horizontal is a
-constant 5% enlargement, translated, which buys the sideways travel at the cost of a 5% upscale.
-
-**Halved at review, both axes**, from a full sweep of the Overscan and a 10% zoom. The zoom came down
-with the sweep rather than staying put: the enlargement exists only to create the sideways travel, so
-holding it while spending half of it would pay the whole quality cost for half the movement.
-
-**The vertical travel is relative to `framing`, not absolute.** It moves 25% either side of the
-anchor the author chose, clamped at the edges of the file, so a Plate framed `bottom` travels up from
-its anchor and is never pushed past it. Before, the anchor described where a Plate sat and nothing
-about where it went.
-
-**"Nothing parallaxes" still holds, and this is not a quiet exception to it.** Parallax is
-scroll-linked differential movement between layers: two things moving at different rates to fake
-depth the page does not have. The Traverse is one element and the input is the pointer rather than
-the scroll position. Nothing is layered and nothing pretends to be behind anything.
-
-**"Never scales" is narrowed a second time, and here is the narrowing.** The rule above is about
-Registration, and it is about *animating* size: no move changes the size of content while it plays.
-The Traverse's 5% is a constant — the image is laid out enlarged and stays that way, hovered or not,
-on `/` and on `/projects/<slug>/` alike, which is also what keeps the Carry's two ends identical.
-Nothing scales *during* the move; the move is a translation. That is a real narrowing and it is
-written into the rule rather than granted beside it, for the same reason the Carry's was.
-
-It is off wherever it would be a lie or a nuisance: `(hover: hover) and (pointer: fine)`, because on
-touch a hover is the first half of a tap, and `reduce`, like everything else. It is on `/` only. The
-detail page emits the identical file at the identical crop, which the Carry requires, and simply
-rests at the Plate's own `framing` anchor.
-
-**Its cost is bytes, not milliseconds**, and that is what makes it a different kind of decision from
-the Carry. The Overscan means the wide tier is cut 16:9 and shown 21:9: about 31% more pixels on
-`/`'s hero, measured at 66.6 KB for the largest at the width a 1440px desktop fetches. It does not
-touch the number the performance gate grades, because that gate runs at mobile width where the 4:5
-crop is served and the wide tier is never requested. Read that as a reason to keep watching the
-desktop figure by hand, not as a reason it is free.
-
-Under `prefers-reduced-motion: reduce` there is still no transition at all. The Carry does not reopen
-that, and the fade is not split off to be kept without it. The Traverse's listener is not attached at
-all under `reduce`, so there is no state to switch off.
-
-No animation library, and still no second file. All four moves are CSS plus one inline script; the mechanics,
-the measured cost of every alternative, and the conditions for revisiting are in
-[docs/styling.md](./styling.md). The order there is binding: **this document is amended first, then
-a library is chosen to serve it.**
+**The order is binding: this document is amended first, then a mechanism is chosen to serve it.**
+Never the reverse. The full spec as it shipped, every measurement behind it, and four findings that
+each cost real time to discover are kept in [docs/motion.md](./motion.md). Read that before
+proposing motion here — three of the four traps it records fail silently, and one of them looks
+exactly like a page with no animation.
 
 ## Consequence for content production
 
@@ -318,14 +217,14 @@ Decided in [issue #30](https://github.com/imecoulter/coulterheiberger-com/issues
 **Every image carries a required `framing` keyword in frontmatter**, one of nine, passed through to
 sharp unchanged. It is a Plate's composition decision, stated once by whoever looked at the image.
 
-**It now drives four cuts, not two**, and all four are the same decision applied in different places:
-the wide file sharp cuts, the tall file sharp cuts, the Social Card's 1200x630, and — since the
-Traverse — the resting `object-position` the browser cover-crops the band at. That last one was not a
-new mechanism but a new *place the existing one had to reach*: with the wide file cut looser than the
-band, the browser performs a second crop, and left to itself it centres. A Plate framed `left bottom`
-would have had its composition honoured by sharp and then thrown away by CSS eight pixels later. The
-keyword-to-`object-position` map is in `src/layout.ts`, one entry per schema enum member so the two
-cannot drift apart.
+**It drives four cuts, not two**, and all four are the same decision applied in different places: the
+wide file sharp cuts, the tall file sharp cuts, the Social Card's 1200x630, and the
+`object-position` the browser cover-crops the band at. The fourth arrived with the Overscan and
+outlived the Traverse it was added for: it was never a new mechanism, only a new *place the existing
+one had to reach*. With the wide file cut looser than the band, the browser performs a second crop,
+and left to itself it centres. A Plate framed `left bottom` would have had its composition honoured
+by sharp and then thrown away by CSS eight pixels later. The keyword-to-`object-position` map is in
+`src/layout.ts`, one entry per schema enum member so the two cannot drift apart.
 
 It works because of a measured property of *these two ratios*. Every plate's native aspect sits
 between 4:5 and 21:9, so reaching 21:9 is a purely **vertical** cut and reaching 4:5 a purely

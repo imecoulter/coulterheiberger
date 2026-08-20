@@ -7,9 +7,9 @@
  * folder actually on disk. `assets` and `publish` already check the slug they
  * are handed, but they only ever see folders the ritual created — a folder
  * added by hand, or renamed afterwards, reaches main unexamined. The slug is
- * the URL, the entry id, and the tail of the Carry's view-transition-name, and
- * a bad one fails silently in the third of those. Same reason as the images:
- * this is the cheap moment.
+ * the URL and the entry id, and it is also held to CSS <custom-ident> shape for
+ * a use that is not shipped today — see scripts/lib/repo.mjs. Same reason as
+ * the images: this is the cheap moment.
  *
  * This gate matters more than a lint rule because the mistake it catches is
  * permanent. "Source-resolution Rendered Assets never enter git" is binding
@@ -160,12 +160,11 @@ if (badSlugs.length > 0) {
     `check:assets — ${badSlugs.length} Project folder name(s) are not usable slugs.\n` +
       `A slug starts with a lowercase letter, then lowercase letters, digits and\n` +
       `single interior hyphens (SLUG_RE, scripts/lib/repo.mjs).\n\n` +
-      `The folder name is three things at once: the public URL segment, the\n` +
-      `collection entry id, and the tail of the Carry's view-transition-name\n` +
-      `(plate-<slug>). The last of those fails SILENTLY — an invalid CSS\n` +
-      `custom-ident is not an error, it is simply no transition, on that one\n` +
-      `Project, invisible in review. Rename the folder now; once the URL is\n` +
-      `indexed it needs a 301 indefinitely.\n`,
+      `The folder name is the public URL segment and the collection entry id,\n` +
+      `and it is held to CSS custom-ident shape besides — that use is not\n` +
+      `shipped today (docs/motion.md) and the constraint is kept because it is\n` +
+      `free now and a round of 301s later. Rename the folder now; once the URL\n` +
+      `is indexed it needs a 301 indefinitely.\n`,
   );
   for (const slug of badSlugs) {
     console.error(`  src/content/projects/${slug}/`);

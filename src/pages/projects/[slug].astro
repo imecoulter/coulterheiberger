@@ -66,11 +66,9 @@ const expanded = await Promise.all(
         It also keeps the page image-LCP, which is the regime ADR-0002 costed
         the ~220 KB hero crossover in. Three hundred pixels of heading above it
         would hand the LCP to an <h1> on mobile and quietly move the page into
-        the other regime.
-
-        NO data-anim, and no Registration: first screen. */}
+        the other regime. */}
     <div class="hero">
-      <Plate frame={images[0]} slug={project.id} context="detail" priority />
+      <Plate frame={images[0]} context="detail" priority />
     </div>
 
     <h1>{title}</h1>
@@ -94,7 +92,7 @@ const expanded = await Promise.all(
       </div>
     </dl>
 
-    <div class="prose" data-anim="rise">
+    <div class="prose">
       <Content />
     </div>
 
@@ -102,10 +100,10 @@ const expanded = await Promise.all(
         nothing here is being fitted to a band: the two art-directed crops exist
         for the Plate, which has a layout to satisfy, and a Frame does not.
 
-        No Registration on any of them. An image the visitor scrolled to is not
-        information arriving, it is the thing they came to see — and twelve
-        wipes in a column is precisely the "performing" the motion spec exists
-        to refuse.
+        No entrance on any of them, and none is coming back by default. An image
+        the visitor scrolled to is not information arriving, it is the thing they
+        came to see, and twelve of them entering down one column is precisely the
+        performance the motion spec was written to refuse. See docs/motion.md.
 
         No captions and no process/finished label. ~15 of the 47 Frames are
         working images rather than finished camera renders and they render
@@ -358,30 +356,16 @@ const expanded = await Promise.all(
     cursor: pointer;
   }
 
-  /* A short fade, declared only under no-preference, so `reduce` gets the
-     dialog appearing with no transition rather than a transition switched off.
-     Same inversion as every other move on this site.
+  /* NO FADE. The view opens and closes instantly, which is what <dialog> does on
+     its own — `showModal()` and `close()` with nothing layered over them.
 
-     `allow-discrete` and @starting-style are what let an element that goes
-     display:none animate at all. Where they are unsupported the dialog simply
-     appears and disappears, which is the correct failure. */
-  @media (prefers-reduced-motion: no-preference) {
-    dialog.expanded {
-      opacity: 0;
-      transition:
-        opacity 0.24s ease-out,
-        display 0.24s ease-out allow-discrete,
-        overlay 0.24s ease-out allow-discrete;
-    }
+     A 0.24s opacity transition used to sit here, and rebuilding it is not just a
+     `transition` declaration: an element that goes `display: none` cannot
+     animate without `allow-discrete` on `display` and `overlay`, plus an
+     `@starting-style` block to give the opening frame something to start from.
+     docs/motion.md keeps the working version.
 
-    dialog.expanded[open] {
-      opacity: 1;
-    }
-
-    @starting-style {
-      dialog.expanded[open] {
-        opacity: 0;
-      }
-    }
-  }
+     THE BLUR ABOVE IS NOT A FADE and stayed. It is a static effect that is
+     either on or off with the dialog, and it is what makes this read as one
+     Frame over the page rather than a page that was replaced. */
 </style>

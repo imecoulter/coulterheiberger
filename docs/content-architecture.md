@@ -238,11 +238,13 @@ Three separate things ride on that one string, which is why it is worth a gate:
 - **The public URL segment.** This document already calls URLs the most expensive thing here to
   change: once indexed they need 301s indefinitely.
 - **The collection entry id**, since the folder name *is* the id.
-- **A CSS `<custom-ident>`** — `plate-<slug>`, the Carry's `view-transition-name`
-  (`docs/styling.md`). This is the reason the pattern requires a **leading letter** rather than
-  merely a leading alphanumeric: an ident may not begin with a digit, and an invalid one fails as
-  *no transition at all*. Silent, and invisible in review — nothing throws, the Carry simply does not
-  happen on that one Project.
+- **A CSS `<custom-ident>`**, which is the reason the pattern requires a **leading letter** rather
+  than merely a leading alphanumeric: an ident may not begin with a digit. This use is **not shipped
+  today** — it was `plate-<slug>`, the Carry's `view-transition-name`, and the Carry went with the
+  rest of the motion substrate (`docs/motion.md`). The constraint is kept anyway, because it costs
+  nothing now and relaxing it would mean a round of 301s the day that behaviour returns. It is also
+  the failure mode worth remembering: an invalid ident is not an error, it is *no transition at
+  all*, silently, on that one Project.
 
 ---
 
@@ -440,7 +442,8 @@ documentation.
 | `getImage` with explicit `width` + `height` + a `widths` ladder crops **every** srcset entry | Confirmed. cecret's hero emitted 2.333 at 960/1280/1920/2560 |
 | `getImage` with `aspectRatio` + a `widths` ladder **does not crop** | Confirmed, and it fails silently: the same hero emitted the source's 1.778 at every width while *reporting* `aspectRatio: 2.333` in the attributes. This is why `src/components/Plate.astro` passes both dimensions |
 | `position` reaches sharp and changes the output | Confirmed. `top` and `left bottom` emit different content hashes — `position` is one of `DEFAULT_HASH_PROPS` |
-| `view-transition-name: var(--vt)` substitutes, and the unset case computes to `none` | **Confirmed in Chrome.** `--vt: probe-name` computes `probe-name`; the same rule with `--vt` unset computes `none`. Closes the first of `docs/styling.md`'s two recorded unverified items |
-| The Carry's LCP delta on real plates | **Confirmed: +20 ms**, median of 11 interleaved runs, 4× CPU throttle, real `/` → `/projects/cecret/` navigation with all six Plates named. Under the ~70 ms threshold. Closes the second item — see `docs/styling.md` |
-| Under `prefers-reduced-motion: reduce` the Plate is the plain document | Confirmed on a real navigation: `view-transition-name: none`, `clip-path: none`, `opacity: 1`, `transition-duration: 0s` |
 | Astro's static `redirects` emits `<meta http-equiv="refresh">`, not a 301 | Confirmed by source (`core/routing/3xx.js`). See §1 |
+
+Three rows about the Carry's view transitions were verified here and have moved to
+`docs/motion.md` with the behaviour they described. They are still measurements, not readings — the
+site simply no longer does the thing they measure.

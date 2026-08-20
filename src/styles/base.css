@@ -124,120 +124,22 @@ h3 {
   color: var(--muted);
 }
 
-/* ---- Registration --------------------------------------------------------
-   The one-time entrance of an element as it first enters the viewport. Three
-   moves, durations and easing from docs/design-direction.md. The observer
-   that adds .is-in is one inline script in src/layouts/Base.astro — the only
-   JavaScript on the site. Decided in issue #12.
+/* ---- no motion -----------------------------------------------------------
+   THIS FILE DECLARES NO TRANSITION, NO ANIMATION AND NO @view-transition, and
+   that is the current state of the whole site rather than an omission here.
 
-   THE HIDDEN STATE IS DECLARED ONLY UNDER no-preference. That inversion is
-   the whole reduced-motion design, not a formatting choice: "reduce" is not a
-   branch that strips animation, it is the plain document, and Registration is
-   what everyone else gets layered on top. Do NOT rewrite this as a `reduce`
-   block that disables things — that computes the animated path first and
-   fails toward motion when anything goes wrong.
+   Registration, the Navigation Cross-fade and the Carry all lived below this
+   line and are gone. What is left is the plain document: pages paint in their
+   final state and a navigation is an ordinary full page load.
 
-   --d is the stagger delay, set per element by the observer in groups of four
-   at 60ms. Elements on the first screen must NOT carry data-anim: an element
-   at opacity 0 or fully clipped is not an LCP candidate (web.dev/articles/lcp
-   excludes "elements with an opacity of 0"), so animating the hero would make
-   LCP wait for this script instead of the image decode. */
-@media (prefers-reduced-motion: no-preference) {
-  [data-anim='rise'] {
-    opacity: 0;
-    transform: translateY(10px);
-    transition:
-      opacity 0.48s ease-out var(--d, 0ms),
-      transform 0.48s ease-out var(--d, 0ms);
-  }
+   THERE IS ALSO NO `prefers-reduced-motion` QUERY LEFT ANYWHERE, which follows.
+   The substrate declared every hidden and animated state ONLY under
+   `no-preference`, so that `reduce` was the plain document rather than a branch
+   that switched things off. Remove the animated state and the query has nothing
+   to guard. Do not add a bare `reduce` block back: it would be a rule that
+   disables something nothing declares.
 
-  [data-anim='rise'].is-in {
-    opacity: 1;
-    transform: none;
-  }
-
-  [data-anim='rule'] {
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.62s ease-out var(--d, 0ms);
-  }
-
-  [data-anim='rule'].is-in {
-    transform: none;
-  }
-
-  /* `wipe` and `rule` HAVE NO USER TODAY. `/` used to wipe every Plate in and
-     owner review removed it, on the argument that six entrances down a page
-     made of six Plates is the work announcing itself before it shows itself.
-     They stay declared because the vocabulary is the design direction's, not
-     this file's, and `rule` has never had one.
-
-     IF YOU WIRE `wipe` BACK UP, PUT IT ON A WRAPPER, NEVER ON AN <img> THAT A
-     COMPONENT ALSO STYLES. It was on the Plate's <img>, which Plate.astro also
-     gives `transition: object-position, transform` for the Traverse. `transition`
-     is a shorthand and the scoped rule compiles to `img.astro-<hash>` at (0,1,1)
-     against this selector's (0,1,0) — so it did not merge, it replaced, and
-     every Plate that should have wiped snapped instead. Confirmed in a browser
-     as `transitionProperty: object-position` on five images sitting at
-     `clip-path: inset(100% 0 0 0)`. Silent both ways: nothing warns, and the
-     page looks like a page with no animation rather than a broken one. */
-  [data-anim='wipe'] {
-    clip-path: inset(100% 0 0 0);
-    transition: clip-path 0.56s ease-out var(--d, 0ms);
-  }
-
-  [data-anim='wipe'].is-in {
-    clip-path: inset(0);
-  }
-
-  /* ---- Navigation cross-fade ---------------------------------------------
-     Cross-document view transitions, CSS only. There is no client-side
-     router: issue #12 measured Astro's ClientRouter at 5,494 B gzip — 10.7%
-     of the entire JS budget, and 13x this whole motion substrate (426 B on
-     the wire) — for a site whose full page loads land at 67-104ms TTFB. Its one
-     unique capability is transition:persist for live state, and v1 has none.
-     Astro's own docs say the router "will increasingly become unnecessary"
-     as this API lands.
-
-     Nested under no-preference for the same fail-safe reason as the moves: a
-     browser that ignores the nesting falls back to no transition, never to a
-     transition the user asked not to see. Chrome 126+ / Safari 18.2+;
-     Firefox has no support and simply navigates. Both documents must opt in,
-     which is automatic here because every page shares this stylesheet. */
-  @view-transition {
-    navigation: auto;
-  }
-
-  /* ---- the Carry's handoff -----------------------------------------------
-     THE OLD SNAPSHOT IS HELD, NOT CROSS-FADED, and this is about a hole rather
-     than about taste.
-
-     `/` and `/projects/<slug>/` show the same hero at different widths, so they
-     resolve DIFFERENT rungs of the same ladder: measured on the built site at a
-     1600px window, the index takes the ~1136px variant and the Project page the
-     ~1504px one. On a first visit the Project page's file is therefore a real
-     network fetch, and the default cross-fade does not wait for it — the old
-     snapshot dissolves into a new one that is still empty, so the image
-     disappears and then pops back in when the bytes land. Verified by stalling
-     the response: at the end of the transition the hero measured
-     `complete: false` over an empty box.
-
-     Holding the old snapshot at full opacity means the new one fades in OVER a
-     picture rather than over nothing. When it is ready the handoff is invisible;
-     when it is late the visitor sees the old rung a moment longer instead of a
-     hole. There is no way to make the document wait for it — `blocking="render"`
-     is NOT honoured on `<link rel="preload" as="image">` (probed in Chrome: with
-     the image stalled 2500ms the page still painted at 36ms), and `rel="expect"`
-     waits for an element to be parsed, not for bytes.
-
-     So this is the safety net and the warming in Base.astro is the fix: warming
-     usually wins the race, and this makes losing it cheap instead of ugly.
-
-     Scoped by `view-transition-class: plate`, declared in Plate.astro. Not
-     `(*)`: that would hold the ROOT snapshot too and freeze the whole-page
-     cross-fade the rest of this section is about. */
-  ::view-transition-old(.plate) {
-    animation: none;
-    opacity: 1;
-  }
-}
+   The specs, the durations, and the measured findings behind all of it are kept
+   in docs/motion.md. Read it before adding motion here — several of the traps it
+   records are silent, including one where a component's `transition` shorthand
+   replaces an entrance declared in this file and nothing warns. */

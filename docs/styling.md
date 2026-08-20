@@ -9,7 +9,7 @@ there and summarised at the bottom of this file.
 
 ```
 src/styles/tokens.css    custom properties only — nothing in this file paints
-src/styles/base.css      reset, element defaults, type roles, Registration, cross-fade
+src/styles/base.css      reset, element defaults, type roles
 src/styles/fonts.css     @font-face only — two faces, nothing else
 src/layouts/Base.astro   imports the above once for every page; holds the only <script>
 src/components/*.astro   everything else, in a scoped <style> block
@@ -275,141 +275,39 @@ SVG.**
 
 ## Motion
 
-Three things move on this site, and none of them uses a library. Two were decided in
-[issue #12](https://github.com/imecoulter/coulterheiberger-com/issues/12) by building every
-candidate and measuring it; the Carry was decided in
-[#31](https://github.com/imecoulter/coulterheiberger-com/issues/31). The design they implement is the
-Motion section of [docs/design-direction.md](./design-direction.md).
+**There is none.** No `transition`, no `animation`, no `@keyframes`, no `@view-transition`, and no
+`:hover` rule anywhere in `src/`. There is also **no `prefers-reduced-motion` query left**, and that
+follows rather than being an omission: the substrate declared every hidden and animated state only
+under `no-preference`, so that `reduce` was the plain document rather than a branch that switched
+things off. Remove the animated state and the query has nothing to guard. **Do not add a bare
+`reduce` block back** — it would disable something nothing declares.
 
-**Registration** — the one-time entrance of an element as it first enters the viewport. Three moves
-(`rise`, `rule`, `wipe`) live in `base.css`; one `IntersectionObserver` in `Base.astro` adds `.is-in`
-once and stops watching. The contract is three attributes and nothing else:
+The one authored `<script>` in `Base.astro` now holds two behaviours, and neither draws anything:
+warming the hero (a cache warm on `pointerenter`, no visual) and the Expanded View (`showModal()` and
+a `src` swap). It measures **421 B gzip / 834 B raw**, one inline block, zero extra requests — 0.8%
+of ADR-0002's 50 KB. The rule was always one authored `<script>`, not one behaviour, and it is
+intact.
 
-**One user on the whole site**, the body prose on `/projects/<slug>/`. `/` used to register every
-Plate and was stripped at owner review — see the design direction for why. `wipe` and `draw rule` are
-declared with nothing using them.
+Everything that was here — Registration, the Navigation Cross-fade, the Carry, the Traverse, the
+Expanded View's fade — is in [docs/motion.md](./motion.md), with its measurements, its byte costs,
+and four findings that each fail silently. **Read it before writing a `transition` into this
+codebase.** One of the four is specifically about a component's `transition` shorthand replacing a
+global rule at a higher specificity, which looks exactly like a page with no animation.
 
-**If you re-enable `wipe` on a Plate, it goes on a wrapper, never on the `<img>`.** It was on the
-image, which `Plate.astro` also gives `transition: object-position, transform` for the Traverse.
-`transition` is a shorthand, and the scoped rule compiles to `img.astro-<hash>` at (0,1,1) against
-`[data-anim='wipe']` at (0,1,0) — so it did not merge with the wipe's `clip-path 0.56s`, it replaced
-it. Every Plate that should have wiped in snapped instead, silently: `transitionProperty` read
-`object-position` on five images sitting at `clip-path: inset(100% 0 0 0)`, and the page looked like
-a page with no animation rather than a broken one. Found by reading computed style off the built
-page, not off the source.
+The design this implements is the Motion section of [docs/design-direction.md](./design-direction.md),
+and the order is binding: **that document is amended first, then a mechanism is chosen to serve it.**
 
-| | |
-| --- | --- |
-| `data-anim="rise\|rule\|wipe"` | opts an element in and picks its move |
-| `.is-in` | added by the observer; the only thing the script does |
-| `--d` | stagger delay, set per element in groups of four at 60 ms |
+## The Plate link on `/`
 
-**Navigation Cross-fade** — `@view-transition { navigation: auto; }`, three lines of CSS in
-`base.css`. Zero JavaScript, no client-side router. Chrome 126+ / Safari 18.2+; Firefox has no
-support and simply navigates.
+Not motion, and it is here because the bug underneath it is silent.
 
-**The Carry** — a Plate's image holding its position and scale between `/` and `/projects/<slug>/`.
-Zero JavaScript, and **still nothing in `base.css`**: it landed in `src/components/Plate.astro`, in that
-component's scoped `<style>`, which is where this section always said it would go. The declaration sits
-beside the markup that emits `--vt`, so there is no global selector reaching for an inline custom
-property, and a component that does not emit `--vt` is not silently opted in.
-
-| | |
-| --- | --- |
-| Named element | **The `<picture>`, which is the clip box.** No text is named: the Plate is one unit, but a group snapshot rasterizes and stretches the specification line — mono text scaled by a transform is exactly the artefact the datum cannot afford — and a `<picture>` holds the image and nothing else. It was on the `<img>` and the Carry visibly popped: the `<img>` is laid out 5% larger than its box at all times (`--zoom`, which is what creates the Traverse's sideways travel) and the `overflow: hidden` hiding that bleed lives on the `<picture>` **above** it. A named element is lifted into the top layer, where its own clip still applies and its ancestors' do not, so the 5% became the visible edge for the length of the transition and snapped back at the end. Measured at 1600×900: the group's left edge sat at **x=17 against a 48px gutter**, which is `1121 × 0.05 / 2`. **Anything that clips a Plate belongs on the `<picture>`** |
-| Name | `plate-<slug>`, derived from the Project slug. Unique per document by construction, matches across the two documents for free, and reverses on back-navigation for free |
-| Declaration | `--vt: plate-<slug>` in the `<picture>`'s inline vars; `view-transition-name: var(--vt, none)` **inside** `@media (prefers-reduced-motion: no-preference)`, in `Plate.astro`'s scoped style. The value ships inert and the declaration stays gated, which preserves the fail-safe inversion below |
-| Coverage | Every Plate on `/` is named, so one click carries all 3–8. That is deliberate — see the design direction — and it is what the threshold is measured against |
-| `reduce` | Unchanged. No transition at all; the fail-safe inversion is not reopened |
-
-**"0 bytes" was the wrong meter, and #12 recorded it.** The cross-fade was priced at zero and shipped
-on that basis. Field RUM on cross-document view transitions reports roughly **+70 ms LCP on repeat
-mobile pageviews**, correlated with CPU
-([corewebvitals.io](https://www.corewebvitals.io/pagespeed/view-transition-web-performance)). The
-transfer cost genuinely is zero; the paint cost is not, and the shipped cross-fade is paying it
-today. Correction recorded here rather than in #12's table, which measures transfer bytes and is
-right about them.
-
-**The threshold: the Carry's own delta must not exceed the ~70 ms the plain cross-fade already
-costs.** Measured on a real `/` → `/projects/<slug>/` navigation, named minus unnamed, on the same
-page and the same device class. Roughly doubling a cost the record called zero is where a decoration
-stops being affordable — and 3–8 simultaneously named elements is exactly where it would show up.
-
-It is deliberately a *relative* number. An absolute millisecond budget for a transition would be
-invented here and then argued with; the cross-fade's measured cost is a figure the site is already
-paying and has already accepted, so "no worse than what you already agreed to" is a threshold that
-holds its meaning when the hardware changes.
-
-**The escape hatch is the plain cross-fade, and it is the only one.** Over the threshold, delete the
-`--vt` declaration and the site falls back to the Cross-fade it already has. **It is never rescued
-with JavaScript.** A ~200-byte click handler that assigns the name on demand is the obvious fix and
-it is out of bounds: the site has exactly one `<script>`, and adding a second is an amendment to
-`docs/design-direction.md` first — not a call the session building the Project pages gets to make
-under its own deadline.
-
-**The perf gate structurally cannot see this.** `npm run perf` is `lhci collect` plus
-`scripts/assert-lcp-path.mjs` over cold loads, and no browser-driving devDependency exists in this
-repo. Extending CI with Playwright to police a transition was considered and rejected: the
-enforcement machinery would outweigh the thing enforced. So the Carry is held by rule here, and
-watched in the field by [#33](https://github.com/imecoulter/coulterheiberger-com/issues/33).
-
-**Both previously-unverified items are now measured.** They were recorded here as "almost certainly
-true, and this repo runs things rather than reading them"; the Project routes made them checkable and
-they were checked. Both are in `docs/content-architecture.md`'s "Verified mechanics" table.
-
-1. **`view-transition-name: var(--vt)` substitutes, and the unset case computes to `none`.** Confirmed
-   in Chrome against the same rule in both states: `--vt: probe-name` computes `probe-name`, and the
-   same declaration with `--vt` unset computes `none`. **Chrome only** — Safari was not driven, and
-   saying otherwise would be the assertion this section exists to forbid.
-2. **The Carry's LCP delta is +20 ms**, against the ~70 ms threshold. Median of 11 interleaved runs per
-   condition, 4× CPU throttle, on a real `/` → `/projects/cecret/` navigation with **all six Plates
-   named** — the 3–8 case this threshold was written for. Named median 156 ms, unnamed 136 ms, and the
-   two distributions barely overlap (named min 144, unnamed max 152), so it is an effect rather than
-   noise. **The Carry ships.**
-
-   Measured by suppressing `view-transition-name` on the unnamed arm and asserting the suppression
-   actually applied before trusting any number — the first attempt injected the override too early,
-   `document.documentElement` was still null, and the two arms were silently identical. A delta of
-   −8 ms came back and it was measuring nothing. Read a Carry measurement that reports a *negative*
-   delta as a broken harness, not as a free transition.
-
-   The number is from this Windows machine over `astro preview`, not from CI and not from a phone. It
-   is a local comparison of two builds that differ in one declaration, which is what the threshold asks
-   for — "the same page and the same device class" — and it is not a claim about field LCP.
-
-**The Traverse** — the pointer moves a Plate's wide image beneath the cursor on `/`. The direction
-argues for it; this is how it is built.
-
-| | |
-| --- | --- |
-| vertical | `object-position` on the `<img>`, travelling the real Overscan: the wide file is cut **16:9** and shown **21:9**, leaving 23.8% of its height outside the box. No upscale |
-| horizontal | `transform: translate3d()` with a constant `scale(1.05)`. There is no sideways Overscan to travel — `cover` fits the file to the box by width — so the enlargement creates the slack and the translate spends it |
-| how far | `--reach: 25%` either side of the anchor, and `--sweep`, **derived** as `(--zoom - 1) * 50%`. Halved at review from a full sweep and a 10% zoom |
-| resting place | `--rest-y`, mapped from the Plate's own `framing` keyword in `src/layout.ts`. The travel is **relative to it** and `clamp()`ed to the file, so a Plate framed `bottom` moves up from its anchor and is never pushed past it |
-| driven by | `--py` and `--tx`, both **unitless −1..1**, set on the `<li class="plate">` on `pointermove` and inheriting down. The script carries no amplitude: halving the move did not touch it |
-| measured against | the `<picture>`. Not the `<img>`, whose rect is the transformed one, so the mapping would feed its output back into its input; and not the Plate, which on desktop is the image *plus* the 320px metadata column |
-| eased | `transition: object-position 0.4s ease-out, transform 0.4s ease-out`, so it follows the pointer rather than sticking to it |
-| gated | `(prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) and (min-aspect-ratio: 1 / 1)`, in the CSS; the first three in the script. The shape is not mirrored because in the mobile mode the image exactly fills its box and both properties are inert rather than wrong |
-| scope | `[data-reveal]` on the Plate itself, emitted by `src/pages/index.astro`. `Plate.astro` owns the geometry, not the binding |
-
-**It shipped on one axis and was unreachable.** Vertical-only, resting at the midpoint — and a cursor
-crosses a 21:9 band along it, not down it. A full-width horizontal sweep on the built page returned
-six samples of `50% 50%`, and a 40px vertical nudge moved the image 12px on a 961px-wide photograph.
-The review that reported "no hover effect" was reading the page correctly. **The lesson is about
-where an effect is reachable, not whether it is present:** every unit-level check passed the whole
-time, because each one drove the axis that worked.
-
-**The hover target is the whole Plate, and it has to be — this is not a reading of the vocabulary,
-it is forced.** The index gives each Plate one link whose `::after` covers the row, so a pointer over
-the image targets that `<a>` in the metadata column, never the `<picture>`. `.plate` is the one
-element both are inside, and events reach it by bubbling from either. That it also reads correctly —
-CONTEXT.md calls a Plate "a single unit", so the unit responds — is true and is not the reason.
-
-**The overlay needs `z-index: 1`, and finding out why cost a real bug.** Before it, the overlay
-covered the image and the image still took the click: the largest and most obviously clickable thing
-on the page did nothing, on desktop and on mobile, while the title and the summary worked. Confirmed
-with `elementsFromPoint` over the image centre, which returned `[IMG, A, PICTURE, .plate-media,
-.plate]` — the overlay present, and underneath.
+**The overlay needs `z-index: 1`.** Each Plate gets one link, on the title so its accessible name is
+the Project's name, with an `::after` covering the row so the whole thing is clickable without adding
+a second link to the same URL for a screen reader to read twice. Before the z-index, the overlay
+covered the image and **the image still took the click**: the largest and most obviously clickable
+thing on the page did nothing, on desktop and on mobile, while the title and the summary worked.
+Confirmed with `elementsFromPoint` over the image centre, which returned
+`[IMG, A, PICTURE, .plate-media, .plate]` — the overlay present, and underneath.
 
 The cause is **grid painting order**. Grid items paint as atomic units in document order (CSS Grid
 §6), and `.plate-media` follows `.plate-meta` in the DOM, so the later item painted over the earlier
@@ -417,25 +315,18 @@ item's positioned descendant. The DOM order is deliberate — it is the screen r
 Project name before Project picture — so the fix is the z-index, never a reorder. `.plate` also takes
 `isolation: isolate` so that z-index stays local.
 
-**This was found by clicking, not by reading.** A dispatched `pointermove` bypasses hit testing
-entirely and reports success on a target no real cursor can reach. Drive the Traverse and the Plate
-link with a real mouse, or the test is measuring the listener rather than the page.
+**This was found by clicking, not by reading.** A dispatched `pointermove` or synthetic click bypasses
+hit testing entirely and reports success on a target no real cursor can reach. Drive the Plate link
+with a real mouse, or the test is measuring the listener rather than the page.
 
-**The guards are stated twice and have to agree.** CSS cannot ask whether a listener bound, and the
-script cannot ask whether a rule applied. If the script attaches where the media query does not
-match, `--py` jumps with no transition; the reverse is merely inert. Change one, change the other.
+**There is no hover state on it, or on any link on the site.** `text-decoration: none` plus
+`base.css`'s `color: inherit`, and nothing else. On the gallery's Frame links the cursor is the
+affordance.
 
-**`--pan` is removed on `pointerleave`, never set back to a value.** The CSS fallback chain is
-`var(--pan, var(--rest-y, 50%))`, so deleting the property *is* the rest state and `framing` stays
-the single source of it. Writing the resting number into the script would be a second copy of the
-author's composition decision, in JavaScript, where nothing would ever check it.
+## The Expanded View
 
-**The cost is bytes and it lands off the gate's path.** The wide tier gains ~31% of its pixels;
-measured at 66.6 KB for the largest hero at the width a 1440x900 desktop fetches. The perf gate runs
-mobile, where the 4:5 crop is served and the wide tier is never requested — so **the gate's LCP number
-does not move, and that is not the same as the change being free.** Watch the desktop figure by hand.
-
-**The Expanded View** — one Frame at window size, over the page blurred back.
+One Frame at window size, over the page blurred back. This is a `<dialog>` and a `src` swap, not
+motion — it opens and closes instantly.
 
 | | |
 | --- | --- |
@@ -454,93 +345,14 @@ cannot see a keyboard trap.
 `::backdrop` recently and unevenly, and where they do not, `var(--ground)` resolves to nothing and the
 UA's own translucent black lands over a paper site. So the dialog is sized to the viewport, carries
 the ground itself, and `::backdrop` is cleared out from under it. A real element resolves the token in
-every engine.
+every engine. It is a static effect, either on or off with the dialog, which is why it survived the
+pass that removed the fade around it.
 
 **`showModal()` does not stop the page scrolling, and this was measured rather than assumed.** With
 the dialog open, one PageDown moved the document from 3233 to 4020 while the image stayed put, so a
 visitor closes the view and finds themselves somewhere else on the page. The fix is
 `html:has(dialog.expanded[open]) { overflow: hidden }`, which also makes the dialog's `100vw` exact:
 while the scrollbar is present, `100vw` includes it and the dialog overhangs. One rule, both problems.
-
-**What the script now costs.** Registration alone was 195 B gzip. All three behaviours together are
-**641 B gzip**, 1,315 B raw, still one inline block and still zero extra requests — 1.1% of ADR-0002's
-50 KB. The rule that mattered was one authored `<script>`, not one behaviour, and it is intact.
-
-### Two rules that are invisible until something breaks
-
-**Nothing on the first screen carries `data-anim`.** An element at `opacity: 0` or fully clipped is
-not an LCP candidate — [web.dev's LCP article](https://web.dev/articles/lcp) excludes "elements with
-an opacity of 0" — so animating the hero makes LCP wait for the script instead of the image decode.
-Registration is for content you scroll to. The perf gate will catch a violation, but only after it
-ships.
-
-**The hidden state is declared only inside `@media (prefers-reduced-motion: no-preference)`**, for
-Registration, the cross-fade, and the Carry alike. This is the reduced-motion design, not a
-formatting habit: under `reduce` the page is simply the finished document — verified in a real
-browser, computed `opacity: 1`, no transform, no clip, `transition-duration: 0s`, and
-`pagereveal.viewTransition` null on a real navigation. Do not rewrite any of them as a `reduce` block
-that turns things off. That form
-computes the animated path first and fails *toward* motion; this one fails toward stillness.
-
-### What each option costs
-
-Measured on this repo's real dependency graph (astro 7.2.0 / vite 8.2.1 / rolldown, gsap 3.15.0,
-motion 13.1.0), gzip level 6 — the unit `lighthouserc.cjs` asserts against 51,200 B. Kept here so
-the choice can be reopened with numbers instead of re-derived from scratch:
-
-| approach | gzip | requests | % of the 50 KB JS budget |
-| --- | --- | --- | --- |
-| **IntersectionObserver + CSS** (Registration alone) | **195 B** | **0 — inlined** | 0.4% |
-| `motion/mini` (`animate`) + IO | 3,187 B | 1 | 6.2% |
-| `motion` (`animate` + `inView` + `stagger`) | 21,755 B | 1 | 42.5% |
-| GSAP core alone | 27,297 B | 1 | 53.3% |
-| GSAP + ScrollTrigger | 44,205 B | 1 | 86.3% |
-| GSAP + ScrollTrigger + SplitText | 47,104 B | 1 | 92.0% |
-| Astro `ClientRouter` | 5,494 B | 1 | 10.7% |
-| Native CSS scroll-driven | 0 B | 0 | — cannot fire once |
-
-Whole substrate on the wire when that table was built: **+426 B gzip on the document** (2,938 →
-3,954 B raw, 1,230 → 1,656 B gzip), zero extra requests.
-
-**The 195 B row is the comparison basis, not today's shipped figure.** The same inline block now also
-carries the Traverse and the Expanded View, and measures **641 B gzip / 1,315 B raw — 1.1% of the
-budget**, still zero extra requests. The row is left as it was because it is what the libraries were
-priced against: every one of them replaces Registration and none of them would have made the other
-two smaller. Re-run the comparison against 641 B, not 195 B, if it is ever reopened.
-
-Three things that table doesn't show:
-
-- **An external file is a round trip.** Under the gate's `devtools` throttling every library
-  candidate costs 562.5 ms of latency before anything it reveals can paint, and lands *on* the LCP
-  Path — GSAP would spend ~44 KB of the ~240 KB the 2.5 s clock actually permits, for zero pixels.
-- **Native scroll-driven CSS is disqualified on capability, not support.** `animation-timeline:
-  view()` scrubs progress from scroll *position*, so it necessarily reverses on scroll back, and the
-  design direction requires fire-once. Firefox's absence is the second reason, not the first.
-- **`ClientRouter` is 13x the whole substrate** — 5,494 B against 426 B — on a site whose full page
-  loads measure 67-104 ms TTFB. Its one unique capability is `transition:persist` for live state, and v1 has none. Astro's
-  own docs say it "will increasingly become unnecessary" as the native API lands.
-
-### When to revisit
-
-Not a closed door, and not a budget ceiling to squeeze under — 50 KB of headroom is sitting unused.
-What rules a library out today is that the design has nothing for it to do:
-
-> Registration, not performance. Line-level only. Fires once and never re-triggers on scroll back.
-> Nothing parallaxes, and element-level Registration never scales. At most two elements animating at
-> a time.
-
-That is an entrance-reveal spec, and 195 B implements all of it. **Neither the Carry nor the two
-moves added after it change this answer.** The Traverse is one transitioned property and a
-`pointermove` that writes a percentage; the Expanded View is `showModal()` and a `src` swap. A
-library contributes nothing to either, and the second one is a browser primitive doing focus
-management no library should be reimplementing. It is one CSS declaration and a name derived from a slug; a library has nothing to
-contribute to it, and the fact that the browser does the interpolation is the whole reason it is
-affordable. Sequenced timelines, scrub-linked
-motion, physics, SVG morphing and line-splitting are all things GSAP does well and this design
-forbids — so the order is **amend `docs/design-direction.md` first, then pick the library the new
-design needs.** Never the reverse. At that point the candidate is `motion/mini` at 3.2 KB unless
-SplitText specifically is the thing you need, and the cost of being wrong is one PR: everything here
-is one attribute, one class and one observer.
 
 ## Enforcing the refusals
 

@@ -9,10 +9,10 @@
 import { EMAIL, LINKEDIN } from '../site';
 ---
 
-{/* No data-anim. The footer is on the first screen on /404 and on the current
-    placeholder /, and base.css:106 rules first-screen elements out of
-    Registration. Independently, CONTEXT.md scopes Registration to information
-    arriving — the footer is furniture that is simply present. */}
+{/* Nothing here enters, and two separate arguments say so should it ever be
+    proposed again: the footer is on the first screen on /404, which rules it out
+    on LCP grounds, and it is furniture that is simply present rather than
+    information arriving. Both are recorded in docs/motion.md. */}
 <footer class="t-spec">
   <a class="address" href={`mailto:${EMAIL}`}>{EMAIL}</a>
   {/* rel="me" pairs with the Person graph's sameAs on /. No target="_blank":
