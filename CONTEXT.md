@@ -48,6 +48,12 @@ move is a CSS change rather than a re-encode of every wide variant. Not a mistak
 not slack to be tightened.
 _Avoid_: bleed, margin, padding, slack, extra crop
 
+### Colour
+
+**Ground**:
+The colour the site is on, and the reference the ink, the rule and the muted tint are all derived from. There is one, it is dark, and the site ships no light alternative and no visitor-facing switch. Two grounds and a band that inverted between them were how the site was built until [ADR-0007](./docs/adr/0007-one-dark-ground.md); the terms *day* and *night* belong to that model and are not used.
+_Avoid_: background, theme, mode, dark mode, night, day, palette
+
 ### Site structure
 
 **Project**:

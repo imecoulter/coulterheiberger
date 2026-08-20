@@ -33,8 +33,9 @@ budget with no carve-out. It is not a precedent for a second authored script.
 **A component never hard-codes a value that a token names.** Write `var(--rule)`, not `#c9c6c0`.
 Write `var(--f-mono)`, not `'JetBrains Mono', …`.
 
-This is not tidiness — it is what makes the night band work. The band reassigns four properties and
-every component inside it inverts without knowing the band exists.
+This is not tidiness. It is what let the whole site's ground invert in [ADR-0007](./adr/0007-one-dark-ground.md)
+by editing two hex values in one file: no component knew which end of the axis it was on, so none of
+them had to change.
 
 ## Tokens
 
@@ -85,27 +86,29 @@ over-fetch. The file arrives through Vite's `?raw`, not `node:fs`: this module i
 `dist/.prerender/` before it runs, so `import.meta.url` resolves next to the *bundle* and the build
 dies with `ENOENT`.
 
-### The night band, and a trap
+### One band, and the trap that came with having two
 
-Exactly **one** night band per page (see the design direction). It is a class that reassigns tokens:
+**There is one Ground and it is declared once, on `:root`.** [ADR-0007](./adr/0007-one-dark-ground.md)
+inverted it and deleted the `.night` class that used to invert into it, so a second band is not
+something to add: it is something that was removed on purpose.
 
-```css
-.night {
-  --ground: #0e1114;
-  --ink: #e8e6e1;
+That deletion retired a trap worth knowing about anyway, because it will return the moment anyone
+reassigns `--ground` or `--ink` in a nested scope. A custom property is resolved at computed-value
+time *on the element that declares it*, then inherits as an already-resolved value. A `color-mix()`
+declared only on `:root` therefore bakes in `:root`'s ground and ink and does **not** re-derive
+further down. `.night` had to restate `--rule` and `--muted` for that reason alone; with the two lines
+removed, both bands computed `oklab(0.819525 …)` for `--rule`, putting the day-tinted hairline on the
+night ground. It looked correct in the editor and wrong in the browser.
 
-  /* These two MUST be restated. See below. */
-  --rule: color-mix(in oklab, var(--ink) 18%, var(--ground));
-  --muted: color-mix(in oklab, var(--ink) 58%, var(--ground));
-}
-```
+**So: if you ever scope the primaries again, restate every derived token in the same block.** The one
+Ground on `:root` has nothing below it to get this wrong, which is most of why it is one.
 
-**Do not "simplify" this by deleting the last two lines.** A custom property is resolved at
-computed-value time *on the element that declares it*, then inherits as an already-resolved value.
-A `color-mix()` declared only on `:root` therefore bakes in `:root`'s ground and ink and will **not**
-re-derive inside `.night`. Verified on the built page: with those lines removed, day and night both
-compute `oklab(0.819525 …)` for `--rule` — the day-tinted hairline on the night ground. It looks
-correct in the editor and wrong in the browser.
+### The ground is enforced
+
+`npm run check:css` **refuses `prefers-color-scheme` in site CSS by name**, alongside zero radius,
+zero shadow and `color: var(--signal)`. A light variant is one media query away otherwise, and it
+would leave no trace. `scripts/dev/build-favicons.mjs` is the one exemption and emits that query into
+an SVG deliberately: the favicon renders in the browser's tab strip, not on this site's ground.
 
 ## Type roles
 
