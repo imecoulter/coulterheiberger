@@ -189,6 +189,38 @@ export const bodySizes =
   `${WIDE_MODE} calc(100vw - ${GUTTER_LG * 2}px), ` +
   FULL_SM;
 
+/* ---- the portrait --------------------------------------------------------
+   `src/assets/portrait.jpg`, on the Masthead and on /about/ime/. Not a Rendered
+   Asset and not a Frame — see docs/asset-delivery.md §2 — but its `sizes` is
+   composed here for the reason every other one is: the attribute is HTML, it
+   cannot say var(--plate-meta), and a number written into the markup drifts
+   from the CSS silently.
+
+   IT IS THE SAME WIDTH IN BOTH PLACES, deliberately, so there is one string
+   rather than a pair that would have to be kept in step. The Masthead puts it
+   in the metadata column, which IS --plate-meta; /about/ime/ caps it at the
+   same token rather than picking a second size for a second page.
+
+   Below the mode switch the column is gone and the portrait sits in the stacked
+   arrangement at a fixed cap, NOT at the full content width: a face at 100vw is
+   the whole first screen on a phone, and it would take the LCP element off the
+   work and onto the author. The cap is stated in CSS and mirrored here. */
+const PORTRAIT_SM = 200;
+export const portraitSizes = `${WIDE_MODE} ${PLATE_META}px, ${PORTRAIT_SM}px`;
+
+/** Two rungs, and no more. The element is at most 320 px, so 640 covers 2x and
+    960 covers the 3x phones — a 1280 rung would only ever be fetched by a
+    display that does not exist at this size. The committed file is 1600 px
+    square (scripts/dev/build-portrait.mjs), so both are downscales.
+
+    THE TOP RUNG IS ALSO PASSED AS `width`, and that is not redundant. Without an
+    explicit width Astro sets the fallback `src` to the SOURCE size: the first
+    build of this emitted a 1600 px, 170 KB file as the src beside a 41 KB rung
+    nearly every browser actually takes. It is only reached by a client ignoring
+    srcset, which is exactly the client least able to afford it. */
+export const PORTRAIT_WIDTHS = [640, 960];
+export const PORTRAIT_WIDTH = PORTRAIT_WIDTHS[PORTRAIT_WIDTHS.length - 1];
+
 /** The Expanded View's source width (CONTEXT.md). Fetched only when a visitor
     opens a Frame, so it is Post-LCP Media by construction and behind a Gate —
     which is why it may be this much larger than anything the page lays out.

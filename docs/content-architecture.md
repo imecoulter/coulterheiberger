@@ -16,13 +16,30 @@ The governing rule, applied throughout: **if no page renders a field, the field 
 
 | Route | What it is |
 | --- | --- |
-| `/` | **The Project index itself.** A positioning line, then every Project |
+| `/` | **The Project index itself.** The Masthead, then every Project |
 | `/projects/<slug>/` | Project detail |
-| `/about/` | Bio, experience, capabilities, location, contact — one page |
+| `/about/ime/` | Bio, experience, capabilities, location, contact — one page |
 | `/404` | Keeps its `noindex` |
 | `/log/`, `/log/<slug>/` | Build Log. Shape decided in §3, **not built** |
 
 `/projects/` has no page of its own. Send it to `/` rather than letting it 404 — people truncate URLs.
+`/about/` and `/about` are the same case and get the same treatment, to `/about/ime/`.
+
+### Why the About page is at `/about/ime/` and not `/about/`
+
+This table said `/about/` until the page was built. **Owner call**, recorded here rather than applied
+silently: `ime` is the practice's own namespace and it already exists in two places a visitor can
+see — the contact address `ime@coulterheiberger.com` and the `rel="me"` pair it forms with the Person
+graph (`src/site.ts`). The route makes that namespace a place rather than only an address.
+
+The cost is real and it is the reason this needs writing down: **`ime` means nothing to someone who
+has not read the address**, so the guessable URL is `/about/`, and a bare `/about/` that 404s is a
+worse answer than either. Hence the two 301s above, both spellings, in `public/_redirects` beside the
+`/projects/` pair and for the same reason — a person truncating a URL does not reliably stop on the
+slash. **Exact paths, never a wildcard**: that file's header records what a `/projects/*` splat cost
+and why no local check caught it.
+
+`/about/ime/` is the canonical URL and the only one in the sitemap. Nothing links to `/about/`.
 
 **It is `public/_redirects`, not Astro's `redirects` config.** This document said the opposite until the
 Project routes were built, and the correction is recorded here rather than applied silently.
@@ -50,10 +67,18 @@ exist, and a landing page in front of a portfolio is a doormat. The work is the 
 Bio, experience, capabilities, location, and contact are one document about one person. Split across five
 routes they become five thin pages competing for the same visitor. Contact in particular is not a route.
 
-**`location` is listed here and rendered nowhere yet.** Nothing in the repo states a location, and the
-governing rule at the top of this file says a field nobody renders does not exist — so there is no
-`location` in any schema and no `address` in the Person graph on `/`. Both land when `/about/` does.
-Whoever builds that page: this is the line that says the field is wanted.
+**`location` has landed.** This paragraph used to say it was listed here and rendered nowhere, that
+the governing rule at the top of this file therefore kept it out of every schema, and that it would
+arrive with the About page. It has: `/about/ime/` states `Minneapolis, Minnesota`, and the Person
+graph on `/` now carries the matching `address` as a `PostalAddress`.
+
+It is still **not a frontmatter field anywhere**, and that is the point worth keeping. One page states
+one location in prose. A `location` in the Project schema would be the version this file cut in §4,
+for the reason given there.
+
+`worksFor` and `affiliation` are unaffected by this and are still never added — see ADR-0005 and the
+comment beside the graph in `src/pages/index.astro`. `address` says where the practice is; an
+organization edge would say whose it is, which the site does not claim.
 
 ### Contact: `mailto:` and a LinkedIn link, no form
 
@@ -330,9 +355,15 @@ JS, so it costs the LCP Path nothing, and the case-study Projects that arrive la
 components. One real cost: MDX parses JSX, so a bare `<` or `{` in body prose is a build error rather than a
 character.
 
-**The About page is `src/pages/about.mdx`** with a layout in frontmatter — not a collection, and not an
-`.astro` page. A single non-repeating document in a collection means a loader, a schema, and a `render()`
-call to serve one entry. Astro renders `.mdx` as a page directly.
+**The About page is `src/pages/about/ime.mdx`** with a layout in frontmatter — not a collection, and not
+an `.astro` page. A single non-repeating document in a collection means a loader, a schema, and a
+`render()` call to serve one entry. Astro renders `.mdx` as a page directly.
+
+**Its layout is `src/layouts/About.astro`, and that is not a second layout mechanism.** It wraps
+`Base.astro` and adds exactly what MDX cannot carry: the `<main>` shell and a scoped `<style>` block.
+The page's own content stays markdown, which is what MDX is for and why this file chose it. A page that
+put its structure in the `.mdx` would be JSX with prose in it, and the reason for the format would be
+gone.
 
 **No CMS, confirmed against the real shape.** Six flat fields and one array, in three files, with one
 author, no editorial workflow, and no publishing calendar. A CMS here would exist to edit six fields.

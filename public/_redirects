@@ -33,3 +33,14 @@
 # that resolves to an asset, and there is no asset here to resolve to.
 /projects/ / 301
 /projects / 301
+
+# The About page is at /about/ime/ — `ime` is the practice's own namespace, the
+# one already in the contact address. The consequence is that the URL a visitor
+# would GUESS is the one with no page on it, so both spellings of it are sent to
+# the real one. Reasoning in docs/content-architecture.md §1.
+#
+# EXACT PATHS HERE TOO, and the warning above is the whole reason to say so: a
+# `/about/* /about/ime/ 301` would match /about/ime/ itself and loop. Nothing
+# local would catch it.
+/about/ /about/ime/ 301
+/about /about/ime/ 301
