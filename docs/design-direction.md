@@ -105,17 +105,23 @@ the token mechanics.
 
 | role | value |
 | --- | --- |
-| ground | `#0E1114` |
+| ground | `#000000` |
 | ink | `#E8E6E1` |
 | signal | `#E3392C` |
 
-**The ground is not `#000`, and that is a measured refusal rather than a preference.** Pure black was
-asked for by name. It drops `--muted` to 4.09 against its 4.5 floor and flattens `--rule` to 1.09,
-so it costs an amendment to ADR-0003 and a visibly lighter specification line. It was declined on the
-images: the reference sites can afford `#000` because their grids are uniformly bright photography,
-and `not-unreal`'s hero is a greyscale collage **on pure black**, which on a pure-black page stops
-being an object and becomes a hole. Fourteen units of separation buys that Plate an edge for free.
-Full table and reasoning in [ADR-0007](./adr/0007-one-dark-ground.md).
+**The ground is pure black, and it moved the two derived tokens with it.** `--muted` is 63% ink and
+`--rule` is 30%, against the 58% and 18% the paper site ran for its whole life. Those are not new
+design decisions: they are the percentages that hold the *old* ratios on a darker ground, 4.96 against
+5.01 and 1.43 against 1.44. Only the ground actually moved. At the old percentages pure black puts
+`--muted` at **4.09** and fails the AA gate outright, which is why this is written down rather than
+adjusted.
+
+**What pure black costs is accepted, not solved.** The reference sites can afford `#000` because their
+grids are uniformly bright photography; this asset set is tonally split, and `not-unreal`'s hero is a
+greyscale collage **on pure black**, which on this ground has no boundary and reads as a hole rather
+than an object. That is a judgement to make rendered, in the visual review pass, not one to argue from
+a table. Full reasoning and the intermediate ground that was proposed and rejected:
+[ADR-0007](./adr/0007-one-dark-ground.md).
 
 **Signal red survives on the focus ring, and nowhere else.** That is one selector on the whole site,
 `:focus-visible` in `base.css`, and it is on screen only while somebody is navigating by keyboard.
@@ -132,9 +138,9 @@ affordance that has to be unmistakable, and it is the reason `--signal` is asser
 than 4.5:1 and refused in a `color:` declaration by name. Nothing here relaxes that, and a future use
 of signal on a surface is a change to this table, not a styling decision.
 
-`--rule` (18% ink) and `--muted` (58% ink) are derived rather than picked, at 1.44 and 5.01 on this
-ground. The originally hand-picked pair was `#2A2F35` / `#8B9098`; the derivation lands within
-delta 5–11 of it, and departs deliberately on muted, which derives neutral rather than that cool
+`--rule` (30% ink) and `--muted` (63% ink) are derived rather than picked, at 1.43 and 4.96 on this
+ground. The originally hand-picked pair for a dark band was `#2A2F35` / `#8B9098`; the derivation
+stays close to it and departs deliberately on muted, which derives neutral rather than that cool
 blue-grey. The cool cast was an undocumented fourth colour decision, and it was dropped for the same
 reason the registration marks were.
 

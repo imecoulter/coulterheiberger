@@ -46,8 +46,13 @@ Three primaries. Everything else derives or is a scale.
 | `--ground` | the surface |
 | `--ink` | text on the surface |
 | `--signal` | registration red: the `:focus-visible` outline, and nothing else. See the design direction for what it stopped being. |
-| `--rule` | derived — hairline, `color-mix` 18% ink into ground |
-| `--muted` | derived — secondary text, `color-mix` 58% ink into ground |
+| `--rule` | derived — hairline, `color-mix` 30% ink into ground |
+| `--muted` | derived — secondary text, `color-mix` 63% ink into ground |
+
+**Those two percentages are load-bearing and were 18% and 58% on the paper site.** They moved with the
+ground in [ADR-0007](./adr/0007-one-dark-ground.md), and they moved *to hold their old ratios*: on
+pure black, 58% ink measures 4.09 and fails the AA gate, while 63% restores 4.96 against the 5.01 the
+design has always had. `--muted` is an asserted invariant in `check-css.mjs`, not a tuning knob.
 
 `--rule` and `--muted` are tints on the ground/ink axis, so a context that flips the two primaries
 gets a coherent pair for free.

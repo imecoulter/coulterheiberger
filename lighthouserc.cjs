@@ -100,10 +100,15 @@ module.exports = {
         // ---- accessibility (issue #35, ADR-0003) --------------------------
         //
         // WCAG AA is the named target. AAA was priced and REFUSED on design
-        // fit, not skipped: 7:1 needs ~69% ink (day) / 70% (night) against
-        // today's 58%, a visibly darker specification line. "Never considered"
-        // and "considered and refused" read identically in a config file, and
-        // only one is true here — the ADR says which.
+        // fit, not skipped: 7:1 needs ~70% ink against today's 63%, a visibly
+        // lighter specification line. "Never considered" and "considered and
+        // refused" read identically in a config file, and only one is true
+        // here — the ADR says which.
+        //
+        // 63%, not the 58% this comment carried for the life of the paper site:
+        // --muted moved with the Ground in ADR-0007, because on pure black 58%
+        // measures 4.09 and fails AA outright. The percentage moved to hold the
+        // ratio, not to relax it.
         //
         // Gated at `error`, like every other check in deploy.yml. A `warn` row
         // gets read once and never again.

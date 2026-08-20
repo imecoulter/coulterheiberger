@@ -4,8 +4,9 @@
  * accessibility bar, over the BUILT css.
  *
  *   1. zero border-radius, zero box-shadow      (docs/design-direction.md)
- *   2. --muted >= 4.5:1 and --signal >= 3:1 on the ground, in BOTH bands
+ *   2. --muted >= 4.5:1 and --signal >= 3:1 on the ground
  *   3. --signal never appears in a `color:` declaration
+ *   4. no prefers-color-scheme: one Ground, dark    (docs/adr/0007-one-dark-ground.md)
  *
  * Built output, not source, because that is the only place the question is
  * actually settled — a value can arrive from a component, a dependency, or a
@@ -63,7 +64,7 @@ function declarations(css, prop) {
    Deliberately NOT quantised to 8 bits before computing luminance. WCAG 2.x
    defines relative luminance over 8-bit channels, so quantising is arguably the
    more literal reading — it was tried, and it moves --muted by at most 0.02
-   (night 5.01 -> 4.99) and --rule by 0.01. Nothing here turns on it, and the
+   (5.01 -> 4.99 on the old ground) and --rule by 0.01. Nothing here turns on it, and the
    continuous form is what color-mix() actually computes. Recorded so the next
    reader knows the question was asked rather than missed.
 
@@ -113,35 +114,35 @@ function contrast(a, b) {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-/* ---- token bands ----------------------------------------------------------
-   Two bands: `:root` (day) and `.night`. Night is day overlaid with .night's
-   own declarations, which is the cascade the page actually gets.
+/* ---- the token band -------------------------------------------------------
+   ONE BAND, `:root`, because the site has one Ground (ADR-0007). This function
+   read two — `:root` (day) and a `.night` class — until that ADR inverted the
+   ground and deleted the second. The two-band machinery is NOT kept warm for a
+   future band: a second Map that never populates passes every assertion below
+   silently, which is worse than not checking at all.
 
-   WHICH BAND DECLARED A TOKEN IS TRACKED, and a color-mix() resolves against
-   the primaries of ITS OWN declaring band — not the band being evaluated. That
-   is not pedantry, it is the whole point: a custom property resolves at
-   computed-value time on the element that declares it, so a color-mix() left
-   only on :root bakes in :root's ink/ground and does NOT re-derive under
-   .night (tokens.css:54-61, verified on the built page in issue #11). Modelling
-   it any other way would compute the value we WANT and bless the exact
-   regression tokens.css warns about — deleting the two restated lines would
-   sail through. Modelled this way, deleting them drops night --muted onto the
-   night ground as a day-tinted grey and this check fails, which is correct. */
+   THE DECLARING SCOPE IS STILL TRACKED on every token, and that is not vestigial.
+   A color-mix() must resolve against the primaries of the scope that DECLARED it,
+   because a custom property resolves at computed-value time on its own element
+   and then inherits already-resolved — so a mix left on :root bakes in :root's
+   ink/ground and does not re-derive further down. That trap is what forced the
+   old `.night` block to restate --rule and --muted (verified on the built page,
+   issue #11). One band has nothing below it to get this wrong; the structure
+   stays so that reintroducing a scoped band cannot quietly get it wrong either.
+   See docs/styling.md. */
 function bands(css) {
-  const day = new Map();
-  const night = new Map();
+  const root = new Map();
 
   // Innermost rule bodies only: `[^{}]*` cannot span a nested block, so an
   // at-rule wrapper is skipped and its inner `:root{...}` is what matches.
   for (const [, prelude, body] of css.matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
     const selectors = prelude.split(',').map((s) => s.trim());
-    const target = selectors.includes(':root') ? day : selectors.includes('.night') ? night : null;
-    if (!target) continue;
+    if (!selectors.includes(':root')) continue;
     for (const [, name, value] of body.matchAll(/(--[\w-]+)\s*:\s*([^;}]+)/g)) {
-      target.set(name, value.trim());
+      root.set(name, value.trim());
     }
   }
-  return { day, night };
+  return root;
 }
 
 /**
@@ -179,14 +180,21 @@ function resolve(name, band, seen = new Set()) {
    --muted: 4.5:1. It is the colour of .t-label and .t-spec, which are 11-12px —
    small text, so the 3:1 large-text exemption does not apply and was explicitly
    refused (issue #35): .t-spec is the design's most characteristic element and
-   exempting it exempts the thing people squint at. 58% ink measures 4.90 (day) /
-   5.01 (night); the floor for 4.5:1 is 56% / 55%, so there are two points of
-   margin. Moving --muted below that is a design change, not a tuning knob.
+   exempting it exempts the thing people squint at. 63% ink measures 4.96 on the
+   Ground and the floor for 4.5:1 is 61%, so there are two points of margin.
+   Moving --muted below that is a design change, not a tuning knob.
 
-   --signal: 3:1. It is the :focus-visible outline (base.css:32-35) and nothing
-   else — a non-text UI component under WCAG 2.2 SC 1.4.11. It measures 3.77
-   (day) / 4.41 (night) and FAILS 4.5:1, which is why the `color:` refusal below
-   exists and why this floor is 3 and not 4.5.
+   63% IS NOT THE HISTORICAL NUMBER, AND THE DIFFERENCE IS THE GROUND (ADR-0007).
+   --muted was 58% for the whole life of the paper site. On a pure black ground the
+   4.5:1 floor moves from 55% to 61%, so 58% lands at 4.09 and FAILS. 63% holds the
+   ratio the design has always had — 4.96 against 5.01 — with the same margin
+   ADR-0003 chose 58% for. It is a percentage tuned to keep the rendered grey
+   constant across a change of ground, not a relaxation of anything.
+
+   --signal: 3:1. It is the :focus-visible outline (base.css) and nothing else —
+   a non-text UI component under WCAG 2.2 SC 1.4.11. It measures 4.89 on the
+   Ground and FAILS 4.5:1, which is why the `color:` refusal below exists and why
+   this floor is 3 and not 4.5.
 
    --rule is deliberately absent. It is a ~1.5:1 hairline by design; a floor
    there would be a number with no authority behind it. Do not add one because
@@ -223,46 +231,58 @@ for (const { file, css } of sources) {
       violations.push({ file, prop: 'color (--signal is not a text colour)', ...d });
     }
   }
+  // ONE GROUND, AND IT IS DARK (ADR-0007). Refused by NAME rather than by
+  // asserting some property of the result, for the same reason --signal is: a
+  // value assertion cannot see intent, and "just a light variant" is one media
+  // query away and leaves no trace in the design docs.
+  //
+  // scripts/dev/build-favicons.mjs emits this query too, deliberately, and is
+  // out of reach here on purpose — it writes an SVG, not site CSS, and the
+  // favicon renders in the browser's tab strip rather than on this ground.
+  for (const m of css.matchAll(/prefers-color-scheme\s*:\s*[\w-]+/gi)) {
+    const start = Math.max(0, m.index - 60);
+    violations.push({
+      file,
+      prop: 'prefers-color-scheme (the site has one Ground)',
+      value: m[0],
+      context: css.slice(start, m.index + m[0].length).trim(),
+    });
+  }
 }
 
 /* Contrast is a property of the token set, not of each file, so it is computed
    once over all built CSS concatenated rather than per source. */
 const allCss = sources.map((s) => s.css).join('\n');
-const { day, night } = bands(allCss);
+const root = bands(allCss);
 
-if (day.size === 0) {
+if (root.size === 0) {
   console.error('check:css — no `:root` custom properties found in built CSS. Refusing to pass.');
   process.exit(1);
 }
 
-// Attach the declaring band to every token, then build night as day overlaid.
-const dayBand = new Map();
-for (const [k, v] of day) dayBand.set(k, { value: v, from: dayBand });
-const nightBand = new Map(dayBand);
-for (const [k, v] of night) nightBand.set(k, { value: v, from: nightBand });
+// Attach the declaring scope to every token — see bands() for why resolve()
+// needs it even with a single band.
+const band = new Map();
+for (const [k, v] of root) band.set(k, { value: v, from: band });
+
+let ground;
+try {
+  ground = resolve('--ground', band);
+} catch (err) {
+  console.error(`check:css — cannot resolve --ground: ${err.message}`);
+  process.exit(1);
+}
 
 const ratios = [];
-for (const [bandName, band] of [
-  ['day', dayBand],
-  ['night', nightBand],
-]) {
-  let ground;
+for (const { token, min, role } of FLOORS) {
+  let ratio;
   try {
-    ground = resolve('--ground', band);
+    ratio = contrast(resolve(token, band), ground);
   } catch (err) {
-    console.error(`check:css — cannot resolve --ground in the ${bandName} band: ${err.message}`);
+    console.error(`check:css — cannot resolve ${token}: ${err.message}`);
     process.exit(1);
   }
-  for (const { token, min, role } of FLOORS) {
-    let ratio;
-    try {
-      ratio = contrast(resolve(token, band), ground);
-    } catch (err) {
-      console.error(`check:css — cannot resolve ${token} in the ${bandName} band: ${err.message}`);
-      process.exit(1);
-    }
-    ratios.push({ bandName, token, ratio, min, role });
-  }
+  ratios.push({ token, ratio, min, role });
 }
 
 const failed = ratios.filter((r) => r.ratio < r.min);
@@ -271,7 +291,8 @@ if (violations.length > 0 || failed.length > 0) {
   if (violations.length > 0) {
     console.error(
       `check:css — ${violations.length} violation(s) of the design direction's hard rules.\n` +
-        `Datum ships zero radius and zero shadow, and --signal is never text.\n` +
+        `Datum ships zero radius and zero shadow, --signal is never text, and the\n` +
+        `site has ONE Ground with no light alternative.\n` +
         `If that is genuinely changing, amend docs/design-direction.md first —\n` +
         `do not weaken this check.\n`,
     );
@@ -288,7 +309,7 @@ if (violations.length > 0 || failed.length > 0) {
     );
     for (const f of failed) {
       console.error(
-        `  ${f.token} on --ground (${f.bandName})\n` +
+        `  ${f.token} on --ground\n` +
           `    ${f.ratio.toFixed(2)}:1, needs ${f.min}:1 — ${f.role}\n`,
       );
     }
@@ -297,6 +318,8 @@ if (violations.length > 0 || failed.length > 0) {
 }
 
 const blocks = sources.length;
-const table = ratios.map((r) => `${r.token}/${r.bandName} ${r.ratio.toFixed(2)}`).join(', ');
-console.log(`check:css — ok. ${blocks} stylesheet(s)/inline block(s), 0 radius, 0 shadow.`);
+const table = ratios.map((r) => `${r.token} ${r.ratio.toFixed(2)}`).join(', ');
+console.log(
+  `check:css — ok. ${blocks} stylesheet(s)/inline block(s), 0 radius, 0 shadow, one Ground.`,
+);
 console.log(`check:css — contrast ok. ${table}.`);

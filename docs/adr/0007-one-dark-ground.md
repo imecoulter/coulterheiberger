@@ -27,44 +27,58 @@ Nothing else in Datum depends on which end of the axis the ground sits at. That 
 amendment: it changes two hex values and the argument for them, and every other decision in the
 document survives the change unread.
 
-## The ground is `#0E1114` and not `#000`
+## The ground is `#000`, and it moved two derived tokens with it
 
-**Pure black was asked for by name and it was measured before it was refused.** Computed through the
-same OKLab mix → sRGB → WCAG path `scripts/check-css.mjs` uses:
+**`#0E1114` was proposed first, priced, and rejected by the owner in favour of pure black.** The
+intermediate ground is recorded here because it was genuinely the recommendation and the reasons
+against pure black are real: they are now accepted costs rather than open questions.
 
-| token | on `#0E1114` | on `#000000` |
-| --- | ---: | ---: |
-| `--ink` `#E8E6E1` | 15.18 | 16.84 |
-| `--muted` (58% ink) | **5.01** ✅ | **4.09** ❌ |
-| `--rule` (18% ink) | 1.44 | 1.09 |
-| `--signal` `#E3392C` | 4.41 ✅ | 4.89 ✅ |
-| the 4.5:1 floor for `--muted` | 55% ink | **61% ink** |
+Computed through the same OKLab mix → sRGB → WCAG path `scripts/check-css.mjs` uses:
 
-**Pure black fails the gate that [ADR-0003](./0003-accessibility-bar.md) pinned.** `--muted` is the
-colour of `.t-spec` and `.t-label` — the specification line, 11 to 12 px, the design's most
-characteristic element — and on `#000` it lands at 4.09 against a 4.5 floor. ADR-0003 was explicit
-that this is a CI failure and not a judgement call, and that if `--muted` genuinely needs to move,
-*that ADR changes first*.
+| token | on `#0E1114` | on `#000000`, tokens unchanged | **as shipped on `#000000`** |
+| --- | ---: | ---: | ---: |
+| `--ink` `#E8E6E1` | 15.18 | 16.84 | **16.84** |
+| `--muted` | 5.01 (58%) ✅ | **4.09** (58%) ❌ | **4.96** (63%) ✅ |
+| `--rule` | 1.44 (18%) | 1.09 (18%) | **1.43** (30%) |
+| `--signal` `#E3392C` | 4.41 ✅ | 4.89 ✅ | **4.89** ✅ |
+| the 4.5:1 floor for `--muted` | 55% ink | 61% ink | 61% ink |
 
-So pure black was available at a price: move `--muted` to 61 or 62% ink, amend ADR-0003, and lift
-`--rule` well above 18% as well, because 18% mixed toward pure black resolves to `#0F0F0E` — four
-values off the ground, which is not a hairline, it is nothing.
+**Pure black is not a one-value change, and shipping it as one would have failed CI.** `--muted` is
+the colour of `.t-spec` and `.t-label`, the specification line at 11 to 12 px, and on `#000` at its
+long-standing 58% it lands at **4.09** against a 4.5 floor. [ADR-0003](./0003-accessibility-bar.md)
+was explicit that this is a CI failure rather than a judgement call, and that if `--muted` genuinely
+needs to move, that decision gets written down first. This is that writing down.
 
-**It was declined, and the reason is about the images rather than the numbers.** Luxigon and Brick can
-afford `#000` because every image in those grids is bright daylight photography, so black is always
-the recessive value. This site's asset set is tonally split: `atmosphere` leads on a high-key
-white-walled interior, and **`not-unreal`'s hero is a greyscale collage on pure black with stars in
-it.** On a pure-black page that Plate stops being an object and becomes a hole in the layout. Fourteen
-units of separation is what gives a black-ground image an edge for free, with no new furniture and no
-border.
+**`--muted` moves 58% → 63%.** 63 is chosen so the rendered grey barely moves: 4.96 against the 5.01
+it has always had, while sitting two points above the new 61% floor — the same margin ADR-0003 picked
+58% for on the old one. **`--rule` moves 18% → 30%**, because 18% mixed toward pure black resolves to
+`#0F0F0E`, four values off the ground, which is not a hairline but an absence. 30% restores 1.43
+against the old 1.44.
 
-That is worth stating plainly because it inverts a trade ADR-0003 already made once. There, AAA was
-declined because it would have made the specification line *darker* in the one place this design is
-most itself. Here the same line would have gone *lighter* for the same reason, and it is declined the
-same way: on design fit, having been priced.
+**So both tokens look the same as they always did.** Only the ground moved. That is the property
+worth preserving and it is why the two numbers are ugly: they are the values that hold the
+appearance constant across a change of ground, not round numbers someone liked.
 
-`--rule` at 18% and `--muted` at 58% therefore **do not move**. Both were measured on the new ground
-before it was chosen, and both pass unchanged.
+### What pure black costs, accepted rather than solved
+
+**The dark Plates lose their edge.** This asset set is tonally split in a way the reference sites' are
+not: Luxigon and Brick can afford `#000` because every image in those grids is bright daylight
+photography, so black is always the recessive value. Here `atmosphere` leads on a high-key
+white-walled interior, while **`not-unreal`'s hero is a greyscale collage on pure black with stars in
+it.** On `#000` that Plate has no boundary at all; it stops being an object on the page and becomes a
+hole in it. `#0E1114` would have bought it an edge for free, with no border and no new furniture.
+
+This is **accepted, not fixed.** It is exactly the kind of thing that has to be judged rendered rather
+than argued, and the ground-inversion commit is followed by a visual review pass on the same branch.
+If that Plate reads as a hole, the fix is a decision about that Plate — a different crop, a different
+hero — or a hairline on Plates generally, which would be new furniture and a change to
+`design-direction.md`. It is deliberately **not** a reason to walk the ground back up to `#0E1114`
+without saying so here.
+
+**It also inverts a trade ADR-0003 already made once.** There, AAA was declined because 69% ink would
+make the specification line visibly lighter in the one place this design is most itself. 63% is a
+smaller step in that same direction, taken for a different reason, and it is worth naming that the
+line is now marginally lighter than the design has ever shipped it.
 
 ## Dark-only, and enforced by name
 
@@ -124,7 +138,7 @@ band and the trap has nothing to trap.
 ## `--signal` is unchanged
 
 `#E3392C` stays, on the `:focus-visible` outline and nowhere else, at its asserted 3:1 floor. It
-measures **4.41** on the new ground, with more room than the 3.77 it had on paper.
+measures **4.89** on the new ground, with considerably more room than the 3.77 it had on paper.
 
 Red on near-black is the signature of the cinematic-chrome cluster Datum is built to be
 distinguishable from, and that objection was raised and does not apply: signal is on screen only while
@@ -150,10 +164,10 @@ can be, and the focus ring is the one affordance that has to be unmistakable.
 - **The Expanded View needed no change.** `src/pages/projects/[slug].astro` tints it with
   `color-mix(in oklab, var(--ground) 82%, transparent)`, so it follows the token. Its in-file comment
   warns about the UA's own translucent black landing over a paper site, and that hazard retires here.
-- **`--rule` and `--muted` get a look on a built page.** Both pass their gates and neither moves in
-  this change, but a hairline at 1.44 behaves differently as light-diluted-toward-dark than it did as
-  ink-diluted-toward-white, and no number settles that. Recorded as **deferred**, not as decided, so
-  "18% unchanged" is not later misread as a judgement someone made.
+- **`--rule` and `--muted` are asserted invariants at their new percentages**, the way 58% was. Both
+  were tuned to hold their old ratios rather than to a round number, and both still want a look on a
+  built page: a hairline behaves differently as light-diluted-toward-black than it did as
+  ink-diluted-toward-white, and no ratio settles that.
 - **The asset set gets a second look after the flip.** JPEG banding in dark gradients is invisible on
   paper and not on a dark ground, and `not-unreal`'s edge wants confirming at fourteen units rather
   than assuming. Any fix goes through `npm run assets`, never by hand.
@@ -181,3 +195,7 @@ Recorded here rather than by editing that ADR, which is a dated record of what w
   tokens before they render where Lighthouse reads pages after, and that difference is untouched.
 - **The accessibility bar itself is unchanged.** WCAG AA, gated at `error`, `--muted` at 4.5:1,
   `--signal` at 3:1 and never a text colour, the large-text exemption still refused by name.
+- **`--muted` moved, and ADR-0003 said that requires a decision written down first.** This ADR is it.
+  What moved is the *percentage* (58 → 63) needed to hold the same ratio on a darker ground, not the
+  floor and not the bar. Its section "Contrast: the token did not move" is now historical: the token
+  did move, for a reason that ADR did not have in front of it.
