@@ -77,11 +77,23 @@ export ratios sends you back into the toolchain when the design moves.
 
 Repo weight lands at roughly 1.2–2.0 MB per committed asset depending on render noise.
 
-**This document, and `npm run assets`, cover Rendered Assets only.** The site-wide Social Card
-(`src/assets/social-card.jpg`) is not one: it has no master, it is built from committed fonts by
-`scripts/dev/build-social-card.mjs`, and §3's ritual would refuse it outright at the 3200 px minimum.
-It is still graded by §4, because §4 reads every tracked image under `src/` and the card conforms to
-§2's format, colour and size rules by construction. See `docs/content-architecture.md` §6.
+**This document, and `npm run assets`, cover Rendered Assets only.** Two committed images under `src/`
+are not Rendered Assets, and neither goes through §3's ritual:
+
+- **The site-wide Social Card** (`src/assets/social-card.jpg`). It has no master, it is built from
+  committed fonts by `scripts/dev/build-social-card.mjs`, and §3's ritual would refuse it outright at
+  the 3200 px minimum. See `docs/content-architecture.md` §6.
+- **The portrait** (`src/assets/portrait.jpg`), on the Masthead and on `/about/ime/`. It is a
+  photograph, and `CONTEXT.md` scopes a Rendered Asset to "visual output produced offline in a 3D
+  authoring toolchain" — so §1's render preset has nothing to say about it, and §3 would put it in
+  `src/content/projects/<slug>/`, which would make the person a Project. Built by
+  `scripts/dev/build-portrait.mjs` from an uncommitted master that does not live in `.render-drop/`
+  either, because there is no preset behind it.
+
+**Both are still graded by §4**, because §4 reads every tracked image under `src/` by magic bytes, and
+both conform to §2's format, colour and size rules by construction. The portrait in particular is
+produced through the same encode as a Rendered Asset — including the `pipelineColourspace('srgb')`
+call §3 explains — precisely so that being outside the ritual costs it none of the guarantees.
 
 ### Naming and roles
 
