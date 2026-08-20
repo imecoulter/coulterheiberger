@@ -54,6 +54,10 @@ _Avoid_: bleed, margin, padding, slack, extra crop
 A single piece of work presented on the site: a real-time system, a rendered sequence, an interactive build. A Project may include Rendered Assets and may — but usually does not — include an Exhibit.
 _Avoid_: work, piece, case study, entry
 
+**Masthead**:
+The site's own identity block, at the head of the index and above the first Plate: who the practice is, what it does, and the practice's own specification line. Deliberately **not** a Plate — it holds no Project and enters no metadata contract — but it is measured against the same datum, because a specification line is what the datum is. It borrows the Plate's two-column grid with the columns swapped, so the text sits where an image would and the two share a left edge without being the same kind of object.
+_Avoid_: about card, bio, hero, intro, banner, plate
+
 **Plate**:
 A Project as it is presented: one image and one specification line, a single unit. Every piece of work on the site is a Plate under an identical metadata contract, so plates differ in subject rather than in status. The index and the detail page show the same Plate in two presentations, not two different objects.
 _Avoid_: card, tile, thumbnail, item, hero

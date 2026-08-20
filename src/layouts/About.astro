@@ -1,0 +1,225 @@
+---
+/* The shell for /about/ime/.
+
+   IT WRAPS Base.astro RATHER THAN REPLACING IT, and it is not a second layout
+   mechanism. docs/content-architecture.md §5 puts the About page in MDX so its
+   content stays markdown; what MDX cannot carry is a <main> shell and a scoped
+   <style> block, and that is the entire contents of this file. A page that put
+   its structure in the .mdx would be JSX with prose in it, and the reason for
+   choosing the format would be gone.
+
+   No other page needs one: `/` and `/projects/<slug>/` are .astro and hold their
+   own. This exists because exactly one page on the site is markdown. */
+import { Picture } from 'astro:assets';
+import Base from './Base.astro';
+import portrait from '../assets/portrait.jpg';
+import {
+  portraitSizes,
+  PORTRAIT_WIDTH,
+  PORTRAIT_WIDTHS,
+  FRAME_FORMATS,
+  FRAME_FALLBACK,
+} from '../layout';
+
+/* THE FRONTMATTER ARRIVES UNDER `frontmatter`, NOT AS TOP-LEVEL PROPS, and the
+   difference fails silently. A layout used by an .mdx page gets one object:
+   `Astro.props.frontmatter`. Destructuring `title` off `Astro.props` directly —
+   which is what a layout used by an .astro page would do — yields undefined,
+   Base.astro renders `<title>undefined</title>`... except it does not even do
+   that: it renders an EMPTY <title>, the page keeps its meta description and its
+   canonical, and it looks completely normal.
+
+   Caught by `document-title` in lighthouserc.cjs, which is exactly why that list
+   names ten audits rather than leaning on the category score. Nothing in the
+   build, in `astro check`, or on the rendered page said a word. */
+interface Props {
+  frontmatter: {
+    title: string;
+    description: string;
+  };
+}
+
+/* The layout adds no metadata of its own — the Social Card, the canonical, and
+   the robots tag are all Base.astro's, and a second place deciding any of them
+   is how two mechanisms start drifting. */
+const { title, description } = Astro.props.frontmatter;
+---
+
+<Base title={title} description={description}>
+  <main>
+    {/* h1 AT --t-h2, NOT --t-h1. tokens.css is explicit: h1 is the site's name
+        on `/` and appears once, h2 is a page's own title. `/projects/<slug>/`
+        resolves the same tension the same way, and this copies it rather than
+        inventing a second answer. The element is still an h1 because it is this
+        document's heading; only the size role differs. */}
+    <h1>Coulter Heiberger</h1>
+
+    {/* ADR-0005 again, and this is the page the ADR names: "the phrase any
+        future About page leads with". Unqualified. */}
+    <p class="t-label role">Technical Artist</p>
+
+    {/* NOT `priority`, and not eager. It sits below the heading, so on a phone
+        the h1 paints first and this is not the LCP element — which is the
+        text-LCP regime docs/precedents.md found every fast site in the
+        precedent set to be in. Verified under `npm run budget`, not assumed. */}
+    <Picture
+      class="portrait"
+      src={portrait}
+      alt="Coulter Heiberger, smiling, in glasses and a light blue collared shirt against a warm stucco wall."
+      width={PORTRAIT_WIDTH}
+      height={PORTRAIT_WIDTH}
+      widths={PORTRAIT_WIDTHS}
+      sizes={portraitSizes}
+      formats={FRAME_FORMATS}
+      fallbackFormat={FRAME_FALLBACK}
+      loading="lazy"
+      decoding="async"
+    />
+
+    <div class="prose">
+      <slot />
+    </div>
+  </main>
+</Base>
+
+<style>
+  /* ONE DATUM EDGE, and one column. `/projects/<slug>/` argues this at length:
+     everything on the page starts on the same left edge and only the right
+     edges vary. That page has a full-shell hero above its column; this one has
+     no hero at all, so it is the column and nothing else. */
+  main {
+    max-width: var(--measure-page);
+    margin-inline: auto;
+    padding: var(--rhythm) var(--gutter);
+  }
+
+  h1 {
+    font-size: var(--t-h2);
+    line-height: 1.02;
+    max-width: var(--body-col);
+  }
+
+  .role {
+    margin: 20px 0 0;
+  }
+
+  /* The same cap as the Masthead's, from the same token, fetched at the same
+     widths. Two presentations of one image at one size — see portraitSizes in
+     src/layout.ts for why there is one string rather than a pair. */
+  main :global(picture) {
+    display: block;
+    margin-top: 40px;
+  }
+
+  :global(.portrait) {
+    width: 200px;
+    aspect-ratio: 1;
+    object-fit: cover;
+  }
+
+  /* Both conditions, for the reason index.astro spells out on the Masthead's
+     copy of this rule: the mode switch is a shape, so a landscape phone reaches
+     the wide branch at 844 px wide and a 320 px face there is out of proportion
+     to the column beside it. Same boundary, same token. */
+  @media (min-aspect-ratio: 1 / 1) and (min-width: 1200px) {
+    :global(.portrait) {
+      width: var(--plate-meta);
+    }
+  }
+
+  .prose {
+    margin-top: var(--rhythm);
+    max-width: var(--body-col);
+  }
+
+  /* ---- markdown, styled through :global() ---------------------------------
+     Astro scopes styles by attribute, and nothing inside <slot /> carries this
+     component's attribute — the MDX renders in the page's scope, not the
+     layout's. So every rule reaching the content is :global(), confined by the
+     .prose ancestor. This is the same mechanism `/projects/<slug>/` uses for
+     the <Picture> elements inside its gallery links.
+
+     NO NEW TYPE ROLE AND NO NEW SIZE. h2 takes --t-h3, which is the Plate
+     title's size on `/`; everything else is the serif body default or one of
+     the two mono classes. Six styles, unchanged. */
+  .prose :global(h2) {
+    margin: var(--rhythm) 0 0;
+    font-size: var(--t-h3);
+    line-height: 1.1;
+  }
+
+  .prose :global(h2:first-child) {
+    margin-top: 0;
+  }
+
+  /* NO COLOUR. This was --muted for one draft, which put the practice prose —
+     the primary content of the page — in the secondary colour while the
+     experience list beside it sat in --ink, so the eye went to the dated rows
+     rather than to the writing. `/projects/<slug>/` sets the pattern: the lede
+     is --muted and the body prose is the inherited --ink. There is no lede
+     here, so there is nothing to demote. */
+  .prose :global(p) {
+    margin: 20px 0 0;
+  }
+
+  /* The dated lists: experience and education. A rule per row rather than a
+     bullet, because the site has no bullet and adding one would be a mark it
+     does not otherwise use. The rule is --rule, the same hairline the fact
+     block on a Project page separates itself with. */
+  .prose :global(ul) {
+    list-style: none;
+    margin: 24px 0 0;
+    padding: 0;
+  }
+
+  .prose :global(li) {
+    padding: 16px 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  .prose :global(li:last-child) {
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* The year sits above its line in mono, the line reads in serif. Authored in
+     the MDX as <span class="t-spec">, so the markdown stays markdown and the
+     type role is the site's own rather than a fourth thing invented here. */
+  .prose :global(li .t-spec) {
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  /* Capabilities. The same <dl> shape as the fact block on a Project page,
+     because it is the same object: a short label over a value, several across.
+     Not a copy of those rules — that page's are scoped to it — but the same
+     tokens, so the two read as one treatment. */
+  .prose :global(dl) {
+    display: grid;
+    gap: 24px;
+    margin: 24px 0 0;
+    padding: 20px 0 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  @media (min-aspect-ratio: 1 / 1) {
+    .prose :global(dl) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px 48px;
+    }
+  }
+
+  .prose :global(dd) {
+    margin: 6px 0 0;
+    color: var(--muted);
+  }
+
+  /* The location line, and the last thing on the page. Contact is deliberately
+     NOT repeated here: Footer.astro is on every page and carries the address
+     and the LinkedIn link, and docs/content-architecture.md §1 is explicit that
+     contact is not a route. */
+  .prose :global(.location) {
+    margin-top: var(--rhythm);
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+  }
+</style>
