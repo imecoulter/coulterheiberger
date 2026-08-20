@@ -80,17 +80,27 @@ export const TALL = { w: 4, h: 5 } as const;
     is vertical, and a file cut to the same 21:9 the box is drawn at hides
     nothing — there is simply no image outside the frame. Cutting at 16:9 and
     showing 21:9 leaves 23.8% of the file's height outside the box, and that
-    excess is the overscan the Traverse travels through (CONTEXT.md).
+    excess is the Overscan (CONTEXT.md).
+
+    IT CURRENTLY HAS NO CONSUMER. The Traverse travelled through it and was
+    removed with the rest of the motion substrate (docs/motion.md). The pair is
+    kept anyway, deliberately: collapsing this to 21:9 reclaims ~31% of the wide
+    tier's pixels, but it makes rebuilding that move an edit to this file plus a
+    re-encode of every wide variant — which also invalidates CI's
+    processed-image cache. Kept, the move is CSS only. Do not "tidy" it without
+    reading the note in docs/motion.md on what is being traded.
 
     THIS IS THE ONE PLACE THE PAIR IS SET, and the two numbers are load-bearing
-    against each other. Widening this to 4:3 buys more travel and costs LCP
-    bytes on `/`'s hero linearly; narrowing it to 21:9 does not disable the
-    Traverse, it makes it silently do nothing. The cost of today's pair is
-    ~31% more pixels in the wide tier, priced in docs/styling.md against the
-    ~240 KB of hero the LCP gate actually binds at.
+    against each other. Narrowing this to 21:9 would not report an error; it
+    would silently leave any future travel with nowhere to go.
 
-    The TALL crop has no equivalent: it is cut and shown at 4:5, because the
-    Traverse is gated on a fine pointer and there is no hover on a phone. */
+    The cost is ~31% more pixels in the wide tier and it lands OFF the gate's
+    path: the perf gate runs at mobile width, where the 4:5 crop is served and
+    the wide tier is never requested. The gate's LCP number not moving is not
+    the same as this being free. Watch the desktop figure by hand.
+
+    The TALL crop has no equivalent: it is cut and shown at 4:5, because there
+    was never anything to travel through on a phone. */
 export const WIDE_SOURCE = { w: 16, h: 9 } as const;
 
 type Crop = { readonly w: number; readonly h: number };
@@ -125,7 +135,9 @@ export const OBJECT_POSITION = {
   'right bottom': '100% 100%',
 } as const;
 
-/** The vertical half of the above, which is the half the Traverse rests at. */
+/** The vertical half of the above: where the 21:9 band sits inside the 16:9
+    file. The only half with anything to do today, since the file and the box
+    are the same width. */
 export const restY = (framing: string) =>
   (OBJECT_POSITION[framing as keyof typeof OBJECT_POSITION] ?? '50% 50%').split(' ')[1];
 

@@ -31,14 +31,17 @@ export function renderDropDir() {
 }
 
 /**
- * The slug is the public URL segment, the collection entry id, and — since
- * issue #31 — the tail of the Carry's `view-transition-name` (`plate-<slug>`).
+ * The slug is the public URL segment and the collection entry id.
  *
- * The LEADING LETTER is what that third use added. A CSS `<custom-ident>` may
- * not begin with a digit, and an invalid one fails as *no transition*: nothing
- * throws, nothing logs, the Carry just doesn't happen on that Project. The
+ * The LEADING LETTER is held for a third use that is not shipped today. Issue
+ * #31 made the slug the tail of the Carry's `view-transition-name`
+ * (`plate-<slug>`), and a CSS `<custom-ident>` may not begin with a digit — an
+ * invalid one fails as *no transition*, silently, on that one Project. The
  * pattern previously allowed `2024-tower`, which is a fine URL and a broken
- * ident. See docs/content-architecture.md §2 and docs/styling.md.
+ * ident. The Carry was removed with the rest of the motion substrate
+ * (docs/motion.md) and this constraint stays anyway: it costs nothing, and
+ * relaxing it would mean a round of 301s the day the Carry comes back. See
+ * docs/content-architecture.md §2.
  */
 export const SLUG_RE = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
 

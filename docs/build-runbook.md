@@ -219,6 +219,8 @@ genuinely needs to move, it moves in ADR-0002 first, with a reason.
 
 **Moved after the perf gate.** This is the ticket that most needs a trustworthy budget, and until session 7 lands the gate grades on the best of three runs. `docs/design-direction.md` now carries the motion vocabulary — rise, draw rule, wipe, with durations and the reduced-motion rule — so this session picks the tool for a decided vocabulary rather than inventing one.
 
+> **The substrate this session shipped is no longer on the site.** See "The motion substrate was removed" below. The outcome above is left exactly as written — the tool comparison is still the reason there is no animation library here, and re-deciding it would mean re-running that table, not reading this line. What changed is the vocabulary it was picking a tool for, not the pick.
+
 ```
 /wayfinder https://github.com/imecoulter/coulterheiberger-com/issues/2 #12
 
@@ -268,3 +270,17 @@ The map closed after a final audit pass that verified every ticket's deliverable
 None of these were visible from the tickets, which is the point: **a ticket's resolution comment records what a session decided, not what is true of `main` today.** The two drift, and they drifted here in the direction of "closed" being more optimistic than "shipped". If this repo grows another map, audit against the tree.
 
 **The placeholder went live at the end of it** — `/` indexable, `/404` permanently not, one honest page saying the portfolio is in progress.
+
+### The motion substrate was removed
+
+Recorded here because the section above says entries drift from `main`, and this is the largest such drift since: **session 8's deliverable is gone.** All five motion categories — Registration, the Navigation Cross-fade, the Carry, the Traverse, and the Expanded View's fade — were taken out in one pass, leaving the plain document. Nothing animates, nothing transitions, nothing responds to a pointer.
+
+**It went on how it read, not on what it cost.** Clicking a Project put three categories on screen at once and the result was artefacts rather than craft: the frame expanding, the image brightening, content popping in and out. Each has a mechanical cause and each was individually explicable — that is precisely the problem. The pieces were coupled tightly enough that the honest move was to remove the system and rebuild deliberately, rather than tune a knot.
+
+Every measurement is kept in [`docs/motion.md`](./motion.md), which is the spec of record if any of it returns. **Nothing in session 8's table was found to be wrong**, and the library comparison still stands — this was a design call, not a correction.
+
+**Two things about the removal are worth carrying forward.**
+
+The first is the same lesson this section already names, applied to reviewing rather than to tickets: **a doc that specifies shipped behaviour has to be edited when the behaviour goes, or it becomes a second description to keep in sync with the first.** `docs/design-direction.md` and `docs/styling.md` were amended in the same pass, not after it.
+
+The second is smaller and cost real time: **verify against a restarted server, or against `dist`, never against a dev server that was running before the edits.** A stale `astro dev` reported `scale(1.05)` and a live 0.4s transition on a tree that no longer contained either, and it looked exactly like a failed removal. The first browser pass of that session was measuring a server, not the site.

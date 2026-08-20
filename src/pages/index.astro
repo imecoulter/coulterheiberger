@@ -68,32 +68,23 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
     <ol class="plates" data-hero-sizes={detailWideSizes}>
       {
         projects.map((project, i) => {
-          /* NO REGISTRATION ON THIS PAGE. Every Plate used to arrive on scroll —
-             the metadata `rise`, the image `wipe` — and it is gone at owner
-             review: six of them firing down a page whose entire content is six
-             Plates meant the work announced itself before it showed itself.
+          /* `first` IS ONLY ABOUT `priority`. The LCP element takes eager, sync
+             and fetchpriority high, and there is at most one per page.
 
-             The substrate stays in base.css because the design direction still
-             defines it, and `/projects/<slug>/` still registers its body prose.
-             What is gone is the usage here, which was all of the `wipe`'s.
-
-             `first` survives it. It is now only about `priority`: the LCP
-             element takes eager, sync and fetchpriority high, and there is at
-             most one per page. */
+             It used to do a second job. Every Plate arrived on scroll — the
+             metadata `rise`, the image `wipe` — and `first` was excluded from
+             that, because an element at opacity 0 is not an LCP candidate. The
+             entrances went at owner review and the substrate behind them has now
+             gone too; docs/motion.md holds both, and the LCP constraint is the
+             thing to re-read before any of it comes back. */
           const first = i === 0;
           return (
-            /* data-reveal is the Traverse's hover target, and it is the WHOLE
-               Plate rather than the image. It has to be: the link overlay above
-               sits on top of the image, so a pointer over the image targets the
-               <a> in the metadata column, not the <picture>. `.plate` is the one
-               element both of those are inside.
-
-               It reads correctly too. CONTEXT.md defines a Plate as one image
-               and one specification line, "a single unit" — so the unit
-               responding to the pointer is the Plate, not one of its parts.
-               --pan is a custom property and inherits down to the <img> from
-               here. */
-            <li class="plate" data-reveal>
+            /* No data-reveal and no data-anim. This <li> carried the first as the
+               Traverse's hover target — the whole Plate, because the link overlay
+               below sits on top of the image and a pointer over it targets the
+               <a> rather than the <picture>. Nothing on this page responds to a
+               pointer now except the link itself. */
+            <li class="plate">
               <div class="plate-meta">
                 {/* The Plate index: a rule, then the zero-padded ordinal in
                     .t-spec like every other mono line. Both in ink. */}
@@ -114,12 +105,7 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
               </div>
 
               <div class="plate-media">
-                <Plate
-                  frame={project.data.images[0]}
-                  slug={project.id}
-                  context="index"
-                  priority={first}
-                />
+                <Plate frame={project.data.images[0]} context="index" priority={first} />
               </div>
             </li>
           );
@@ -273,10 +259,10 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
      positioned descendant. Do not "fix" this by reordering the DOM; that trades
      a silent mouse bug for a reading-order one.
 
-     It is also what makes the Traverse work. The overlay owns the pointer over
-     the image, so `pointermove` targets this <a>; the listener is on `.plate`,
-     which both the overlay and the image sit inside, and the events reach it by
-     bubbling either way. */
+     NO HOVER STATE, here or anywhere else on the site. `text-decoration: none`
+     and base.css's `color: inherit` are the whole of it, and the row does not
+     respond to a pointer at all. That is the current state rather than an
+     oversight — see docs/motion.md. */
   .title a {
     text-decoration: none;
   }

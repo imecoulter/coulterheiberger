@@ -128,152 +128,57 @@ const ogImageURL = new URL(ogImage.src, Astro.site);
     {structuredData && (
       <script type="application/ld+json" is:inline set:html={JSON.stringify(structuredData)} />
     )}
-    {/* Registration is opt-in via [data-anim] and gated on this script, so with
-        scripting off the marked elements would stay hidden. The selector is
-        :root-qualified to outrank base.css's equal-specificity [data-anim]
-        rules regardless of where Astro injects the stylesheet. */}
-    <noscript>
-      <style>
-        :root [data-anim] {
-          opacity: 1;
-          transform: none;
-          clip-path: none;
-        }
-      </style>
-    </noscript>
+    {/* NO <noscript> BLOCK, AND NOTHING NEEDS ONE. There used to be one here
+        un-hiding Registration's [data-anim] elements, because an entrance that
+        starts at opacity 0 and is revealed by script is invisible without it.
+        Nothing on the site now starts hidden, so with scripting off every page
+        is simply the page. Anything added here that hides an element until
+        JavaScript runs needs this block back — see docs/motion.md. */}
   </head>
   <body>
     <slot />
     <Footer />
     <script>
-      // THE ONE AUTHORED SCRIPT. Three behaviours live in it — Registration,
-      // the Traverse, and the Expanded View — and that is deliberate: the rule
-      // in docs/styling.md is one authored <script>, not one behaviour. A
-      // second file, or an island, is an amendment to docs/design-direction.md
-      // first. The Cloudflare beacon below is not authored here and is not a
-      // precedent for one.
+      // THE ONE AUTHORED SCRIPT. Two behaviours live in it — warming the hero
+      // and the Expanded View — and that is deliberate: the rule in
+      // docs/styling.md is one authored <script>, not one behaviour. A second
+      // file, or an island, is an amendment to docs/design-direction.md first.
+      // The Cloudflare beacon below is not authored here and is not a precedent
+      // for one.
       //
-      // Inline on purpose. Issue #12 measured Registration alone at 195 B gzip
-      // with ZERO extra requests: Astro inlines a script that imports nothing.
-      // Every library candidate emitted an _astro/*.js file instead, which under
-      // the perf gate's devtools throttling costs 562.5ms of latency before
-      // anything it reveals can paint — and lands on the LCP Path besides.
-      // Adding to this block keeps that property; adding a file loses it.
+      // IT WAS THREE. Registration's IntersectionObserver and the Traverse's
+      // pointer listener were both here and are gone with the rest of the motion
+      // substrate; docs/motion.md keeps them. NEITHER OF THE TWO LEFT DRAWS
+      // ANYTHING — one fetches an image early, the other opens a <dialog> — so
+      // there is no animation in this file and nothing here should acquire one
+      // without reading that doc first.
       //
-      // Everything below degrades to the plain document with scripting off:
-      // [data-anim] is unhidden by the <noscript> block above, [data-reveal]
-      // simply rests at its framing anchor, and every Frame is a real link to
-      // its own full-size image.
+      // Inline on purpose. Issue #12 measured the substrate at 195 B gzip with
+      // ZERO extra requests: Astro inlines a script that imports nothing. Every
+      // library candidate emitted an _astro/*.js file instead, which under the
+      // perf gate's devtools throttling costs 562.5ms of latency before anything
+      // it affects can paint — and lands on the LCP Path besides. Adding to this
+      // block keeps that property; adding a file loses it.
+      //
+      // Both behaviours below degrade to the plain document with scripting off:
+      // warming is an optimisation nobody sees fail, and every Frame is a real
+      // link to its own full-size image.
 
-      // ---- Registration -----------------------------------------------------
-      // Adds .is-in once per element and stops watching; the moves themselves
-      // are CSS in base.css.
-      //
-      // No reduced-motion check here. base.css declares the hidden state only
-      // under (prefers-reduced-motion: no-preference), so under `reduce` this
-      // adds a class that changes nothing. Registration is the enhancement;
-      // the plain document is the baseline.
-      const io = new IntersectionObserver(
-        (entries) => {
-          let i = 0;
-          for (const entry of entries) {
-            if (!entry.isIntersecting) continue;
-            const el = entry.target as HTMLElement;
-            // Staggered in groups of four at 60ms (docs/design-direction.md).
-            el.style.setProperty('--d', `${(i % 4) * 60}ms`);
-            el.classList.add('is-in');
-            io.unobserve(el);
-            i++;
-          }
-        },
-        { rootMargin: '0px 0px -12% 0px' },
-      );
-
-      for (const el of document.querySelectorAll('[data-anim]')) io.observe(el);
-
-      // ---- the Traverse -----------------------------------------------------
-      // Sets --py and --tx from the pointer's position over a Plate;
-      // Plate.astro's scoped CSS turns those into object-position and a
-      // transform, and owns both amplitudes. See CONTEXT.md for the term and
-      // docs/styling.md for the mechanics.
-      //
-      // BOTH AXES, and the second one is not decoration. Y alone shipped and was
-      // unreachable: a cursor crosses a 21:9 band sideways, and Y rests at the
-      // midpoint, so the gesture people actually make moved nothing at all.
-      //
-      // BOTH ARE UNITLESS -1..+1 and neither carries an amplitude. The CSS
-      // multiplies --py by --reach and --tx by --sweep, so how far the picture
-      // travels is a design decision that lives with the design: it was halved
-      // on review without this file changing at all.
-      //
-      // THE THREE GUARDS MUST MATCH THE MEDIA QUERY IN Plate.astro. If this
-      // attaches where that query does not apply, --py jumps with no
-      // transition; the reverse is merely inert. Queried once, not per element.
-      // The query's fourth condition, the 1:1 aspect ratio, is deliberately NOT
-      // mirrored: in the mobile mode the image exactly fills its box, so both
-      // properties are inert rather than wrong, and a shape check here would be
-      // state to keep in sync across a resize for no behaviour. That matters
-      // more now than it did under a width threshold, because a window changes
-      // orientation more readily than it crosses 720px.
-      //
-      // `reduce` is checked as the negative of no-preference rather than as its
-      // own branch, so a browser that reports neither is treated as still.
-      //
-      // No listener removal and no matchMedia change handler: these are page
-      // lifetime, and every navigation is a full document load — there is no
-      // client-side router to tear anything down for.
-      if (
-        matchMedia('(hover: hover) and (pointer: fine)').matches &&
-        matchMedia('(prefers-reduced-motion: no-preference)').matches
-      ) {
-        for (const el of document.querySelectorAll<HTMLElement>('[data-reveal]')) {
-          // MEASURE THE <picture>, WHICH IS NEITHER OF THE OBVIOUS TWO.
-          //
-          // Not the <img>: it carries the Traverse's own transform, so
-          // getBoundingClientRect returns the moved rect and the mapping would
-          // feed its output back into its input.
-          //
-          // Not `el` either, though that is the element being listened to. On
-          // desktop a Plate is the image PLUS the 320px metadata column, so the
-          // horizontal fraction would reach 1 somewhere out in the text and the
-          // picture would never see the end of its travel.
-          const box = el.querySelector('picture');
-          if (!box) continue;
-
-          el.addEventListener('pointermove', (event) => {
-            const r = box.getBoundingClientRect();
-            const y = Math.min(1, Math.max(0, (event.clientY - r.top) / r.height));
-            const x = Math.min(1, Math.max(0, (event.clientX - r.left) / r.width));
-            // The two signs are opposite ON PURPOSE, and they produce the same
-            // movement. object-position names the part of the picture the box
-            // shows, so it rises with the pointer; translate moves the picture
-            // itself, so it falls against it. Both mean "point at a thing and it
-            // comes to you", which is the only way the two axes read as one.
-            el.style.setProperty('--py', ((y - 0.5) * 2).toFixed(3));
-            el.style.setProperty('--tx', ((0.5 - x) * 2).toFixed(3));
-          });
-          // Removed, not set to the resting value: both CSS fallback chains end
-          // at 0, which resolves to the author's `framing` anchor and an
-          // untranslated image, so deleting the properties IS the rest state and
-          // the keyword stays the single source of it.
-          el.addEventListener('pointerleave', () => {
-            el.style.removeProperty('--py');
-            el.style.removeProperty('--tx');
-          });
-        }
-      }
-
-      // ---- warming the Carry ------------------------------------------------
+      // ---- warming the hero -------------------------------------------------
       // Fetches the hero at the width the PROJECT page will lay it out, as soon
       // as a pointer says a Plate is being considered.
       //
       // WHY THERE IS ANYTHING TO WARM. `/` and `/projects/<slug>/` show the
       // same image at different widths, so they resolve different rungs of one
       // ladder — ~1136px against ~1504px at a 1600px window, measured on the
-      // built site. The Carry therefore cross-fades to a file that is still on
-      // the wire, and base.css describes the hole that leaves. The document
-      // cannot be made to wait for it: `blocking="render"` does nothing on a
-      // preloaded image, which was probed rather than assumed.
+      // built site. So the Project page opens on a hero that is a real network
+      // fetch, and this buys it the width of a deliberate movement toward the
+      // link. It used to have a second job, hiding that fetch under the Carry's
+      // cross-fade; the Carry is gone and the head start is not.
+      //
+      // NOT A HOVER EFFECT, despite the trigger. Nothing about the page changes
+      // when this runs — it is a cache warm with no visual, which is why it
+      // survived a pass that removed every hover behaviour on the site.
       //
       // NO URL ARITHMETIC. The srcset is read off the <source> already in the
       // page and handed to a detached Image with the Project page's `sizes`
@@ -300,10 +205,10 @@ const ogImageURL = new URL(ogImage.src, Astro.site);
           const warm = () => {
             if (warmed) return;
             warmed = true;
-            // The wide AVIF tier, which is what a browser doing this transition
-            // at all will take. A browser without AVIF gets no warming and the
-            // plain, slightly slower handoff — it is already the population
-            // being served the single-width fallback.
+            // The wide AVIF tier, which is what any browser reaching this line
+            // will take. A browser without AVIF gets no warming and the plain,
+            // slightly slower arrival — it is already the population being
+            // served the single-width fallback.
             const source = plate.querySelector<HTMLSourceElement>('source[type="image/avif"]');
             if (!source) return;
             const warmer = new Image();
