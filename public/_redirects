@@ -1,6 +1,20 @@
 # /projects/ has no page of its own — people truncate URLs, so send it to `/`,
 # which IS the Project index (docs/content-architecture.md §1).
 #
+# THESE ARE EXACT PATHS AND MUST STAY EXACT. This was `/projects/* / 301`, and
+# the splat did not just match the truncated URL — it matched every Project
+# page underneath it. All six 301'd to `/`, so the section was unreachable in
+# production and every link on the index bounced straight back to the index.
+#
+# IT WAS INVISIBLE TO EVERY LOCAL CHECK, and that is the part worth remembering:
+# this file is a Cloudflare edge feature, so `astro dev`, `astro preview` and
+# anything driving them serve the Project pages correctly. Only the deployed
+# site redirects. The gate that did catch it is `npm run check:served`, which
+# runs after deploy and compares the Served Document against the build — it
+# reported the six pages as serving `/`'s document, and it had been failing on
+# `main` since the routes landed. Do not add a wildcard back here without
+# reading that gate's output on the next deploy.
+#
 # This is here rather than in Astro's `redirects` config, and that contradicts
 # what §1 originally said. The reason is that a static Astro build cannot emit a
 # real 301: it writes an HTML page carrying <meta http-equiv="refresh">
@@ -11,4 +25,11 @@
 # Cloudflare's static assets serve _redirects natively from the asset directory,
 # so this is a real edge 301 at zero bytes. public/ is copied verbatim into dist/,
 # which is exactly what this file needs and the reason it cannot live in src/.
-/projects/* / 301
+#
+# Both spellings, because the truncation this exists for is a person deleting
+# from the end of a URL and they do not reliably stop on the slash. Without the
+# second line `/projects` served the 404 page, which is a worse answer to the
+# same question: `html_handling: "auto-trailing-slash"` only normalises a path
+# that resolves to an asset, and there is no asset here to resolve to.
+/projects/ / 301
+/projects / 301
