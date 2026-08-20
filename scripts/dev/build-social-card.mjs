@@ -116,9 +116,15 @@ const FONTS = {
  * DERIVED the way the token is, rather than pasted as a hex: docs/styling.md's
  * one rule is that nothing hard-codes a value a token names, and a stale hairline
  * baked into a raster is exactly the drift that rule exists to prevent.
+ *
+ * These two inverted with the Ground in ADR-0007. This card is the one asset a
+ * stranger sees BEFORE they see the site, so it is the one place a stale ground
+ * would be most visible and least noticed — nothing in CI renders it. A Project's
+ * own Social Card is unaffected: those are build-time crops of the Project's hero,
+ * so they carry the image rather than the ground.
  */
-const GROUND = '#f2f0ec';
-const INK = '#14161a';
+const GROUND = '#000000';
+const INK = '#e8e6e1';
 
 const srgbToLinear = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
 const linearToSrgb = (c) => (c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055);
@@ -154,7 +160,10 @@ function mixOklab(a, b, pct) {
   return oklabToHex(x.map((v, i) => v * pct + y[i] * (1 - pct)));
 }
 
-const RULE = mixOklab(INK, GROUND, 0.18);
+/* 0.30, not 0.18. The percentage moved with the Ground in ADR-0007: 18% ink into
+   pure black resolves four values off it, so the datum rule on this card would
+   have been a hairline nobody can see. Keep this in step with tokens.css. */
+const RULE = mixOklab(INK, GROUND, 0.3);
 
 // ---- compose --------------------------------------------------------------
 

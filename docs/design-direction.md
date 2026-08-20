@@ -38,7 +38,10 @@ rather than status**. That equivalence is the argument the site makes — made s
 of claimed in an About paragraph. It is also the one move nothing in the precedent set makes,
 because every site in that set has exactly one kind of object it knows how to present.
 
-Paper ground, inverting **once** to night, where the interactive work sits.
+**One dark ground, for everybody.** This line read "Paper ground, inverting once to night, where the
+interactive work sits" until [ADR-0007](./adr/0007-one-dark-ground.md), which inverted the ground and
+cut the second band rather than flipping it. Everything else on this page survived that change
+unread, which is what made it an amendment rather than a new direction.
 
 ## What the precedent analysis actually found
 
@@ -83,25 +86,42 @@ These are enforced by `npm run check:css` over the built output (see `docs/styli
 - **Native scroll.** No Lenis, no Locomotive, no `ScrollSmoother`. MIR loads `ScrollSmoother` and
   never instantiates it; Luxigon, Neoscape and Kilograph are plain native scroll.
 - **The LCP element is never a canvas** (ADR-0002).
-- **At most one night band per page.** More reads as a dark site with light interruptions — which is
-  the cluster this direction is trying not to join.
+- **One ground, and it is dark.** No light alternative, no `prefers-color-scheme` fallback, no
+  visitor-facing toggle. `npm run check:css` refuses `prefers-color-scheme` in site CSS by name, the
+  way it refuses radius and shadow.
 
-  **This is a ceiling, not a mandate**, on the same footing as the three-type-role cap: "exactly one"
-  bounds how many a page may have, it does not require a page to have one. v1 ships **zero** night
-  bands. The band's stated job is to mark where the interactive work sits, ADR-0002 ships zero Exhibits,
-  and a dark band marking nothing is decoration — which is the thing this direction refuses. It returns
-  with the first Exhibit.
+  **There was a "at most one night band per page" rule here**, and it is gone rather than inverted.
+  The band's stated job was to mark where the interactive work sits; with one dark ground there is
+  nothing to invert into, and a paper band on a dark site would be a louder gesture than the night
+  band on paper ever was. It is recorded rather than deleted silently because a two-band model was
+  how this site was built for its whole life until [ADR-0007](./adr/0007-one-dark-ground.md), and the
+  next reader should find the trace. If a future Exhibit needs marking, that is decided with the
+  Exhibit in hand.
 
 ## Colour
 
 Three primaries. `--rule` and `--muted` derive from the ground/ink axis; see `docs/styling.md` for
-the token mechanics and the `color-mix` scoping trap.
+the token mechanics.
 
-| role | day | night |
-| --- | --- | --- |
-| ground | `#F2F0EC` | `#0E1114` |
-| ink | `#14161A` | `#E8E6E1` |
-| signal | `#E3392C` | `#E3392C` |
+| role | value |
+| --- | --- |
+| ground | `#000000` |
+| ink | `#E8E6E1` |
+| signal | `#E3392C` |
+
+**The ground is pure black, and it moved the two derived tokens with it.** `--muted` is 63% ink and
+`--rule` is 30%, against the 58% and 18% the paper site ran for its whole life. Those are not new
+design decisions: they are the percentages that hold the *old* ratios on a darker ground, 4.96 against
+5.01 and 1.43 against 1.44. Only the ground actually moved. At the old percentages pure black puts
+`--muted` at **4.09** and fails the AA gate outright, which is why this is written down rather than
+adjusted.
+
+**What pure black costs is accepted, not solved.** The reference sites can afford `#000` because their
+grids are uniformly bright photography; this asset set is tonally split, and `not-unreal`'s hero is a
+greyscale collage **on pure black**, which on this ground has no boundary and reads as a hole rather
+than an object. That is a judgement to make rendered, in the visual review pass, not one to argue from
+a table. Full reasoning and the intermediate ground that was proposed and rejected:
+[ADR-0007](./adr/0007-one-dark-ground.md).
 
 **Signal red survives on the focus ring, and nowhere else.** That is one selector on the whole site,
 `:focus-visible` in `base.css`, and it is on screen only while somebody is navigating by keyboard.
@@ -118,11 +138,16 @@ affordance that has to be unmistakable, and it is the reason `--signal` is asser
 than 4.5:1 and refused in a `color:` declaration by name. Nothing here relaxes that, and a future use
 of signal on a surface is a change to this table, not a styling decision.
 
-The originally hand-picked `rule` and `muted` values (`#C9C6C0` / `#6E706B` day, `#2A2F35` /
-`#8B9098` night) are now derived, landing within delta 5–11 of those originals. The one deliberate
-departure is **night muted**, which derives neutral rather than the original's cool blue-grey: that
-cool cast was an undocumented fourth colour decision, and it was dropped for the same reason the
-registration marks were.
+`--rule` (30% ink) and `--muted` (63% ink) are derived rather than picked, at 1.43 and 4.96 on this
+ground. The originally hand-picked pair for a dark band was `#2A2F35` / `#8B9098`; the derivation
+stays close to it and departs deliberately on muted, which derives neutral rather than that cool
+blue-grey. The cool cast was an undocumented fourth colour decision, and it was dropped for the same
+reason the registration marks were.
+
+**"The furniture is greyscale so that the images are the only colour on the page" is the sentence the
+dark ground serves.** On paper, the page and the images were both bright and competed for the eye. On
+this ground the six renders are the only light source on screen, which is why ADR-0007 is an
+amendment to this direction rather than a departure from it.
 
 ## Typography
 

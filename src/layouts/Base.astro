@@ -86,6 +86,13 @@ const ogImageURL = new URL(ogImage.src, Astro.site);
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {/* The Ground, extended into mobile browser chrome. One value, no media
+        variants: the site has one ground and it is dark (ADR-0007), so a
+        `media` attribute here would describe a light version that does not
+        exist. This is the closest the design gets to the reference sites'
+        edge-to-edge feel for the price of one tag. Kept in step with
+        --ground by hand; it is HTML and cannot say var(). */}
+    <meta name="theme-color" content="#000000" />
     {/* Four links, one mark. All of them are generated from a single SVG by
         scripts/dev/build-favicons.mjs, which is dev-only and committed like the
         social card — CI never runs it.

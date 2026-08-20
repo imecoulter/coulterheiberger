@@ -5,7 +5,17 @@
   box-sizing: border-box;
 }
 
+/* `color-scheme: dark` is load-bearing, not a declaration of intent. It is what
+   paints the UA's own surfaces dark — the canvas BEFORE this stylesheet lands,
+   the scrollbars, and any form control this site ever grows. Without it a
+   visitor on a slow connection gets a white flash and then a near-black page,
+   which is the most visible defect a dark-ground site can ship.
+
+   It sits here rather than in tokens.css because that file declares itself
+   custom properties only, and this is a real property. One ground, dark, for
+   everybody: see ADR-0007. */
 html {
+  color-scheme: dark;
   -webkit-text-size-adjust: 100%;
 }
 

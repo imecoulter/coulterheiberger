@@ -1,15 +1,40 @@
 /* Datum tokens. Custom properties only — nothing in this file paints.
 
    THREE PRIMARIES: --ground, --ink, --signal. Everything else derives.
-   --rule and --muted are tints on the ground/ink axis, so the night band
-   flips two properties and the derived pair follows. */
+   --rule and --muted are tints on the ground/ink axis.
+
+   ONE GROUND, AND IT IS DARK. There is no light alternative, no
+   prefers-color-scheme fallback and no toggle; check-css.mjs refuses that
+   query by name. There used to be a second band — a `.night` class at the
+   foot of this file that reassigned the two primaries — and ADR-0007 inverted
+   the ground and deleted it rather than flipping it. Do not reintroduce a
+   scoped band without reading that ADR and the trap in docs/styling.md: a
+   color-mix() resolves against its DECLARING scope and will not re-derive
+   further down, so any block that reassigns a primary must restate both
+   derived tokens or it silently ships the wrong greys. */
+/* THE GROUND IS PURE BLACK, AND THE TWO PERCENTAGES BELOW ARE WHAT THAT COST.
+   They are not free parameters and they were not eyeballed.
+
+   --muted was 58% for the whole life of the paper site, pinned by ADR-0003 as an
+   asserted invariant rather than a preference. On #000 the 4.5:1 floor moves from
+   55% to 61%, and 58% lands at 4.09 — a FAILING specification line. 63% restores
+   it to 4.96, within a whisker of the 5.01 it has always had, with the same two
+   points of margin over the floor that ADR-0003 chose 58% for.
+
+   --rule was 18% and measured 1.09 on pure black, which is four values off the
+   ground: not a hairline, an absence. 30% puts it back to 1.43, against the 1.44
+   it used to have.
+
+   So both tokens LOOK the same as they always did. Only the ground moved. If you
+   are here to lower either number back toward its old value, read ADR-0007
+   first — the old values were correct for a ground this one no longer is. */
 :root {
-  --ground: #f2f0ec;
-  --ink: #14161a;
+  --ground: #000000;
+  --ink: #e8e6e1;
   --signal: #e3392c;
 
-  --rule: color-mix(in oklab, var(--ink) 18%, var(--ground));
-  --muted: color-mix(in oklab, var(--ink) 58%, var(--ground));
+  --rule: color-mix(in oklab, var(--ink) 30%, var(--ground));
+  --muted: color-mix(in oklab, var(--ink) 63%, var(--ground));
 
   /* Three roles, two webfonts. Settled in issue #21, which priced each role
      against the LCP Path rather than arguing about it.
@@ -107,20 +132,4 @@
   :root {
     --rhythm: 160px;
   }
-}
-
-/* THE night band. One per page.
-
-   The two derived tokens MUST be restated here. A custom property resolves
-   at computed-value time on the element that declares it and then inherits
-   as a resolved value — so a color-mix() declared only on :root bakes in
-   :root's ground/ink and will NOT re-derive in this scope. Verified on the
-   built page (issue #11): omitting these two lines ships the day-tinted
-   rules on the night ground. Three values still, stated once each. */
-.night {
-  --ground: #0e1114;
-  --ink: #e8e6e1;
-
-  --rule: color-mix(in oklab, var(--ink) 18%, var(--ground));
-  --muted: color-mix(in oklab, var(--ink) 58%, var(--ground));
 }
