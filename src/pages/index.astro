@@ -149,14 +149,33 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
           decoding="async"
         />
 
-        {/* One ordinary link, and no overlay. The `.title a::after` trick below
-            exists because a Plate's whole row is one target; this element has
-            two things in it a visitor might want and only one of them is a
-            link. The border is the affordance, for the reason Footer.astro
-            gives: `link-in-text-block` is gated at error, and base.css hands
-            every <a> `color: inherit`, so a link distinguished by colour alone
-            would be distinguished by nothing at all. */}
-        <a class="t-label about" href="/about/ime/">About</a>
+        {/* THE PORTRAIT IS THE LINK, and this label is how it says so.
+
+            IT WAS AN ORDINARY BORDERED LINK SET UNDER THE FACE, on the argument
+            that "this element has two things in it a visitor might want and
+            only one of them is a link". Owner review overturned the premise:
+            there are not two things here, there is one offer — go read about
+            him — and splitting it across a face and a word underneath made the
+            face inert and made the word the only affordance on `/` drawn with a
+            border rather than with the datum. Folding the label onto the
+            portrait makes this behave like the six Plates below it: one target,
+            one revealed label, one instant swap. design-direction.md is amended
+            for the second `:hover`; docs/motion.md holds the boundary.
+
+            THE SAME `::after` TRICK AS `.title a`, and deliberately the same
+            shape rather than an <a> wrapped round the <picture>. Wrapping would
+            fold the portrait's alt text into the link's accessible name, so the
+            link would announce as "Coulter Heiberger, smiling, in glasses and a
+            light blue collared shirt against a warm stucco wall. About". This
+            way there is one link named "About" and one image keeping its own
+            description, which is what the Plate pattern already buys.
+
+            The <p> is new and is doing structural work, not decorative: the
+            label needs a block-level box to be a grid item stacked on the
+            portrait, and a bare <a> in the grid would stretch to the cell. */}
+        <p class="about">
+          <a class="t-label" href="/about/ime/">About</a>
+        </p>
       </div>
     </header>
 
@@ -275,6 +294,90 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
     max-width: var(--measure-page);
     margin-inline: auto;
     padding: var(--rhythm) var(--gap);
+
+    /* THE SCRIM, AND THE 0.94 IS A MEASUREMENT RATHER THAN A TASTE. Both
+       reveals on this page paint text over a render, and ADR-0008 originally
+       refused a gradient there on the grounds that one cannot promise 4.5:1
+       over arbitrary pixels. That is true of an unbounded gradient; this one is
+       bounded, and the bound is what makes it safe:
+
+         A black scrim at alpha over a white pixel composites to 255(1 - alpha),
+         and the text needs 4.5:1 against that. For --muted (luminance 0.198,
+         which is the 4.96:1 check-css.mjs reports on the Ground) the backdrop
+         must sit at or below (0.198 + 0.05) / 4.5 - 0.05 = 0.0051, a channel
+         value of about 16, so alpha >= 0.938. For --ink (luminance 0.792) the
+         same arithmetic gives alpha >= 0.595.
+
+       THAT GAP IS THE WHOLE DESIGN, and it took two rounds of owner review to
+       see it. The band began as an opaque --ground block, then as a fade above
+       a 0.97 plateau, and both came back as "too much black". The instruction
+       that resolved it was "start the fade right from the bottom of the frame
+       instead of starting above the text".
+
+       A FADE THAT STARTS AT THE BOTTOM CANNOT CARRY --muted, and this is
+       arithmetic rather than preference. Continuous means alpha is ALREADY
+       falling where the text sits, so the binding point is the TOP of the text
+       rather than the bottom of the band. --muted needs 0.94 there, which is
+       another way of writing "no fade through the text" — the plateau was not a
+       cautious choice, it was the only shape --muted admits. Measured at the
+       text's top edge:
+
+         alpha    --muted        --ink
+         0.66     1.65 FAIL      5.79 ok
+         0.70     2.01 FAIL      6.83 ok
+         0.94     4.52 ok        15.34 ok
+
+       SO THE BAND'S SMALL TEXT IS --ink, and that is a real cost paid
+       deliberately. `.masthead .spec` two screens down still refuses exactly
+       this override, and it is right to: on the Ground, colour is a free choice
+       and a spec line that reads one way beside another spec line is not a
+       style. OVER AN IMAGE IT IS NOT A FREE CHOICE. The text colour is the only
+       thing setting how much render can show through, because it sets the alpha
+       floor. --muted buys a slab; --ink buys a fade. The override is confined to
+       these two bands and stated on the rules that carry it.
+
+       0.66 AT THE TEXT'S TOP, NOT 0.595. Same reasoning ADR-0003 applies to
+       --muted: pin for margin, not for the floor. 0.66 measures 5.79 against a
+       white pixel, so a render would have to be brighter than white to trouble
+       it, and the scrim is light enough that the image reads through the text.
+
+       IT IS DECLARED HERE, NOT IN tokens.css, because that file is custom
+       properties that name a value the design uses everywhere and this one has
+       exactly two consumers, both on this page. If a third route ever reveals a
+       label on an image it gets promoted, and the derivation moves with it.
+
+       IT REACHES 1 AT THE BOTTOM EDGE, AND THAT IS A JOIN RATHER THAN A SLAB.
+       The stop before this one bottomed out at 0.85, which left the image faintly
+       visible along the frame's last few pixels and then cut hard to the page
+       beneath — a seam exactly one Plate-edge wide. --ground is #000000, so an
+       opaque foot IS the page: the band stops having a bottom edge and the frame
+       dissolves into the ground instead of ending on it. The foot is 10% of the
+       band, ~28px, and it sits under the specification line rather than behind
+       the block.
+
+       SEVEN STOPS AND NO PLATEAU ABOVE THE FOOT. Alpha falls continuously from
+       10% to the top and never holds, which is what makes the band read as the
+       image receding rather than as a panel laid on it. Retune a band's height
+       and re-check the
+       alpha at the text's TOP edge, by hand — CI cannot: Lighthouse does not
+       evaluate contrast over an image, and check:css compares tokens to --ground
+       rather than to a composite. The way to check it is to force the bands
+       visible, hide their text so only the scrim is painted, screenshot the text
+       zone and take the brightest pixel in it.
+
+       HIDE THE DEV TOOLBAR BEFORE MEASURING. It paints a rgb(66,68,72) pill
+       over the bottom centre of the viewport, which lands inside three of the
+       six bands and reports 2.30. That is the toolbar, not the page. */
+    --scrim: linear-gradient(
+      to top,
+      rgb(0 0 0 / 1) 0%,
+      rgb(0 0 0 / 0.98) 10%,
+      rgb(0 0 0 / 0.88) 25%,
+      rgb(0 0 0 / 0.68) 45%,
+      rgb(0 0 0 / 0.45) 62%,
+      rgb(0 0 0 / 0.2) 80%,
+      rgb(0 0 0 / 0) 100%
+    );
   }
 
   /* ---- the Masthead ------------------------------------------------------
@@ -303,7 +406,13 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
     .masthead {
       grid-template-columns: minmax(0, 1fr) var(--plate-meta);
       gap: var(--gap);
-      align-items: start;
+
+      /* `stretch`, not `start`. This is what gives the portrait column the text
+         block's height for the rule under `.masthead-aside` to fill. It is the
+         grid default, and it is written out because it is load-bearing here:
+         restoring `start` would silently collapse the face back to a square and
+         the change would look like nothing more than a shorter image. */
+      align-items: stretch;
     }
   }
 
@@ -332,7 +441,15 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
      refuses by name: a type style that reads one way in one place and another
      way next to it is not a style, and it is how the footer address became the
      site's tenth treatment. The specification line is one style, and the
-     Masthead's is a specification line. Margin only. */
+     Masthead's is a specification line. Margin only.
+
+     THE TWO BANDS DO OVERRIDE IT, and this rule is still right. The difference
+     is not that they were allowed a preference and this line was not: over an
+     image the text colour SETS THE SCRIM'S ALPHA FLOOR, so it stops being a
+     colour choice and becomes a legibility one — --muted would force 0.94 and
+     leave no fade. The derivation is on --scrim. On the Ground there is no such
+     forcing function, which is why this line has nothing to trade and keeps the
+     shared colour. */
   .masthead .spec {
     margin: var(--s3) 0 0;
   }
@@ -350,12 +467,31 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
      it — the same rule Plate.astro and the Project gallery each carry, and the
      same `:global()` reach the gallery uses, because the element comes from a
      component rather than from this template. */
+  /* THE PORTRAIT AND ITS LABEL SHARE ONE GRID CELL. Same stacking shape as a
+     Plate below, and adopted for the same two reasons: the label can be
+     revealed without moving anything, and `.about` stays UNPOSITIONED so its
+     `::after` overlay resolves against THIS element instead of against itself.
+     The long note on `.plate` records what getting that wrong costs, because it
+     had already shipped once.
+
+     WIDTH RATHER THAN A CAP ON THE IMAGE. The 200px used to sit on the <img>;
+     it is on the container now because the label band has to be the width of
+     the face and not the width of the column. Above the mode switch this is
+     released and the column decides. */
+  .masthead-aside {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    width: 200px;
+  }
+
   .masthead-aside :global(picture) {
     display: block;
+    grid-area: 1 / 1;
   }
 
   .masthead-aside :global(img) {
-    width: 200px;
+    width: 100%;
     aspect-ratio: 1;
     object-fit: cover;
   }
@@ -370,19 +506,158 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
      much air a genuinely large window gets once it is already in the wide mode".
      Reused rather than a new number, so there is still one of them. Below it the
      portrait stays at its stacked size and the column simply has air in it. */
+  /* THE FACE MATCHES THE HEIGHT OF THE PROSE BESIDE IT. Asked for directly at
+     owner review: the two columns read as one object rather than as a square
+     parked next to a paragraph.
+
+     `align-items: stretch` on the Masthead grid (below) hands this column the
+     text block's height, and the portrait then fills it. `height: 100%` has to
+     beat base.css's `img { height: auto }`, and dropping `aspect-ratio` is what
+     lets it — with both set, the ratio wins and the stretch is silently
+     ignored. `object-fit: cover` absorbs the difference, which is the same
+     mechanism a Plate's band uses one level down.
+
+     BOTH CONDITIONS, not just the shape. The mode switch is an aspect ratio, so
+     an 844x390 landscape phone reaches the wide branch; stretching a face to a
+     text column there makes it the largest thing on screen. Under 1200px the
+     portrait keeps its stacked square and the column simply has air in it.
+     Same boundary and same reasoning as the rule this replaced. */
   @media (min-aspect-ratio: 1 / 1) and (min-width: 1200px) {
+    .masthead-aside {
+      width: auto;
+    }
+
+    /* THE PORTRAIT IS TAKEN OUT OF FLOW, and that is the whole mechanism rather
+       than a detail. `align-items: stretch` alone does nothing here: while the
+       <picture> is an in-flow grid item it is the TALLEST item in the row, so
+       it sizes the row and then "fills" a height it set itself. The first
+       attempt at this looked like it worked only because a 320px square and the
+       prose beside it happened to land within 17px of each other.
+
+       Absolute is what breaks the circle. Out of flow, the portrait contributes
+       nothing to the row, so the row is the TEXT's height and the portrait
+       fills that. Ask for the face to drive the Masthead's height again and
+       this is the declaration to remove, not `align-items`.
+
+       `.about` is then the only in-flow item in this column, which is fine: it
+       is 96px against prose several times that, so it never becomes the
+       measure. `object-fit: cover` on the <img> absorbs the ratio change, and
+       `aspect-ratio: auto` is required to let it — with a ratio still set, the
+       ratio wins and `height: 100%` is silently ignored. */
+    .masthead-aside :global(picture) {
+      position: absolute;
+      inset: 0;
+    }
+
     .masthead-aside :global(img) {
-      width: 100%;
+      height: 100%;
+      aspect-ratio: auto;
     }
   }
 
-  /* `inline-block` so the border is the width of the word rather than the width
-     of the column. */
+  /* THE `ABOUT` LABEL, and it is the Plate's revealed band at portrait scale:
+     same scrim, same instant swap, same `(hover: hover)` pair. Two objects on
+     this page reveal a label on an image and they are deliberately one device,
+     not two treatments — see the band's own note under the Plates for the
+     contrast bound the scrim has to clear.
+
+     SHORTER BAND, SAME GRADIENT. --scrim puts its 0.94 stop at 62% of whatever
+     box it is painted in, and one label line plus --s3 of padding sits at about
+     41% of this band. The invariant is that the text stays below the stop, not
+     that the two bands are the same height. */
+  /* `z-index: 1` IS LOAD-BEARING AND THE BUG IT FIXES IS SILENT, which is the
+     same sentence the Plate's overlay carries and a different bug.
+
+     Above 1200px the <picture> becomes `position: absolute` so the face can
+     take the prose's height. A positioned element paints above a non-positioned
+     in-flow one regardless of DOM order, so without this the label and its
+     scrim render UNDERNEATH the portrait: the reveal fires, the opacity
+     changes, and nothing appears. Caught in a browser, because it looks exactly
+     like a rule that never matched.
+
+     It applies in both modes rather than being scoped to the branch that needs
+     it. A z-index that only exists on one side of a breakpoint is a bug waiting
+     for the other side to grow a positioned child. */
   .about {
-    display: inline-block;
-    margin-top: var(--s3);
+    grid-area: 1 / 1;
+    align-self: end;
+    z-index: 1;
+    display: flex;
+    align-items: flex-end;
+    height: 96px;
+    margin: 0;
+    padding: var(--s3);
+    background: var(--scrim);
+  }
+
+  /* No underline and no border. The affordance is the reveal and the target is
+     the whole face, which is exactly what the border used to stand in for when
+     this was a word sitting on its own under the image.
+
+     --ink RATHER THAN .t-label's --muted, and the reason is the scrim's, not
+     this element's: see the alpha table on --scrim. --muted would force the
+     scrim to 0.94 behind this word and there would be no fade left. */
+  .about a {
+    color: var(--ink);
     text-decoration: none;
-    border-bottom: 1px solid var(--rule);
+  }
+
+  /* The whole portrait is the hit area. Identical to `.title a::after` on a
+     Plate, including the z-index, and the note there explains why that
+     declaration is kept even where DOM order already covers it. */
+  .about a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  /* THE SITE'S SECOND `:hover` RULE, and it is the first one's device on a
+     different object (docs/design-direction.md, docs/motion.md).
+
+     NO `transition`, NO `transform`, NO DURATION, NO EASING — the same terms the
+     Plate's reveal is held to, and the reason a site with no motion can carry
+     either. Putting a duration on this is adding motion to the site.
+
+     `:focus-within` IS NOT A COURTESY. The label's <a> is the only focusable
+     thing in this column, so without it a keyboard visitor would tab onto an
+     invisible link.
+
+     BOTH STATES ARE GUARDED TOGETHER, and guarding only the `:hover` half is the
+     silent version of this bug: it would leave the label at opacity 0 on a
+     phone with no way to ever reveal it, on the one control that leads to
+     /about/ime/. */
+  /* THE REVEAL IS SCOPED TO THE WIDE MODE, exactly as the Plate's band is, and
+     that nesting is the point rather than an accident of where the rules were
+     written. Below the switch the page is stacked and NOTHING on it hides: a
+     Plate's metadata drops into flow under its image at full opacity, so a
+     label that stayed hidden on the portrait would be the one element on a
+     phone concealing itself. It sits permanently on the face there, which is
+     also the only thing telling a touch visitor the face is a target.
+
+     Caught by measuring rather than by reading: at a 390px window the band
+     reported opacity 0 while every Plate below it reported 1. */
+  @media (min-aspect-ratio: 1 / 1) {
+    .about {
+      opacity: 0;
+    }
+
+    /* Both states guarded together, for the reason spelled out on the Plate's
+       copy of this pair: guarding only the `:hover` half leaves the label at
+       opacity 0 on a coarse pointer with no way to ever reveal it, on the one
+       control that leads to /about/ime/. */
+    @media (hover: hover) {
+      .masthead-aside:hover .about,
+      .masthead-aside:focus-within .about {
+        opacity: 1;
+      }
+    }
+
+    @media not (hover: hover) {
+      .about {
+        opacity: 1;
+      }
+    }
   }
 
   /* The only --t-h1 on the site. Tracking comes from base.css at -0.02em; this
@@ -543,16 +818,101 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
 
        Padding on the block rather than a margin on the Plate, so the ground runs
        to the image's own edges and only the text is inset. */
+    /* THE PLATE STACKS ITS TWO CHILDREN IN ONE GRID CELL, and this is the fix
+       for a bug that shipped: CLICKING A PLATE'S IMAGE DID NOTHING.
+
+       `.meta` used to be `position: absolute` here. That made it the containing
+       block for `.title a::after` — the pseudo-element three rules down whose
+       whole job is to be the Plate's hit area — so its `inset: 0` resolved to
+       the 169px metadata band instead of to the 570px Plate. Measured in a
+       browser before the fix: `a.offsetParent === .meta` returned true. The
+       largest and most obviously clickable thing on the page was inert
+       everywhere except the strip of text that only appears on hover.
+
+       Note what this is NOT: the `z-index: 1` on that pseudo-element guards a
+       different failure, where the overlay sits UNDER the image. That one is
+       real and its note is kept. This one is the overlay being the wrong SIZE,
+       and no z-index can help with it.
+
+       Grid stacking removes the cause rather than patching the symptom.
+       `.meta` is a grid item and not positioned, so the nearest positioned
+       ancestor is `.plate` again — which has carried `position: relative` all
+       along. Do not reintroduce `position: absolute` on this block; if the band
+       ever needs to escape the cell, move the overlay off `.title a` first.
+
+       THE ROW RESOLVES TO THE IMAGE'S HEIGHT, so revealing the band still
+       cannot move anything. That was the reason for absolute positioning and it
+       survives: the band is 260px against a hero of ~510px, the picture is the
+       taller item, and it sizes the row. */
+    .plate {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .plate :global(picture) {
+      grid-area: 1 / 1;
+    }
+
+    /* THE BAND. Fixed height so all six read as one row of the same object
+       rather than as six blocks sized by how long their titles are, and bottom
+       aligned inside it so the datum sits on the Plate's own edge.
+
+       IT WAS AN OPAQUE `--ground` BLOCK SIZED BY ITS CONTENT, filling the
+       bottom ~30% of the image, which meant pointing at the work hid the work.
+       ADR-0008 is amended with the measurement that makes the scrim safe; the
+       derivation is on `--scrim` at the top of this block.
+
+       280px IS A DRAWN DIMENSION, not spacing, which is why check-css.mjs's
+       refusal is scoped to margin, padding and gap rather than to every length
+       — the same category as the ordinal's 26px rule.
+
+       IT GOT TALLER WHILE THE BLACK GOT SMALLER, which sounds contradictory and
+       is the whole adjustment. The band's height is the length the gradient has
+       to fall off over, NOT the amount of ground painted: what a visitor reads
+       as "black" is the region near full strength, and that is set by the text
+       plus its padding rather than by this number. Going 260 -> 280 bought
+       47px more fade; dropping the vertical padding to --s3 took 27px off the
+       slab. Shorten the band and the falloff gets steeper, not lighter.
+
+       PADDING IS --s3 VERTICAL, --s4 HORIZONTAL. The horizontal value holds the
+       text's inset from the image edge; the vertical one sets how far up the
+       gradient the text's top edge reaches, which is the number the contrast
+       check turns on. The text spans 7% to 45% of the band, and the scrim is at
+       0.66 by 45%, worth 5.79:1 to --ink.
+
+       THERE IS NO PLATEAU LEFT TO SHRINK. The two previous cuts both held a
+       constant alpha behind the text and the whole adjustment was how tall that
+       region was. It is gone: alpha now falls from the bottom edge of the frame
+       and never holds. Raise this padding or shorten the band and the text's top
+       edge climbs into thinner scrim — re-check it against the table on --scrim
+       rather than assuming, because nothing in CI will say so. */
     .meta {
-      position: absolute;
-      inset: auto 0 0 0;
+      grid-area: 1 / 1;
+      align-self: end;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      height: 280px;
       margin: 0;
-      padding: var(--s4);
-      background: var(--ground);
+      padding: var(--s3) var(--s4);
+      background: var(--scrim);
       opacity: 0;
     }
 
-    /* THE SITE'S ONE `:hover` RULE (ADR-0008, docs/motion.md).
+    /* --ink, NOT .t-spec's --muted, on the ordinal and the specification line.
+       The full argument is on --scrim: a scrim that fades from the bottom edge
+       cannot hold --muted at AA, so over an image the text colour is what
+       decides how much render shows through. The title is an h3 and is already
+       --ink, so this brings the other two lines to the colour the title has
+       always had in this band rather than introducing a new one. */
+    .meta .t-spec {
+      color: var(--ink);
+    }
+
+    /* THE FIRST OF THE SITE'S TWO `:hover` RULES (ADR-0008, docs/motion.md).
+       The second is the Masthead portrait's `About` label above, added when the
+       portrait absorbed the bordered link that used to sit under it. It is the
+       same device on a different object, held to every term below.
 
        NO `transition`, NO `transform`, NO DURATION, NO EASING. The Plate is in
        one state or the other on the frame the pointer arrives, which is the

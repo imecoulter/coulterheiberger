@@ -6,16 +6,26 @@ full page load. This document is the record of what was there, why each piece wa
 was, and what it cost — kept so that rebuilding motion starts from the measurements rather than from
 scratch.
 
-**One `:hover` rule came back, and it is not motion.**
+**Two `:hover` rules came back, and neither is motion.**
 [ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md) gave a Plate on `/` a metadata block that appears
 under `:hover` and `:focus-within`. The sentence above used to end "and no element responds to a
 pointer"; it no longer can, so it is corrected rather than left to be discovered.
 
-It is an `opacity: 0` to `opacity: 1` swap and nothing else — **no `transition`, no `transform`, no
-duration, no easing.** The Plate is in one state or the other on the frame the pointer arrives. That
-is the same class of thing as `:focus-visible`, which this document has always counted as not-motion,
-and it is the boundary to hold: adding a duration to that one declaration is adding motion to the
-site, with everything below in this document applying to it.
+**The second is the Masthead portrait's `About` label**, added when the portrait absorbed the
+bordered link that used to sit under it. It is the same device on a different object, which is the
+only reason it is a second rule rather than a second decision: same trigger pair, same swap, same
+absence of timing.
+
+Each is an `opacity: 0` to `opacity: 1` swap and nothing else — **no `transition`, no `transform`, no
+duration, no easing.** The element is in one state or the other on the frame the pointer arrives.
+That is the same class of thing as `:focus-visible`, which this document has always counted as
+not-motion, and it is the boundary to hold: adding a duration to either declaration is adding motion
+to the site, with everything below in this document applying to it.
+
+**Count the device, not the selectors.** The thing that stayed constant across the amendment is the
+instant swap. A third element revealing a label this same way is the same decision again; an element
+that wants to *ease* into view is a different one, and it needs
+[docs/design-direction.md](./design-direction.md) amended first.
 
 **Two traps that this rule sits directly on top of**, both recorded further down and both silent:
 

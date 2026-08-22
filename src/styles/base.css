@@ -111,7 +111,21 @@ h3 {
    are uppercase, both serif and display styles are sentence case, and no page or
    component overrides either. The one that did — the footer address, set in
    lowercase at normal tracking — was the site's tenth type treatment for the
-   sake of one string, and it is gone. */
+   sake of one string, and it is gone.
+
+   `color` IS PART OF THE STYLE TOO, WITH ONE STATED EXCEPTION. Both mono styles
+   are --muted everywhere they are painted ON THE GROUND, and a page wanting one
+   of them heavier is the drift this layer exists to stop — `/`'s own
+   `.masthead .spec` records that refusal and keeps it.
+
+   THE EXCEPTION IS TEXT OVER AN IMAGE, and it exists because there the colour is
+   not a preference. The two revealed bands on `/` lift .t-spec and .t-label to
+   --ink, and the reason is arithmetic: a black scrim must hold alpha 0.938 to
+   carry --muted at 4.5:1 over a worst-case pixel but only 0.595 to carry --ink,
+   so the text colour is what decides whether the band can be a fade at all
+   rather than an opaque slab over the work. The derivation is on --scrim in
+   src/pages/index.astro and in ADR-0008. Confined to those two bands; anything
+   on the Ground takes the colour above. */
 .t-label {
   font-family: var(--f-mono);
   font-size: var(--t-label);
