@@ -46,15 +46,76 @@ check that keeps the spacing honest were all built alongside it and none of them
 ## Metadata is revealed, not persistent
 
 At rest a Plate is its image and nothing else. Pointing at it, or focusing into it, puts the ordinal,
-the title, the specification line and the year in an opaque block at the Plate's foot.
+the title, the specification line and the year in a scrimmed band at the Plate's foot.
 
 **The metadata is always in the DOM.** It is opacity, not `display` or `hidden`, so a screen reader
 reads a complete Plate, a crawler indexes one, and the page without CSS is the list it always was.
 
-**The block is opaque `--ground`, not a scrim.** A gradient over a render cannot promise 4.5:1
-against arbitrary pixels, and `--muted` holds its ratio against `--ground` and nothing else. A flat
-black block with a hard edge is also the honest form for a design with zero radius and zero shadow:
-it is a plate of ground laid over the image, not an atmospheric effect.
+**The block is a scrim that fades from the frame's bottom edge, and the bound is a number.**
+~~It is opaque `--ground`.~~ Amended twice after owner review, and it is worth recording that the
+first amendment did not go far enough. The opaque block covered the bottom 30% of the Plate, so
+pointing at the work hid the work. Replacing it with a fade *above a plateau* came back as "too much
+black" a second time. What ships now is a fixed-height band whose alpha falls continuously from the
+bottom edge and never holds.
+
+The original reason for refusing a gradient was that one "cannot promise 4.5:1 against arbitrary
+pixels". That is true of an *arbitrary* gradient and false of a bounded one, so the rule is the bound
+rather than the prohibition:
+
+> A black scrim must hold **α ≥ 0.938** everywhere `--muted` is painted, or **α ≥ 0.595** everywhere
+> `--ink` is painted. The bands carry `--ink` and reach **0.68** at the text's top edge.
+
+Derived, not chosen. Black at α over a white pixel — the worst case a render can present — composites
+to `255(1 - α)`. `--muted` sits at luminance 0.198 (the 4.96:1 `scripts/check-css.mjs` reports on the
+Ground), so 4.5:1 needs a backdrop at or below `(0.198 + 0.05) / 4.5 - 0.05 = 0.0051`, a channel value
+near 16, giving α ≥ 0.938. `--ink` sits at 0.792 and the same arithmetic gives α ≥ 0.595. **Both hold
+over any image whatsoever**, which is the property the opaque block had and the thing that had to
+survive.
+
+**The gap between those two figures is the whole design.** A fade that starts at the bottom edge means
+alpha is *already falling* where the text sits, so the binding point is the **top** of the text, not
+the bottom of the band. `--muted` needs 0.94 there — which is another way of writing "no fade through
+the text". The plateau was never a cautious choice; it was the only shape `--muted` admits. Measured
+at the text's top edge:
+
+| α at text top | `--muted` | `--ink` |
+| --- | --- | --- |
+| 0.66 | 1.65 ✗ | 5.79 ✓ |
+| 0.70 | 2.01 ✗ | 6.83 ✓ |
+| 0.94 | 4.52 ✓ | 15.34 ✓ |
+
+**So the bands' small text is `--ink`, and that is a real cost paid deliberately.** It is a type-role
+colour override, and `src/styles/base.css` plus the `.masthead .spec` rule on `/` both refuse exactly
+this move — correctly, because on the Ground a specification line that reads one way beside another
+specification line is not a style. **Over an image it is not a free choice.** The text colour sets the
+scrim's alpha floor, so it is the single thing deciding how much render can show through: `--muted`
+buys a slab, `--ink` buys a fade. The override is confined to the two bands on `/` and stated on both
+rules that carry it. The Plate title is an `h3` and was already `--ink`, so this brings the ordinal and
+the specification line to the colour the title already had beside them rather than minting a new one.
+
+**0.66 at the text's top, not the 0.595 floor.** Same reasoning [ADR-0003](./0003-accessibility-bar.md)
+applies to `--muted`: pin for margin, not for the floor. Measured on the built page across the six
+Plates and the portrait, against the brightest real composited pixel in each text zone: **6.29 to
+12.91**, worst case the fog in `habitat`.
+
+**The foot is opaque, and that is a join rather than a slab.** The scrim reaches α = 1 at the frame's
+bottom edge over its last 10%. An earlier cut bottomed out at 0.85, which left the render faintly
+visible along the frame's final pixels and then cut hard to the page beneath — a seam exactly one
+Plate-edge wide. `--ground` is `#000000`, so an opaque foot *is* the page: the band stops having a
+bottom edge and the frame dissolves into the ground instead of ending on it. Verified by sampling the
+20 rows either side of the boundary; the last four rows inside the frame are already at 0, identical
+to the ground below.
+
+**The band's height is the length the fade falls off over, not the amount of ground painted.**
+Shortening it makes the falloff steeper rather than lighter, which is the opposite of the fix that was
+wanted. Above the foot there is no plateau left to shrink.
+
+**CI cannot catch a regression here.** Lighthouse's `color-contrast` audit does not evaluate text over
+an image and returns `notApplicable`, and `check:css` asserts tokens against `--ground` rather than
+against a composite. The α bound above is the whole guard. To check it by hand: force the bands
+visible, hide their text so only the scrim paints, screenshot each text zone and take its brightest
+pixel. Hide the dev toolbar first — it paints an `rgb(66,68,72)` pill across three of the six bands
+and reports 2.30, which is the toolbar and not the page.
 
 **Coarse pointers never reveal.** There is no tap-to-disclose. The whole Plate is one link and the
 first tap navigates; a two-stage tap needs a second authored script, which the one-script rule
@@ -177,6 +238,6 @@ reached by `object-fit: cover` at the box, the same two-stage mechanism the Over
 | **The collage itself** | Built, measured, and cut: six Projects is not enough work for differing sizes to read as curation rather than as noise. Kept above rather than deleted, because more Projects is what would change the answer |
 | **Keeping the metadata column beside each image** | The arrangement this replaced. It is a persistent rail at Plate scale, and the precedent analysis had already cut the page-level version of exactly that |
 | **Per-Cell re-encode at the Cell's exact ratio** | Six ratios x six Plates x two formats x a width ladder, for a crop `object-fit: cover` already performs from files that exist. It also invalidates CI's processed-image cache on every layout tweak |
-| **A gradient scrim under the revealed metadata** | Cannot promise 4.5:1 over arbitrary pixels, and it is the atmospheric effect a zero-shadow design spent its refusals avoiding |
+| **A gradient scrim under the revealed metadata** | ~~Cannot promise 4.5:1 over arbitrary pixels, and it is the atmospheric effect a zero-shadow design spent its refusals avoiding.~~ **Adopted on amendment, bounded at α ≥ 0.595 where `--ink` is painted (0.938 for `--muted`)** — see "Metadata is revealed, not persistent" above for the derivation. The refusal was right about an unbounded gradient and wrong to generalise from it |
 | **Metadata always visible under each Cell** | Safe, needs no amendment, and it was the owner's rejected option: it makes every Cell a card and reinstates the six identical rectangles a column at a time |
 | **A caption strip reserved but empty at rest** | Avoids the overlay and avoids layout shift, and it leaves a band of empty ground under every image that reads as a mistake rather than as space |

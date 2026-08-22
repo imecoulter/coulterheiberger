@@ -198,9 +198,14 @@ const expanded = await Promise.all(
   }
 
   /* ONE COLUMN BELOW THE HERO. Heading, summary, prose and every Frame share
-     --body-col, which is half the page shell. The hero above runs the full
-     shell, so the page is one wide plate over one half-width column, both
-     starting on the same left edge.
+     --body-col. The hero above runs the full shell, so the page is one wide
+     plate over one narrower column, both starting on the same left edge.
+
+     IT USED TO SAY "half the page shell" and that stopped being true when the
+     shell narrowed from 1600 to 1280 and --body-col stayed at 800. The column
+     is now 62.5% of the shell. What matters here is unchanged and is the shared
+     LEFT EDGE, not the fraction — see the token's own comment for why the
+     arithmetic was not restored.
 
      This replaced two measures with one: the text used to sit at --measure
      (64ch) and the Frames at --gallery-col (1080px), which drew two right edges

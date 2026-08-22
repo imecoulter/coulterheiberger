@@ -127,7 +127,26 @@
      and the copy in the markup would drift silently — the page still looks
      right and the browser just fetches the wrong width. Renaming one of these
      is a build error in layout.ts, which is the point. */
-  --measure-page: 1600px;
+  /* IT WAS 1600px. Narrowed on owner review, and the complaint it answers was
+     "content is mixed between spanning, justified left, and otherwise".
+
+     The shell was never the problem: `/`, `/about/ime/`, `/projects/<slug>/`
+     and the footer all already took this token, centred it, and padded it with
+     --rhythm/--gap. What read as ragged was the RATIO INSIDE it. Every text
+     block caps at --body-col and starts on the left datum edge, so at a 1440px
+     window the prose ran 800px against a 1329px image and left a ~530px void
+     down the right of everything with words in it.
+
+     1280 closes that to ~480px at the same window and puts the prose at 62.5%
+     of the field rather than 50%. The images come down with it, which was the
+     other half of the ask.
+
+     THE LEFT DATUM EDGE IS WHY THIS IS THE LEVER AND CENTRING IS NOT. Every
+     page here is one wide thing over one narrow column sharing a left edge
+     (About.astro and [slug].astro both argue it, and design-direction.md makes
+     the specification line the datum). Centring the columns would close the same
+     void by breaking that, so the shell moves and the alignment does not. */
+  --measure-page: 1280px;
 
   /* NARROWED TO ONE CONSUMER. This was "the metadata column beside a Plate on
      `/`", and with the Bento there is no such column: metadata is revealed on
@@ -137,8 +156,15 @@
      keeping one number beat minting a second. */
   --plate-meta: 320px;
 
-  /* HALF THE PAGE SHELL, and the number is not a coincidence: 800 is
-     --measure-page / 2. Everything in a Project's body sits in this column —
+  /* IT WAS HALF THE PAGE SHELL, and it is now 62.5% of it. 800 was
+     --measure-page / 2 back when that token was 1600; the shell narrowed to
+     1280 and this number deliberately did NOT follow, because closing the void
+     beside the prose was the entire point of narrowing the shell. Halving 1280
+     would have reopened it at 640.
+
+     Do not restore the arithmetic. The relationship was a convenience, not a
+     constraint, and the thing that actually binds this number is the reading
+     measure below. Everything in a Project's body sits in this column —
      heading, summary, prose and every Frame — while the hero above it runs the
      full shell. One wide plate over one half-width column, sharing the left
      datum edge.

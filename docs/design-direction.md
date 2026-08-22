@@ -225,14 +225,23 @@ styling decision — and it is now also a change to the font build.
 **The site does not move.** Nothing animates and nothing transitions. Pages paint in their final
 state and a navigation is an ordinary full page load.
 
-**One element responds to a pointer, and it is the only one.** A Plate on `/` reveals its
-metadata under `:hover` and `:focus-within` ([ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md)). It is an
-`opacity` swap with no `transition`, no `transform` and no timing function: the Plate is in one state
-or the other on the frame the pointer arrives, which is why a site with no motion can carry it. That
-boundary is the thing to hold. The next element that wants to *fade* in is motion, and it needs this
-document amended first, on the terms below.
+**Two elements respond to a pointer, and they are the only two.** On `/`, a Plate reveals its
+metadata and the Masthead portrait reveals its `About` label, both under `:hover` and
+`:focus-within` ([ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md)). Each is an
+`opacity` swap with no `transition`, no `transform` and no timing function: the element is in one
+state or the other on the frame the pointer arrives, which is why a site with no motion can carry
+them. **That boundary is the thing to hold, and it is the swap rather than the count.** The next
+element that wants to *fade* in is motion, and it needs this document amended first, on the terms
+below.
 
-Apart from that Plate and the focus outline, nothing on the site has a state.
+**It was one, and the second is an amendment rather than a drift.** The portrait was a square with a
+bordered `About` link set underneath it — two objects making one offer, and the link was the only
+text on `/` whose affordance was a border rather than the datum. Folding the label onto the face
+makes the portrait behave like the six Plates below it: one target, one revealed label, one
+instant swap. Adding a *third* is this section again, and the question to answer is not "may I have
+another" but "is this the same device, or a new one".
+
+Apart from those two and the focus outline, nothing on the site has a state.
 
 This is the current direction, not a gap waiting to be filled. It replaced five interlocking
 categories — Registration, the Navigation Cross-fade, the Carry, the Traverse, and a fade on the

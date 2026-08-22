@@ -318,8 +318,16 @@ SVG.**
 
 ## Motion
 
-**There is none.** No `transition`, no `animation`, no `@keyframes`, no `@view-transition`, and no
-`:hover` rule anywhere in `src/`. There is also **no `prefers-reduced-motion` query left**, and that
+**There is none.** No `transition`, no `animation`, no `@keyframes`, and no `@view-transition`.
+
+**Two `:hover` rules exist and neither is motion**, both on `/` and both the same device: a Plate's
+metadata band, and the Masthead portrait's `About` label. Each is a bare `opacity` swap with no
+duration and no easing, so the element is in one state or the other on the frame the pointer
+arrives. This paragraph used to claim "no `:hover` rule anywhere in `src/`", which was already
+untrue of the Plate; see [docs/motion.md](./motion.md) for the boundary and
+[ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md) for the band's contrast bound.
+
+There is also **no `prefers-reduced-motion` query left**, and that
 follows rather than being an omission: the substrate declared every hidden and animated state only
 under `no-preference`, so that `reduce` was the plain document rather than a branch that switched
 things off. Remove the animated state and the query has nothing to guard. **Do not add a bare
