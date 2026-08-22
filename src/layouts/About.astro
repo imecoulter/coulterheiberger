@@ -90,7 +90,7 @@ const { title, description } = Astro.props.frontmatter;
   main {
     max-width: var(--measure-page);
     margin-inline: auto;
-    padding: var(--rhythm) var(--gutter);
+    padding: var(--rhythm) var(--gap);
   }
 
   h1 {
@@ -100,7 +100,7 @@ const { title, description } = Astro.props.frontmatter;
   }
 
   .role {
-    margin: 20px 0 0;
+    margin: var(--s3) 0 0;
   }
 
   /* The same cap as the Masthead's, from the same token, fetched at the same
@@ -108,7 +108,7 @@ const { title, description } = Astro.props.frontmatter;
      src/layout.ts for why there is one string rather than a pair. */
   main :global(picture) {
     display: block;
-    margin-top: 40px;
+    margin-top: var(--s5);
   }
 
   :global(.portrait) {
@@ -159,7 +159,7 @@ const { title, description } = Astro.props.frontmatter;
      is --muted and the body prose is the inherited --ink. There is no lede
      here, so there is nothing to demote. */
   .prose :global(p) {
-    margin: 20px 0 0;
+    margin: var(--s3) 0 0;
   }
 
   /* The dated lists: experience and education. A rule per row rather than a
@@ -168,12 +168,12 @@ const { title, description } = Astro.props.frontmatter;
      block on a Project page separates itself with. */
   .prose :global(ul) {
     list-style: none;
-    margin: 24px 0 0;
+    margin: var(--s3) 0 0;
     padding: 0;
   }
 
   .prose :global(li) {
-    padding: 16px 0;
+    padding: var(--s2) 0;
     border-top: 1px solid var(--rule);
   }
 
@@ -186,7 +186,7 @@ const { title, description } = Astro.props.frontmatter;
      type role is the site's own rather than a fourth thing invented here. */
   .prose :global(li .t-spec) {
     display: block;
-    margin-bottom: 6px;
+    margin-bottom: var(--s1);
   }
 
   /* Capabilities. The same <dl> shape as the fact block on a Project page,
@@ -195,21 +195,21 @@ const { title, description } = Astro.props.frontmatter;
      tokens, so the two read as one treatment. */
   .prose :global(dl) {
     display: grid;
-    gap: 24px;
-    margin: 24px 0 0;
-    padding: 20px 0 0;
+    gap: var(--s3);
+    margin: var(--s3) 0 0;
+    padding: var(--s3) 0 0;
     border-top: 1px solid var(--rule);
   }
 
   @media (min-aspect-ratio: 1 / 1) {
     .prose :global(dl) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 24px 48px;
+      gap: var(--s3) var(--s5);
     }
   }
 
   .prose :global(dd) {
-    margin: 6px 0 0;
+    margin: var(--s1) 0 0;
     color: var(--muted);
   }
 
@@ -219,7 +219,7 @@ const { title, description } = Astro.props.frontmatter;
      contact is not a route. */
   .prose :global(.location) {
     margin-top: var(--rhythm);
-    padding-top: 20px;
+    padding-top: var(--s3);
     border-top: 1px solid var(--rule);
   }
 </style>

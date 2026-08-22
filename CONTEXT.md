@@ -34,8 +34,11 @@ _Avoid_: trigger, lazy load, interaction, CI check, gate (for a build check)
 
 ### Motion
 
-**The site has no motion.** Nothing animates, nothing transitions, and nothing responds to a pointer.
-The five terms this section used to define — Registration, Navigation Cross-fade, Carry, Traverse,
+**The site has no motion.** Nothing animates and nothing transitions. One element has a pointer
+state — a Plate on `/` reveals its metadata on `:hover` and `:focus-within`, an `opacity` swap with no
+duration and no easing ([ADR-0008](./docs/adr/0008-the-index-arrangement-and-one-spacing-atom.md)) — and describing that as an
+animation, a fade or a transition is the drift to avoid, because each of those words would license a
+duration. The five terms this section used to define — Registration, Navigation Cross-fade, Carry, Traverse,
 and the Expanded View's fade — name behaviours that were removed in one pass, and they are kept with
 their specs and measurements in `docs/motion.md`. Use them if any of it is rebuilt; do not use them
 to describe the site as it stands.
@@ -61,12 +64,12 @@ A single piece of work presented on the site: a real-time system, a rendered seq
 _Avoid_: work, piece, case study, entry
 
 **Masthead**:
-The site's own identity block, at the head of the index and above the first Plate: who the practice is, what it does, and the practice's own specification line. Deliberately **not** a Plate — it holds no Project and enters no metadata contract — but it is measured against the same datum, because a specification line is what the datum is. It borrows the Plate's two-column grid with the columns swapped, so the text sits where an image would and the two share a left edge without being the same kind of object.
+The site's own identity block, at the head of the index and above the first Plate: who the practice is, what it does, and the practice's own specification line. Deliberately **not** a Plate — it holds no Project and enters no metadata contract — but it is measured against the same datum, because a specification line is what the datum is. It is two columns, text then face, sharing the Plates' left datum edge without being the same kind of object.
 _Avoid_: about card, bio, hero, intro, banner, plate
 
 **Plate**:
-A Project as it is presented: one image and one specification line, a single unit. Every piece of work on the site is a Plate under an identical metadata contract, so plates differ in subject rather than in status. The index and the detail page show the same Plate in two presentations, not two different objects.
-_Avoid_: card, tile, thumbnail, item, hero
+A Project as it is presented: one image and one specification line, a single unit. Every piece of work on the site is a Plate under an identical metadata contract, so plates differ in subject rather than in status. On the index every Plate is the same size, one per row, and the metadata is revealed on the image rather than set beside it; a collage of differing sizes was built and reverted, and [ADR-0008](./docs/adr/0008-the-index-arrangement-and-one-spacing-atom.md) holds it. The index and the detail page show the same Plate in two presentations, not two different objects.
+_Avoid_: card, tile, thumbnail, item, hero, cell, bento
 
 **Expanded View**:
 A single Frame shown at the size of the window, over the rest of the page blurred back. Opened by the

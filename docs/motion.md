@@ -1,10 +1,30 @@
 # Motion
 
 **Nothing on this site moves today.** Every animation, transition and hover effect was removed in one
-pass, back to the plain document: pages paint in their final state, a navigation is an ordinary full
-page load, and no element responds to a pointer. This document is the record of what was there, why
-each piece was built the way it was, and what it cost — kept so that rebuilding motion starts from
-the measurements rather than from scratch.
+pass, back to the plain document: pages paint in their final state and a navigation is an ordinary
+full page load. This document is the record of what was there, why each piece was built the way it
+was, and what it cost — kept so that rebuilding motion starts from the measurements rather than from
+scratch.
+
+**One `:hover` rule came back, and it is not motion.**
+[ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md) gave a Plate on `/` a metadata block that appears
+under `:hover` and `:focus-within`. The sentence above used to end "and no element responds to a
+pointer"; it no longer can, so it is corrected rather than left to be discovered.
+
+It is an `opacity: 0` to `opacity: 1` swap and nothing else — **no `transition`, no `transform`, no
+duration, no easing.** The Plate is in one state or the other on the frame the pointer arrives. That
+is the same class of thing as `:focus-visible`, which this document has always counted as not-motion,
+and it is the boundary to hold: adding a duration to that one declaration is adding motion to the
+site, with everything below in this document applying to it.
+
+**Two traps that this rule sits directly on top of**, both recorded further down and both silent:
+
+- The Plate's block must never be `display: none` or `hidden`. It carries the Plate's accessible
+  metadata, and the whole reason an opacity swap was chosen over a display swap is that a screen
+  reader, a crawler and a CSS-less document all keep reading it.
+- `@starting-style` and `transition-behavior: allow-discrete` are in the baseline for the Expanded
+  View's fade. Neither belongs here. Reaching for them to soften this reveal is how the reveal
+  becomes an animation without anyone deciding it should be one.
 
 **Why it went.** The five categories interlocked, and clicking a Project put three of them on screen
 at once: the frame expanding, the image brightening, and content popping in and out. Rather than tune
