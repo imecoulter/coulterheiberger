@@ -7,6 +7,7 @@
  *   2. --muted >= 4.5:1 and --signal >= 3:1 on the ground
  *   3. --signal never appears in a `color:` declaration
  *   4. no prefers-color-scheme: one Ground, dark    (docs/adr/0007-one-dark-ground.md)
+ *   5. spacing is a token, never a raw length     (docs/adr/0008-the-index-arrangement-and-one-spacing-atom.md)
  *
  * Built output, not source, because that is the only place the question is
  * actually settled — a value can arrive from a component, a dependency, or a
@@ -55,6 +56,57 @@ function declarations(css, prop) {
   }
   return found;
 }
+
+
+/* ---- the spacing ladder ---------------------------------------------------
+   ONE SPACING ATOM AND FIVE STEPS UNDER IT (ADR-0008). --gap is the distance
+   between two Cells and from a Cell to the screen edge; --s1..--s5 is
+   everything inside a block. A page picks one of them; it does not write a
+   length.
+
+   REFUSED BY SHAPE RATHER THAN BY VALUE, for the reason every other refusal in
+   this file is by name. A whitelist of blessed pixel numbers would pass
+   `margin: 20px` written by hand and drift the day --s3 is tuned, and it could
+   not see intent: "just this one 14px" is how the type scale reached ten sizes
+   with nobody deciding to.
+
+   SCOPED TO margin, padding AND THE GAPS, NOT TO EVERY LENGTH. A drawn mark has
+   a size — the Plate index rule is 26x2 px — and a border is a width. Those are
+   not spacing and turning them into tokens would be a fourth scale nobody asked
+   for. What this covers is the distance between two things.
+
+   ZERO IS ALWAYS LEGAL, in every unit, and so is `auto`: `margin: 0` and
+   `margin-inline: auto` are structural rather than spatial. So are the
+   keywords a shorthand can carry (`inherit`, `revert-layer`) and anything
+   inside a var() or a calc(), which is where a token arrives. */
+const SPACING_PROPS = ['margin', 'padding', 'gap', 'row-gap', 'column-gap'];
+
+/** A shorthand's value split into terms, with var()/calc() groups kept whole. */
+function terms(value) {
+  const out = [];
+  let depth = 0;
+  let cur = '';
+  for (const ch of value) {
+    if (ch === '(') depth++;
+    if (ch === ')') depth--;
+    if (/\s/.test(ch) && depth === 0) {
+      if (cur) out.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  if (cur) out.push(cur);
+  return out;
+}
+
+const LENGTH = /^-?[\d.]+(px|rem|em|ch|vw|vh|vmin|vmax|cm|mm|in|pt|pc|q|ex|cap|ic|lh)$/i;
+const SPACING_OK = /^(auto|inherit|initial|unset|revert|revert-layer|0)$/i;
+
+/** True if `term` is a raw length where a token belongs. */
+const isRawSpacing = (term) =>
+  !SPACING_OK.test(term) && !ZERO.test(term) && !/^(var|calc|clamp|min|max)\(/i.test(term) &&
+  LENGTH.test(term);
 
 /* ---- colour ---------------------------------------------------------------
    OKLab mix -> sRGB -> WCAG 2.x relative luminance. The mix has to be done in
@@ -231,6 +283,30 @@ for (const { file, css } of sources) {
       violations.push({ file, prop: 'color (--signal is not a text colour)', ...d });
     }
   }
+  // SPACING IS A TOKEN, NEVER A LENGTH (ADR-0008). The shorthands are checked
+  // term by term, because `margin: 0 auto` is fine and `margin: 0 20px` is not,
+  // and a value assertion over the whole declaration cannot tell them apart.
+  //
+  // Longhands come free: the lookbehind in declarations() keeps `margin` from
+  // matching `margin-top`, so each longhand is asked for by name below.
+  for (const prop of SPACING_PROPS) {
+    const longhands =
+      prop === 'margin' || prop === 'padding'
+        ? [prop, ...['top', 'right', 'bottom', 'left', 'inline', 'block'].map((s) => `${prop}-${s}`)]
+        : [prop];
+    for (const name of longhands) {
+      for (const d of declarations(css, name)) {
+        const raw = terms(d.value).filter(isRawSpacing);
+        if (raw.length > 0) {
+          violations.push({
+            file,
+            prop: `${name} (spacing is --gap or --s1..--s5, never a length)`,
+            ...d,
+          });
+        }
+      }
+    }
+  }
   // ONE GROUND, AND IT IS DARK (ADR-0007). Refused by NAME rather than by
   // asserting some property of the result, for the same reason --signal is: a
   // value assertion cannot see intent, and "just a light variant" is one media
@@ -291,8 +367,8 @@ if (violations.length > 0 || failed.length > 0) {
   if (violations.length > 0) {
     console.error(
       `check:css — ${violations.length} violation(s) of the design direction's hard rules.\n` +
-        `Datum ships zero radius and zero shadow, --signal is never text, and the\n` +
-        `site has ONE Ground with no light alternative.\n` +
+        `Datum ships zero radius and zero shadow, --signal is never text, the\n` +
+        `site has ONE Ground with no light alternative, and spacing is a token.\n` +
         `If that is genuinely changing, amend docs/design-direction.md first —\n` +
         `do not weaken this check.\n`,
     );
@@ -320,6 +396,6 @@ if (violations.length > 0 || failed.length > 0) {
 const blocks = sources.length;
 const table = ratios.map((r) => `${r.token} ${r.ratio.toFixed(2)}`).join(', ');
 console.log(
-  `check:css — ok. ${blocks} stylesheet(s)/inline block(s), 0 radius, 0 shadow, one Ground.`,
+  `check:css — ok. ${blocks} stylesheet(s)/inline block(s), 0 radius, 0 shadow, one Ground, spacing on the ladder.`,
 );
 console.log(`check:css — contrast ok. ${table}.`);

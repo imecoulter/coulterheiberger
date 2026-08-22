@@ -84,8 +84,41 @@
   --track-spec: 0.07em;
   --track-label: 0.09em;
 
-  --gutter: 20px;
-  --rhythm: 64px;
+  /* ONE SPACING ATOM, AND A LADDER UNDER IT. ADR-0008.
+
+     --gap is the distance between two Cells, the distance from a Cell to the
+     screen edge, and the unit --rhythm is a multiple of. One number answering
+     all three is what makes the Bento read as one field rather than as boxes
+     arranged on a page, and it is the whole of the "standardised spacing"
+     the arrangement was asked for.
+
+     IT WAS --gutter, and the rename is not cosmetic: it stopped being only a
+     gutter the moment the same value became the gap inside the grid. There was
+     also a --plate-gap at 48px sitting beside a 48px --gutter, two names for
+     one number, which is precisely the drift this layer exists to prevent.
+     Both are gone. layout.ts parses these names out of this file, so each
+     rename was a build error until every consumer moved — that coupling is the
+     point of it.
+
+     --s1..--s5 IS A CAP, THE SAME WAY THE SIX TYPE SIZES ARE. The site had nine
+     spacing values in use before this and four of them were declared inside a
+     page's own scoped block, so "how many gaps does this site have" could only
+     be answered by reading every page. That is exactly how the type scale got
+     to ten sizes without anyone deciding to. check-css.mjs now refuses a raw
+     length in margin, padding or any gap in the built CSS: a new step goes on
+     this ladder, where the next person can count them, or it does not exist. */
+  --gap: 20px;
+  --s1: 8px;
+  --s2: 12px;
+  --s3: 20px;
+  --s4: 32px;
+  --s5: 48px;
+
+  /* A MULTIPLE, NOT A VALUE. It was 64px/128px/160px hand-declared at three
+     breakpoints; it is now three gaps at whatever the gap is, which moves it to
+     60/144 and drops the third breakpoint's override entirely. The shift is
+     recorded in docs/styling.md rather than special-cased back. */
+  --rhythm: calc(var(--gap) * 3);
 
   /* Layout measures. Declared in px, and deliberately not in rem or ch, because
      src/layout.ts PARSES THEM OUT OF THIS FILE at build time to compose the
@@ -95,8 +128,14 @@
      right and the browser just fetches the wrong width. Renaming one of these
      is a build error in layout.ts, which is the point. */
   --measure-page: 1600px;
+
+  /* NARROWED TO ONE CONSUMER. This was "the metadata column beside a Plate on
+     `/`", and with the Bento there is no such column: metadata is revealed on
+     the Cell. What still uses it is the Masthead's portrait, which borrowed
+     this width deliberately so the face and the old metadata column shared an
+     edge. The edge it shares now is the Bento's fourth column, near enough that
+     keeping one number beat minting a second. */
   --plate-meta: 320px;
-  --plate-gap: 48px;
 
   /* HALF THE PAGE SHELL, and the number is not a coincidence: 800 is
      --measure-page / 2. Everything in a Project's body sits in this column —
@@ -121,15 +160,14 @@
    property; layout.ts is where the one copy of the reasoning lives. */
 @media (min-aspect-ratio: 1 / 1) {
   :root {
-    --gutter: 48px;
-    --rhythm: 128px;
+    --gap: 48px;
   }
 }
 
-/* Still a width, and deliberately: this one is not the mode switch, it is how
-   much air a genuinely large window gets once it is already in the wide mode. */
-@media (min-width: 1200px) {
-  :root {
-    --rhythm: 160px;
-  }
-}
+/* --rhythm USED TO GET A THIRD VALUE HERE, 160px at min-width: 1200px, and it
+   is gone rather than converted. It was the one place a spacing value was not
+   derived from anything, and with --rhythm defined as three gaps there is
+   nothing left for a width breakpoint to say: the gap is already at its wide
+   value by the time a window is 1200px across. The air a genuinely large window
+   gets is now the shell cap doing that job. index.astro still uses 1200px for
+   the Masthead portrait, which is a size question rather than a spacing one. */

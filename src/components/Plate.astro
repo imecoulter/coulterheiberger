@@ -21,9 +21,16 @@
    keyword. src/layout.ts holds the pair and the reasoning.
 
    That is not the only reason it is a component rather than markup on two pages.
-   `/` and `/projects/<slug>/` emit the IDENTICAL crop, and two copies of this
-   markup would agree on the day they were written and diverge on the day one
-   route's ratio was tuned.
+   `/` and `/projects/<slug>/` emit the IDENTICAL crop at the IDENTICAL width,
+   and two copies of this markup would agree on the day they were written and
+   diverge on the day one route's ratio was tuned.
+
+   IT TOOK A `context` PROP FOR MOST OF ITS LIFE, and then a `cell` prop under
+   ADR-0008's Bento, because the two routes laid a Plate out at different
+   widths. They do not any more: the index is a single column of full-width
+   Plates and so is a Project's hero. Both props are gone rather than kept
+   against a future that may not arrive — a prop with one live value is a
+   branch nobody tests.
 
    VERIFIED BY BUILDING, not read (this repo's ethic, and the trap is silent):
    passing `aspectRatio` alongside a `widths` ladder does NOT crop — Astro emits
@@ -44,20 +51,15 @@ import {
   WIDE_MODE,
   cssRatio,
   heightFor,
-  restY,
-  indexWideSizes,
-  indexTallSizes,
-  detailWideSizes,
-  detailTallSizes,
+  objectPosition,
+  plateWideSizes,
+  plateTallSizes,
 } from '../layout';
 
 type Frame = CollectionEntry<'projects'>['data']['images'][number];
 
 interface Props {
   frame: Frame;
-  /** Which presentation. The crops are identical either way; only the width the
-      image is laid out at, and therefore `sizes`, differs. */
-  context: 'index' | 'detail';
   /** The LCP element. At most one per page. */
   priority?: boolean;
 }
@@ -69,10 +71,10 @@ interface Props {
    <custom-ident> (`plate-<slug>`) and had exactly that one consumer, so it went
    with the Carry. Neither is a prop to reinstate casually — docs/motion.md holds
    what each was for, including why the ident had to start with a letter. */
-const { frame, context, priority = false } = Astro.props;
+const { frame, priority = false } = Astro.props;
 
-const wideSizes = context === 'index' ? indexWideSizes : detailWideSizes;
-const tallSizes = context === 'index' ? indexTallSizes : detailTallSizes;
+const wideSizes = plateWideSizes;
+const tallSizes = plateTallSizes;
 
 /** One tier: a format at one crop, across a width ladder. The `src` is the
     ladder's top entry and `srcSet` carries the rest; `position` is the Plate's
@@ -107,8 +109,8 @@ const tallJpeg = await tier(TALL, TALL_FALLBACK, 'jpeg');
 /* Which crop a window gets is the same question as which way the page lays out,
    so it asks the same condition: wider than tall takes the band, taller than
    wide takes the 4:5. layout.ts exports it as WIDE_MODE and tokens.css turns
-   --gutter and --rhythm over on it. Imported rather than restated so the crops
-   and the gutters cannot disagree — a `media` attribute cannot read a custom
+   --gap over on it. Imported rather than restated so the crops
+   and the gaps cannot disagree — a `media` attribute cannot read a custom
    property, but it can read a build-time constant. */
 const WIDE_MEDIA = WIDE_MODE;
 
@@ -118,14 +120,18 @@ const WIDE_MEDIA = WIDE_MODE;
    The point of routing these through layout.ts at all is that the ratio the box
    is drawn at comes from the same pair as the height sharp cut the file to.
 
-   --rest-y is where the wide crop sits in its box, and it is the author's own
-   `framing` keyword. It is not decoration: the wide file is larger than its box,
-   so without this the browser would centre the Overscan and throw away the
-   composition decision sharp had just honoured. */
+   --rest is where the crop sits in its box, and it is the author's own `framing`
+   keyword. It is not decoration: the wide file is larger than its box, so
+   without this the browser would centre the Overscan and throw away the
+   composition decision sharp had just honoured.
+
+   BOTH AXES ARE PASSED and only the vertical one has anywhere to go, because
+   the file and the box are the same width. See objectPosition in layout.ts for
+   why the pair is kept whole rather than trimmed to the half that acts. */
 const vars = [
   `--wide-ratio: ${cssRatio(WIDE)}`,
   `--tall-ratio: ${cssRatio(TALL)}`,
-  `--rest-y: ${restY(frame.framing)}`,
+  `--rest: ${objectPosition(frame.framing)}`,
 ].join('; ');
 ---
 
@@ -159,8 +165,10 @@ const vars = [
      `overflow: hidden` is INERT TODAY and kept on purpose. Nothing overflows
      this element now — `object-fit: cover` clips inside the <img>'s own box —
      but this is the clip box, and anything that lays the image out larger than
-     its frame or clips it belongs here rather than on the <img>. docs/motion.md
-     records what naming the wrong one of those two cost. */
+     its frame or clips it belongs here rather than on the <img>. It was briefly
+     live under ADR-0008's Bento, where the grid sized the box and the image
+     covered it; docs/motion.md records what naming the wrong one of those two
+     cost before that. */
   picture {
     display: block;
     overflow: hidden;
@@ -173,17 +181,16 @@ const vars = [
      it is the crop that produces the band, and `object-position` chooses where
      in the file that band falls. That is the whole mechanism.
 
-     --rest-y is the vertical half of the author's `framing` keyword, and with
-     the Traverse gone it is the only thing positioning the band. It used to be
-     the midpoint of a clamped range the pointer moved through; it is now simply
-     where the band sits. The horizontal half is a flat 50% because the file and
-     the box are the same width, so there is nothing sideways to choose. */
+     --rest is the author's `framing` keyword and it is the only thing
+     positioning the band. It used to be the midpoint of a clamped range the
+     Traverse moved through; it is now simply where the band sits. The
+     horizontal half is inert while the file and the box are the same width. */
   img {
     width: 100%;
     height: auto;
     aspect-ratio: var(--tall-ratio);
     object-fit: cover;
-    object-position: 50% var(--rest-y, 50%);
+    object-position: var(--rest, 50% 50%);
   }
 
   @media (min-aspect-ratio: 1 / 1) {

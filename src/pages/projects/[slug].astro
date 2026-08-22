@@ -68,7 +68,7 @@ const expanded = await Promise.all(
         would hand the LCP to an <h1> on mobile and quietly move the page into
         the other regime. */}
     <div class="hero">
-      <Plate frame={images[0]} context="detail" priority />
+      <Plate frame={images[0]} priority />
     </div>
 
     <h1>{title}</h1>
@@ -190,11 +190,11 @@ const expanded = await Promise.all(
   main {
     max-width: var(--measure-page);
     margin-inline: auto;
-    padding: var(--rhythm) var(--gutter);
+    padding: var(--rhythm) var(--gap);
   }
 
   .hero {
-    margin-bottom: 40px;
+    margin-bottom: var(--s5);
   }
 
   /* ONE COLUMN BELOW THE HERO. Heading, summary, prose and every Frame share
@@ -213,7 +213,7 @@ const expanded = await Promise.all(
   }
 
   .summary {
-    margin: 20px 0 0;
+    margin: var(--s3) 0 0;
     max-width: var(--body-col);
     color: var(--muted);
   }
@@ -221,16 +221,16 @@ const expanded = await Promise.all(
   .facts {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px 48px;
-    margin: 40px 0 0;
-    padding: 20px 0 0;
+    gap: var(--s2) var(--s5);
+    margin: var(--s5) 0 0;
+    padding: var(--s3) 0 0;
     border-top: 1px solid var(--rule);
   }
 
   .facts div {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--s1);
   }
 
   .facts dd {
@@ -252,7 +252,7 @@ const expanded = await Promise.all(
   }
 
   .gallery li + li {
-    margin-top: 40px;
+    margin-top: var(--s5);
   }
 
   /* The link is a block wrapper and nothing else. No underline, no border, no
@@ -294,7 +294,7 @@ const expanded = await Promise.all(
     max-height: 100dvh;
     margin: 0;
     border: 0;
-    padding: var(--gutter);
+    padding: var(--gap);
     overflow: hidden;
     background: color-mix(in oklab, var(--ground) 82%, transparent);
     /* Safari needed the prefix until 18. The design degrades to a plain tint
@@ -331,7 +331,7 @@ const expanded = await Promise.all(
   dialog.expanded[open] {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
-    gap: 16px;
+    gap: var(--s2);
     justify-items: end;
   }
 
@@ -349,7 +349,7 @@ const expanded = await Promise.all(
      not a number that survives that. --ink is 15.6:1 and survives anything. */
   .close {
     margin: 0;
-    padding: 8px 0;
+    padding: var(--s1) 0;
     border: 0;
     background: none;
     color: var(--ink);

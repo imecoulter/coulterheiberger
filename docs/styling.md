@@ -65,9 +65,35 @@ px** and that is deliberate:
 | token | role |
 | --- | --- |
 | `--measure-page` | the page shell, 1600px — was hard-coded in two components before this |
-| `--plate-meta` | the metadata column beside a Plate on `/` |
-| `--plate-gap` | the gutter between a Plate's image and its metadata |
+| `--plate-meta` | the Masthead's portrait column on `/` |
 | `--body-col` | the whole body column on `/projects/<slug>/`: heading, summary, prose and every Frame |
+| `--gap` | the spacing atom: Plate to Plate, Plate to screen edge, column to column. 20px / 48px |
+
+`--plate-gap` used to be here at 48px, beside a `--gutter` that was also 48px — two names for one
+number, which is the drift the token layer exists to prevent.
+[ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md) collapsed both into `--gap` and `--plate-meta` narrowed to
+the one thing still using it. Because `layout.ts` parses these names, each rename was a build error
+until every consumer moved, which is exactly what that coupling is for.
+
+### The spacing scale
+
+| token | value |
+| --- | --- |
+| `--gap` | 20px, 48px in the wide mode |
+| `--rhythm` | `calc(var(--gap) * 3)` — the distance between major page blocks |
+| `--s1`..`--s5` | 8, 12, 20, 32, 48 — everything inside a block |
+
+**The point is the cap, the same way it is with the six type sizes.** Before this the site had nine
+spacing values in use, four of them written inside a page's own scoped block, so "how many gaps does
+this site have" could only be answered by reading every page. The old values snap on: 6→8, 14→12,
+18→20, 24→20, 26 stays because it is a rule *width* and not a space. `--rhythm` moved 64→60 and
+128→144 as a consequence, and that shift was accepted rather than special-cased into the ladder.
+
+**It is enforced.** `npm run check:css` refuses a raw length in `margin`, `padding`, `gap`, `row-gap`
+or `column-gap` anywhere in built site CSS unless the value is zero or a `var(--...)`. By shape
+rather than by value, for the reason every other refusal in that script is by name: a value assertion
+cannot see intent, and "just this one 14px" leaves no trace in the design docs. If a new step is
+genuinely needed it goes on the ladder in `tokens.css`, where the next person can count them.
 
 `--body-col` replaced two tokens at review, `--gallery-col` (1080px, Frames) and `--measure` (64ch,
 text). They drew two different right edges down one page for no reason a reader could see, and they
@@ -175,6 +201,15 @@ Decided in #11, verified against the build:
   hash attribute, so scoped styles already win. Layers would solve a conflict that does not exist.
 - **Container queries — no**, until a component actually ships at two different widths. Every Plate
   today sits in the same container; media queries are the honest tool for a viewport switch.
+
+  **This line was flipped to "yes" for a day and is back**, which is worth a sentence because the
+  next person will find the trace. ADR-0008's Bento put Plates in Cells of four widths in one grid,
+  which met the condition above, and its row Unit was `cqi`-derived because it had to be a function
+  of the grid's own inline size. The collage was reverted; the condition is unmet again and so is the
+  refusal. The trap that cost the most while it was live is recorded in the ADR: a `cqi` inside a
+  container's OWN declarations resolves against an ANCESTOR container, never itself, and with none it
+  falls back to the viewport — silently, with every measurement quietly wrong.
+
 - **`:has()` — allowed**, but do not build structure on it. The one shipped use is the Expanded
   View's scroll lock, `html:has(dialog.expanded[open]) { overflow: hidden }`, which is a state
   toggle: it stops something moving and lays nothing out.

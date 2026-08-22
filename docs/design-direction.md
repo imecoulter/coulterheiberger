@@ -43,6 +43,17 @@ interactive work sits" until [ADR-0007](./adr/0007-one-dark-ground.md), which in
 cut the second band rather than flipping it. Everything else on this page survived that change
 unread, which is what made it an amendment rather than a new direction.
 
+**The index is one column of even Plates, and the frame says nothing so the work has to.**
+[ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md) settled `/`: every Plate the same size, full width, one per row, with
+its metadata revealed on the image rather than set in a column beside it.
+
+**A collage was built here first and cut.** Cells of differing size, packed from a seeded set of
+Bands, on the argument that six identical rectangles deliver "differing in status" while putting the
+whole weight of "differing in subject" onto the images. That argument survives the cut and is what
+the even list now has to answer for. What cut it is the scale: at six Projects a larger Cell is not a
+claim about the work, it is whatever the packer had left to place. The ADR keeps the geometry, because
+what would change the answer is more Projects.
+
 ## What the precedent analysis actually found
 
 Eleven sites were driven in a real browser — computed styles across every element, loaded font
@@ -64,6 +75,13 @@ effective background sampled at 4–9 scroll depths. Eight more were read from s
    **The rail is cut.** Metadata belongs to the Plate and travels with it: a column beside it on
    desktop, the same rows stacked above it at 390 px.
 
+   **Amended by [ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md).** On `/` the column beside it is gone too,
+   and metadata is now revealed on the Plate rather than persistent next to it. The finding above is
+   untouched and is in fact the reason: what was wrong with Bruno Arizio's rail was that the metadata
+   was *furniture the page carried*, and a column pinned to every Plate is the same mistake at
+   Plate scale. On `/projects/<slug>/` metadata is still persistent, because a detail page is where
+   someone went to read it.
+
 3. **Two cited precedents were factually wrong.** Lusion has **zero `<img>` elements** — a fixed
    full-viewport WebGL2 canvas from first paint, so "hero poster gating heavy work" is not what it
    does. Shopify Winter '26's ambient layer is **two live WebGL2 contexts coexisting on one route**,
@@ -83,6 +101,11 @@ These are enforced by `npm run check:css` over the built output (see `docs/styli
 
 - **Zero border-radius.** Shared with MIR, Luxigon, Recent Spaces, Vibor.
 - **Zero box-shadow.**
+- **One spacing atom, and a five-step ladder under it.** `--gap` is the distance between two Plates,
+  the distance from a Plate to the screen edge, and the unit `--rhythm` is a multiple of — one number
+  answering all three, which is what makes the page read as one field rather than as blocks with
+  their own margins. Everything smaller is `--s1`..`--s5`. `npm run check:css` refuses a raw length in `margin`,
+  `padding` or any `gap` in built site CSS. See [ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md).
 - **Native scroll.** No Lenis, no Locomotive, no `ScrollSmoother`. MIR loads `ScrollSmoother` and
   never instantiates it; Luxigon, Neoscape and Kilograph are plain native scroll.
 - **The LCP element is never a canvas** (ADR-0002).
@@ -199,9 +222,17 @@ styling decision — and it is now also a change to the font build.
 
 ## Motion
 
-**The site does not move.** Nothing animates, nothing transitions, and nothing responds to a pointer.
-Pages paint in their final state, a navigation is an ordinary full page load, and the only state
-change on the site is the focus outline.
+**The site does not move.** Nothing animates and nothing transitions. Pages paint in their final
+state and a navigation is an ordinary full page load.
+
+**One element responds to a pointer, and it is the only one.** A Plate on `/` reveals its
+metadata under `:hover` and `:focus-within` ([ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md)). It is an
+`opacity` swap with no `transition`, no `transform` and no timing function: the Plate is in one state
+or the other on the frame the pointer arrives, which is why a site with no motion can carry it. That
+boundary is the thing to hold. The next element that wants to *fade* in is motion, and it needs this
+document amended first, on the terms below.
+
+Apart from that Plate and the focus outline, nothing on the site has a state.
 
 This is the current direction, not a gap waiting to be filled. It replaced five interlocking
 categories — Registration, the Navigation Cross-fade, the Carry, the Traverse, and a fade on the

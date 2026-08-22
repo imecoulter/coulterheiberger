@@ -54,7 +54,7 @@ const px = (token: string) => pxAll(token)[0];
     is the mobile mode. Square is desktop, arbitrarily but consistently: the
     query is `min-aspect-ratio`, which is inclusive.
 
-    tokens.css turns --gutter and --rhythm over on this same condition, and
+    tokens.css turns --gap over on this same condition, and
     docs/design-direction.md's two art-directed crops reuse it, rather than
     minting a second boundary that would then have to be kept in step. It is
     written literally in each `@media` prelude and in the `media` attribute on
@@ -118,11 +118,18 @@ export const cssRatio = (crop: Crop) => `${crop.w} / ${crop.h}`;
     the file, and then quietly discard it at the box. A Plate framed `left top`
     would rest dead centre.
 
-    Only the vertical half does anything today: the file and the box are the
-    same width, so there is no horizontal overflow for the first value to move
-    through. Both are stated anyway, because the pair is what the keyword MEANS
-    and a map that silently drops half of it is the kind of thing that is
-    correct until the day the crops stop being width-matched. */
+    ONLY THE VERTICAL HALF DOES ANYTHING TODAY: the file and the box are the
+    same width in every presentation, so there is no horizontal overflow for the
+    first value to move through. Both are stated anyway, because the pair is
+    what the keyword MEANS and a map that silently drops half of it is the kind
+    of thing that is correct until the day the crops stop being width-matched.
+
+    THAT DAY CAME AND WENT DURING ADR-0008. The Bento's Cells were narrower than
+    their source files as often as they were shorter, the horizontal value drove
+    real overflow, and this block said so. The collage was reverted to a single
+    column of full-width Plates and the horizontal half went dormant again. It
+    is kept whole rather than trimmed back to a `restY`, which is exactly the
+    argument the paragraph above was already making. */
 export const OBJECT_POSITION = {
   centre: '50% 50%',
   top: '50% 0%',
@@ -135,42 +142,66 @@ export const OBJECT_POSITION = {
   'right bottom': '100% 100%',
 } as const;
 
-/** The vertical half of the above: where the 21:9 band sits inside the 16:9
-    file. The only half with anything to do today, since the file and the box
-    are the same width. */
-export const restY = (framing: string) =>
-  (OBJECT_POSITION[framing as keyof typeof OBJECT_POSITION] ?? '50% 50%').split(' ')[1];
+/** The keyword as a full `object-position`, both axes.
+
+    THERE USED TO BE A `restY` HERE that returned only the vertical half, on the
+    argument that it was the only half with anywhere to go. That is true again
+    today and the pair is still passed whole, for the reason the map's own
+    comment gives above: half a keyword is correct right up until the crops stop
+    being width-matched, and they did once already. */
+export const objectPosition = (framing: string) =>
+  OBJECT_POSITION[framing as keyof typeof OBJECT_POSITION] ?? '50% 50%';
 
 const PAGE = px('--measure-page');
 const PLATE_META = px('--plate-meta');
-const PLATE_GAP = px('--plate-gap');
 const BODY_COL = px('--body-col');
 
-/** --gutter is declared twice: the base value, then the wide-mode override. */
-const [GUTTER_SM, GUTTER_LG] = pxAll('--gutter');
+/** --gap is declared twice: the base value, then the wide-mode override.
+
+    IT WAS --gutter AND IT WAS ALSO --plate-gap. Both names are gone: one number
+    is now the distance between two Cells, the distance from a Cell to the
+    screen edge, and the unit --rhythm is a multiple of. See ADR-0008 and the
+    token's own comment. This file parsing the names is what turned each rename
+    into a build error instead of a stale copy. */
+const [GAP_SM, GAP_LG] = pxAll('--gap');
 
 /** Width of the page shell's content box once the gutters are removed. */
-const SHELL_CAPS_AT = PAGE + GUTTER_LG * 2;
+const SHELL_CAPS_AT = PAGE + GAP_LG * 2;
 
 /** In the mobile mode every image is the full content width of the viewport, so
     all three cases share one string. */
-const FULL_SM = `calc(100vw - ${GUTTER_SM * 2}px)`;
+const FULL_SM = `calc(100vw - ${GAP_SM * 2}px)`;
 
 /** Full content width in the wide mode, capped by the page shell. */
-const FULL_LG = `(min-width: ${SHELL_CAPS_AT}px) ${PAGE}px, calc(100vw - ${GUTTER_LG * 2}px)`;
+const FULL_LG = `(min-width: ${SHELL_CAPS_AT}px) ${PAGE}px, calc(100vw - ${GAP_LG * 2}px)`;
 
 /* ---- the three places a Rendered Asset appears --------------------------- */
 
-/** `/` — the hero sits in a grid cell with the metadata column beside it. */
-const INDEX_IMAGE = PAGE - PLATE_GAP - PLATE_META;
-export const indexWideSizes = `(min-width: ${SHELL_CAPS_AT}px) ${INDEX_IMAGE}px, calc(100vw - ${
-  GUTTER_LG * 2 + PLATE_GAP + PLATE_META
-}px)`;
-export const indexTallSizes = FULL_SM;
+/** `/` and `/projects/<slug>/` — a Plate runs the full content width on both.
+
+    ONE STRING FOR TWO ROUTES, and that is a statement about the layout rather
+    than a shortcut. The index is a single column of Plates at the shell's full
+    width; a Project's hero is the same. They were different for as long as the
+    index carried a 320px metadata column beside each image, and different again
+    under the Bento, where a Plate's width depended on which Cell it landed in.
+    It is now the same measurement in both places, so it is the same constant.
+
+    If they ever diverge again, split this into two exports rather than adding a
+    parameter — `sizes` drifting from the CSS is silent, and two named constants
+    are what make a diff show it. */
+export const plateWideSizes = FULL_LG;
+export const plateTallSizes = FULL_SM;
 
 /** `/projects/<slug>/` — the hero runs the full content width. It is the
     widest thing on the page and the datum's left edge is what it shares with
-    everything below it. */
+    everything below it.
+
+    THE SAME STRING AS `plateWideSizes` TODAY, and kept as its own name on
+    purpose. `/` reads this one to warm the next document's hero (see the
+    `data-hero-sizes` note in index.astro), and that is a claim about what the
+    PROJECT PAGE will ask for. Collapsing the two because they are equal would
+    make the warming silently follow the index's layout the next time the index
+    moves, which is what it did twice this year. */
 export const detailWideSizes = FULL_LG;
 export const detailTallSizes = FULL_SM;
 
@@ -185,8 +216,8 @@ export const detailTallSizes = FULL_SM;
     costs the reading measure. */
 export const bodyWidth = BODY_COL;
 export const bodySizes =
-  `(min-width: ${BODY_COL + GUTTER_LG * 2}px) ${BODY_COL}px, ` +
-  `${WIDE_MODE} calc(100vw - ${GUTTER_LG * 2}px), ` +
+  `(min-width: ${BODY_COL + GAP_LG * 2}px) ${BODY_COL}px, ` +
+  `${WIDE_MODE} calc(100vw - ${GAP_LG * 2}px), ` +
   FULL_SM;
 
 /* ---- the portrait --------------------------------------------------------
