@@ -134,6 +134,14 @@ state or the other on the frame the pointer arrives. That is what makes it compa
 that has no motion, and it is the boundary to hold: the next thing that wants to fade in is motion
 and needs the amendment ADR-0007's document demands.
 
+> **Amended by [ADR-0009](./0009-the-two-reveals-are-timed.md) (2026-08-22).** The reveal is timed
+> now: the scrim fades over 220ms and the text rises 8px into it, gated on
+> `prefers-reduced-motion: no-preference`. The paragraph above is kept as written because its
+> reasoning is what ADR-0009 had to answer, and it was answered on its own terms — the direction was
+> amended first, and what got a duration is this same device rather than a new one. The untimed
+> declarations it describes are still in the file and are still the whole reveal under `reduce` and
+> on a coarse pointer.
+
 ## What it costs the desktop LCP Path, measured
 
 The index hero used to be laid out at 1232 px: the shell minus the 320 px metadata column and the

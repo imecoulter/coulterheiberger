@@ -34,14 +34,36 @@ _Avoid_: trigger, lazy load, interaction, CI check, gate (for a build check)
 
 ### Motion
 
-**The site has no motion.** Nothing animates and nothing transitions. One element has a pointer
-state — a Plate on `/` reveals its metadata on `:hover` and `:focus-within`, an `opacity` swap with no
-duration and no easing ([ADR-0008](./docs/adr/0008-the-index-arrangement-and-one-spacing-atom.md)) — and describing that as an
-animation, a fade or a transition is the drift to avoid, because each of those words would license a
-duration. The five terms this section used to define — Registration, Navigation Cross-fade, Carry, Traverse,
-and the Expanded View's fade — name behaviours that were removed in one pass, and they are kept with
-their specs and measurements in `docs/motion.md`. Use them if any of it is rebuilt; do not use them
-to describe the site as it stands.
+**The site moves in two ways and they are one device**: an element enters once as it arrives, and two
+elements reveal a label under a pointer. Both are an `opacity` change and an 8px rise, `ease-out`, at
+the same duration. Nothing transitions between pages, nothing parallaxes, and nothing scrubs with
+scroll position.
+
+**Registration**:
+The one-time entrance of an element as it first comes into view: `opacity` 0 to 1 with an 8px
+`translateY`, 440ms `ease-out`, staggered 60ms apart in groups of four. It fires once, never
+re-triggers on scroll back, and covers the first screen as well as everything below it
+([ADR-0010](./docs/adr/0010-registration-returns.md)). Gated on `prefers-reduced-motion:
+no-preference` only, never on `hover` — a phone scrolls. The first screen registers from a CSS
+keyframe with no script on the path; below the fold, one `IntersectionObserver` adds the class once
+and stops watching.
+_Avoid_: reveal (that is the pointer device below), fade-in, scroll animation, entrance effect,
+scroll reveal, AOS
+
+**The reveal** is the other one: on `/`, a Plate reveals its metadata and the Masthead portrait
+reveals its `About` label, on `:hover` and `:focus-within`. Each fades its scrim in over 440ms and
+rises its text 8px into it 60ms behind, out at 280ms, gated on `hover: hover` and
+`prefers-reduced-motion: no-preference`
+([ADR-0008](./docs/adr/0008-the-index-arrangement-and-one-spacing-atom.md),
+[ADR-0009](./docs/adr/0009-the-two-reveals-are-timed.md)). **The reveal is the device and the device
+is the boundary** — a third element revealing a label this way is the same decision again; anything
+that moves for another reason is a new one and needs the direction amended first.
+
+Registration was one of five terms removed in one pass and is the only one that came back; its
+removal was argued on performance headroom rather than on fit. **Navigation Cross-fade**, **Carry**,
+**Traverse** and the Expanded View's fade name behaviours that are still removed, and they are kept
+with their specs and measurements in `docs/motion.md`. Use those three if any of it is rebuilt; do
+not use them to describe the site as it stands.
 
 **Overscan**:
 The part of a Plate's wide crop that falls outside the band it is shown in: the wide tier is cut 16:9
