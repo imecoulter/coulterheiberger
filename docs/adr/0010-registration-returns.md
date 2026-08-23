@@ -89,8 +89,9 @@ motion; this one fails toward stillness, and under `reduce` the page simply pain
 records this as one of the two invisible rules, and it is the single easiest thing here to get
 backwards.
 
-`base.css` consequently gains the site's second `prefers-reduced-motion` query. It is the second and
-the last: one per file, both `no-preference` gates.
+`base.css` consequently gains a `prefers-reduced-motion` query of its own, the third on the site
+after the two in `index.astro`'s scoped block. All three are `no-preference` gates. The number is not
+the invariant and never was; the form is.
 
 ## The `<noscript>` block is back
 
@@ -118,16 +119,32 @@ styles.
 
 ## What it costs
 
-Measured on the built site, not estimated. Figures are kept current in `docs/motion.md` §costs.
+Measured on the built site, not estimated.
 
-| | before | after |
-| --- | --- | --- |
-| authored JS, gzip | 421 B | recorded in `docs/motion.md` |
-| authored JS, raw | 834 B | recorded in `docs/motion.md` |
+| | before | after | delta |
+| --- | --- | --- | --- |
+| authored JS, gzip | 421 B | **637 B** | +216 B (1.3% of the 50 KB budget) |
+| authored JS, raw | 834 B | **1,263 B** | +429 B |
+| LCP, `/`, 1440x900 | 1,292 ms | **1,288 ms** | **−4 ms** |
+| LCP, `/projects/cecret/` | 1,024 ms | **1,028 ms** | **+4 ms** |
 
-The budget is unchanged: LCP Path ≤ 500 KB, LCP < 2.5 s on throttled 4G, JS on non-Exhibit routes
-≤ 50 KB. If Tier A ever costs measurable LCP, that is a measured constraint and worth acting on.
-Unused headroom is not, and that is the whole reason this document exists.
+LCP is the median of six interleaved runs per arm, 1.6 Mbps / 150 ms RTT and 4x CPU throttle, both
+arms served through the same request interception and differing only in whether `data-anim` is
+present. **Both deltas are inside run-to-run spread** (`/` ranged 1,220–1,292 with the attribute and
+1,272–1,300 without): Tier A costs no measurable LCP, which is the prediction the two-tier design was
+built on. The observer is Tier B only and never touches the LCP Path.
+
+The budget is unchanged and nowhere near reached: LCP Path ≤ 500 KB, LCP < 2.5 s on throttled 4G, JS
+on non-Exhibit routes ≤ 50 KB.
+
+**A first measurement said +156 ms and it was the harness.** Only the stripped arm was going through
+Playwright's request interception, and `route.fulfill()` serves the document from memory rather than
+across the emulated network — so the control arm was paying 150 ms of throttled latency the test arm
+was not, and the "cost of Registration" was the cost of not being intercepted. It was caught by
+re-running at 100 ms and 1,200 ms durations and getting 1,280 and 1,276: **a delta that does not move
+when the animation duration changes by 12x is not the animation.** `docs/motion.md` already carried
+this lesson from the Carry's measurement, in nearly the same words. Read it before believing the next
+one.
 
 ## Rejected
 

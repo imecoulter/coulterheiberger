@@ -67,17 +67,33 @@ const expanded = await Promise.all(
         the ~220 KB hero crossover in. Three hundred pixels of heading above it
         would hand the LCP to an <h1> on mobile and quietly move the page into
         the other regime. */}
-    <div class="hero">
+    {/* REGISTRATION, TIER A: the first screen animates from the stylesheet with
+        no script on the path, so the hero can start on the first frame. It is
+        the LCP element on this page — the hero leads precisely to keep the page
+        image-LCP — so it carries NO --d. An animation-delay on the LCP element
+        is added to LCP one for one (ADR-0010).
+
+        THE OTHER THREE ARE THE GROUP OF FOUR the design spec names, at the
+        site's 60ms unit: title, summary, facts. The three facts are one <dl>
+        and register together rather than as three, which is ADR-0009's argument
+        about the metadata band applied to the same kind of content — it is one
+        datum arriving, not three.
+
+        The Plate wrapper carries data-anim, never the <Plate> itself: a
+        component's scoped `transition` shorthand replaces one inherited from
+        base.css at higher specificity, which is finding #1 in docs/motion.md
+        and looks exactly like a page with no animation. */}
+    <div class="hero" data-anim="now">
       <Plate frame={images[0]} priority />
     </div>
 
-    <h1>{title}</h1>
-    <p class="summary">{summary}</p>
+    <h1 data-anim="now" style="--d: calc(1 * var(--reveal-stagger))">{title}</h1>
+    <p class="summary" data-anim="now" style="--d: calc(2 * var(--reveal-stagger))">{summary}</p>
 
     {/* Credit and the Specification Line together — provenance and
         construction, the pair CONTEXT.md defines against each other. `credit`
         appears here and nowhere else on the site (content-architecture.md §2). */}
-    <dl class="facts">
+    <dl class="facts" data-anim="now" style="--d: calc(3 * var(--reveal-stagger))">
       <div>
         <dt class="t-label">Credit</dt>
         <dd class="t-spec">{credit}</dd>
@@ -92,7 +108,14 @@ const expanded = await Promise.all(
       </div>
     </dl>
 
-    <div class="prose">
+    {/* TIER B FROM HERE DOWN: below the fold, so these start hidden and the
+        observer in Base.astro un-hides each one once as it comes into view.
+
+        THE WRAPPER REGISTERS, NOT THE PARAGRAPHS. The body is MDX and its
+        children cannot be marked in this template, but that is not why: it is
+        one block of writing arriving, and registering it line by line is the
+        performance the direction refuses. Same argument as the <dl> above. */}
+    <div class="prose" data-anim="scroll">
       <Content />
     </div>
 
@@ -120,7 +143,7 @@ const expanded = await Promise.all(
         difference. */}
     <ul class="gallery">
       {frames.map((frame, i) => (
-        <li>
+        <li data-anim="scroll">
           <a class="expand" href={expanded[i].src}>
             {/* <Picture>, and here it IS the right tool — which is worth saying
                 because Plate.astro argues at length for hand-assembling one.

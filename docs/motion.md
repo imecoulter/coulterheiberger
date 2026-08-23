@@ -331,7 +331,7 @@ disappeared, which is the correct failure — and is what it does now.
 
 ---
 
-## Four findings that cost real time
+## Five findings that cost real time
 
 Each of these was found by running something, not by reading it. All four fail silently.
 
@@ -359,6 +359,21 @@ photograph. The review that reported "no hover effect" was reading the page corr
 is about where an effect is reachable, not whether it is present:** every unit-level check passed the
 whole time, because each one drove the axis that worked.
 
+**5. An IntersectionObserver silently skips an element that crosses the viewport inside one frame,
+and with a fire-once entrance that element stays hidden forever.** IO only queues an entry when the
+intersection ratio *changes* between two computed frames. A scroll that carries an element from below
+the viewport to above it in a single frame goes 0 -> 0, no entry is delivered, `.is-in` is never
+added — and because the element starts at `opacity: 0` and nothing re-checks it, it is invisible for
+the rest of the session. Measured on `/` while building ADR-0010: a 700px-per-step scroll left **two
+of the six Plates permanently blank**, and the page looked like a page with two missing images rather
+than like a broken observer.
+
+The fix is not a scroll listener. It is `rootMargin: '200000px 0px -10% 0px'` — extending the root
+upward makes the observed region "everything above the 90% line", which an element cannot leave once
+it has entered, so a jump cannot skip it. **A page-height jump, a scrollbar drag, an anchor landing
+mid-document and a restored scroll position all produce that frame**, so this is a real-visitor bug
+and not a test artefact. Anything rebuilt on IO with a fire-once contract needs the same treatment.
+
 **4. `blocking="render"` is not honoured on `<link rel="preload" as="image">`.** Probed in Chrome:
 with the image stalled 2500 ms the page still painted at 36 ms. `rel="expect"` waits for an element
 to be parsed, not for bytes. **There is no way to make a document wait for an image**, which is why
@@ -385,9 +400,10 @@ browser, computed `opacity: 1`, no transform, no clip, `transition-duration: 0s`
 block that turns things off.** That form computes the animated path first and fails *toward* motion;
 this one fails toward stillness.
 
-**There are exactly two `prefers-reduced-motion` queries in the codebase**, and both are
-`no-preference` gates: Registration's in `src/styles/base.css`, and the reveals' in
-`src/pages/index.astro`'s scoped block. One per file. A third, or either one inverted, is a bug.
+**Every `prefers-reduced-motion` query in the codebase is a `no-preference` gate**, and there are
+three: Registration's in `src/styles/base.css`, and one per reveal in `src/pages/index.astro`'s
+scoped block. The count is not the rule — the form is. A bare `reduce` block anywhere, or any of
+these three inverted, is a bug.
 
 ---
 
@@ -434,9 +450,36 @@ Expanded View was **641 B gzip / 1,315 B raw**, 1.1% of ADR-0002's 50 KB budget,
 block and still zero extra requests. The whole substrate on the wire was **+426 B gzip on the
 document**.
 
-**After the removal it is 421 B gzip / 834 B raw** — warming plus the Expanded View, measured off
-`dist/index.html`. So the two motion behaviours were 220 B gzip of the 641, and what is left is the
+**After the removal it was 421 B gzip / 834 B raw** — warming plus the Expanded View, measured off
+`dist/index.html`. So the two motion behaviours were 220 B gzip of the 641, and what was left was the
 half that never drew anything.
+
+**As it ships today it is 637 B gzip / 1,263 B raw**, measured the same way: warming, Registration's
+observer, and the Expanded View. Registration's share is **+216 B gzip**, against 195 B for the
+historic three-move version — the extra is the two-tier selector and the batch stagger. Still one
+inline block, still zero extra requests, and 1.2% of ADR-0002's 50 KB budget.
+
+**Registration costs no measurable LCP**, which is the claim the whole two-tier design rests on and
+is the reason to state it with numbers. Median of six interleaved runs per arm, 1.6 Mbps / 150 ms RTT
+and 4x CPU throttle, 1440x900:
+
+| | with `data-anim` | stripped | delta |
+| --- | --- | --- | --- |
+| `/` | 1,288 ms | 1,292 ms | **−4 ms** |
+| `/projects/cecret/` | 1,028 ms | 1,024 ms | **+4 ms** |
+
+Both are inside run-to-run spread, and a negative delta is the tell that the two arms are the same
+page rather than that the entrance is free.
+
+**THE FIRST VERSION OF THAT MEASUREMENT SAID +156 ms AND IT WAS THE HARNESS.** Only the stripped arm
+went through Playwright's request interception, and `route.fulfill()` serves the document out of
+memory instead of across the emulated network — so the control arm was paying 150 ms of throttled
+latency that the test arm was not, and "the cost of Registration" was the cost of not being
+intercepted. What caught it was re-running with the duration changed to 100 ms and to 1,200 ms and
+getting 1,280 and 1,276: **a delta that does not move when the animation duration changes by 12x is
+not the animation.** This is the Carry's lesson in a different costume — read a suspicious motion
+delta as a broken harness first, and make both arms take the identical path before trusting either
+number.
 
 ### What each library option costs
 

@@ -345,8 +345,9 @@ rising its text 8px into it 60ms behind, out at 280ms
 [ADR-0009](./adr/0009-the-two-reveals-are-timed.md)). The untimed `opacity` swap still sits outside
 the guard and is still the whole reveal under `reduce` and on a coarse pointer.
 
-**There are exactly two `prefers-reduced-motion` queries**, one per file, and **both are
-`no-preference` gates rather than `reduce` blocks**. The hidden and animated states are declared
+**Every `prefers-reduced-motion` query on the site is a `no-preference` gate, never a `reduce`
+block.** There are three: one in `base.css` guarding Registration, and two in `index.astro`'s scoped
+block, one per reveal. The hidden and animated states are declared
 *inside* the gate, so `reduce` is the plain document rather than a branch that switches motion off.
 That form fails toward stillness; the inverted form computes the animated path first and fails toward
 motion. **Never add a bare `reduce` block, and never invert either of these two.**

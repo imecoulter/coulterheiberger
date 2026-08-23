@@ -80,7 +80,15 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
         argument: a Plate is an image with metadata beside it, this is prose
         with a face beside it. Same two columns, same gap, same edge, opposite
         weights. */}
-    <header class="masthead">
+    {/* REGISTRATION, TIER A, AND NEITHER OF THE TWO "now" ELEMENTS ON THIS PAGE
+        CARRIES A --d. ADR-0010: an animation-delay on the LCP element is added
+        to LCP one for one, and which element that is depends on the viewport.
+        On a phone the Masthead is roughly one screen and its positioning
+        paragraph is the largest thing painted; on a landscape window the first
+        Plate's band is. So both are staggered against nothing and both start on
+        the first frame. That is also the whole budget for this screen: two
+        elements animating at a time is the direction's cap. */}
+    <header class="masthead" data-anim="now">
       <div class="masthead-text">
         <span class="t-label eyebrow">Selected work</span>
         <h1>Coulter Heiberger</h1>
@@ -173,8 +181,15 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
             The <p> is new and is doing structural work, not decorative: the
             label needs a block-level box to be a grid item stacked on the
             portrait, and a bare <a> in the grid would stretch to the cell. */}
+        {/* THE <span> IS LOAD-BEARING AND THE BUG IT PREVENTS IS SILENT. The
+            rise is a transform, a transform makes its element the containing
+            block for positioned descendants, and `.about a::after` is the
+            stretched hit area covering the whole portrait. Transform the <a>
+            and that `inset: 0` collapses onto the word "About": the reveal
+            still looks right and most of the face stops being clickable. The
+            span carries the motion so the anchor never has to. */}
         <p class="about">
-          <a class="t-label" href="/about/ime/">About</a>
+          <a class="t-label" href="/about/ime/"><span>About</span></a>
         </p>
       </div>
     </header>
@@ -245,8 +260,26 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
           return (
             /* One Plate, one row, and every row identical. The <li> is the
                positioning context for the link overlay and the clip box for the
-               revealed metadata — see the two notes in the style block. */
-            <li class="plate">
+               revealed metadata — see the two notes in the style block.
+
+               data-anim IS ON THE <li> AND MUST STAY THERE. Registration holds
+               a transform for 440ms, and a transform makes its element the
+               containing block for positioned descendants — so a data-anim one
+               element inward would collapse `.title a::after`'s stretched hit
+               area for the length of the entrance and then fix itself, which is
+               about as silent as a bug gets. The <li> is already the `::after`'s
+               containing block by virtue of `position: relative`, so putting it
+               here changes nothing about the overlay. See ADR-0010.
+
+               THE FIRST PLATE IS TIER A, the rest are Tier B. The first one is
+               the desktop LCP element and animates from the stylesheet on the
+               first frame; the other five start hidden and wait for the
+               observer in Base.astro. No stagger on the first, for the reason
+               in the note above the Masthead. */
+            <li
+              class="plate"
+              data-anim={first ? 'now' : 'scroll'}
+            >
               <Plate frame={project.data.images[0]} priority={first} />
 
               {/* THE REVEALED METADATA (ADR-0008). Always in the DOM, hidden
@@ -264,8 +297,11 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
               <div class="meta">
                 <p class="t-spec ordinal">{ordinal(project.data.order)}</p>
 
+                {/* The span is the About label's, for the one reason:
+                    `.title a::after` is this Plate's whole-tile hit area, and a
+                    transform on the <a> would shrink it to the title. */}
                 <h2 class="title">
-                  <a href={`/projects/${project.id}/`}>{project.data.title}</a>
+                  <a href={`/projects/${project.id}/`}><span>{project.data.title}</span></a>
                 </h2>
 
                 {/* The Specification Line. `credit` is deliberately NOT here —
@@ -378,6 +414,20 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
       rgb(0 0 0 / 0.2) 80%,
       rgb(0 0 0 / 0) 100%
     );
+
+    /* THE REVEAL'S TIMING MOVED OUT OF THIS FILE. --rise, --reveal-in,
+       --reveal-out and --reveal-stagger are on :root in src/styles/base.css as
+       of ADR-0010, because Registration became a third consumer and they
+       stopped being one file's private numbers. They are still not in
+       tokens.css, which is colour, type and spacing.
+
+       The reasoning that used to sit here is in base.css beside them:
+       in is slower than out on purpose, 60ms is the site's own stagger unit,
+       and --rise is 8px because the band is a gradient rather than a box, so
+       the travel has to stay inside the alpha ADR-0008's contrast table was
+       derived at.
+
+       --scrim stays here. It has one consumer file and it is this one. */
   }
 
   /* ---- the Masthead ------------------------------------------------------
@@ -615,9 +665,15 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
   /* THE SITE'S SECOND `:hover` RULE, and it is the first one's device on a
      different object (docs/design-direction.md, docs/motion.md).
 
-     NO `transition`, NO `transform`, NO DURATION, NO EASING — the same terms the
-     Plate's reveal is held to, and the reason a site with no motion can carry
-     either. Putting a duration on this is adding motion to the site.
+     IT IS TIMED NOW, on the terms the Plate's reveal is held to and no others:
+     the scrim fades over --reveal-in, the label rises --rise into it one
+     --reveal-stagger behind, and the whole thing is gated on
+     `prefers-reduced-motion: no-preference`. This comment used to read "NO
+     transition, NO transform, NO duration, NO easing" and to say that adding
+     one was an amendment to docs/design-direction.md first. That amendment was
+     made — see ADR-0009 — which is why the sentence is gone rather than
+     ignored. What survives it is the shape: the two reveals are ONE device, so
+     a duration that appears on only one of them is the drift to catch.
 
      `:focus-within` IS NOT A COURTESY. The label's <a> is the only focusable
      thing in this column, so without it a keyboard visitor would tab onto an
@@ -656,6 +712,58 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
     @media not (hover: hover) {
       .about {
         opacity: 1;
+      }
+    }
+
+    /* THE MOTION, AND IT IS A BRANCH OFF THE SWAP ABOVE RATHER THAN A REPLACEMENT
+       FOR IT. Everything up to here still describes the reveal completely; a
+       visitor who has asked their OS for less motion, or whose pointer is
+       coarse, gets exactly the page that shipped before this block existed. That
+       is why the opacity endpoints are NOT restated in here. Move them in and
+       `reduce` loses the reveal entirely, which is the silent version of this.
+
+       ONLY THE SCRIM'S OPACITY AND ONLY THE LABEL'S TRANSFORM. The scrim is a
+       gradient whose top edge is a soft falloff; translate it and that edge
+       slides, which reads as a black panel arriving on the face instead of a
+       label surfacing out of it. The text moves, the ground it moves against
+       does not.
+
+       ONE OPACITY, NOT TWO. `.about`'s opacity already fades the scrim and the
+       word together — the word is inside it. Giving the span its own opacity
+       would multiply two curves for no visible gain; the stagger is what
+       separates the text from its ground.
+
+       `display: inline-block` IS REQUIRED, not tidiness. `transform` does not
+       apply to a non-replaced inline box, and an <a> inside a <p> is one. Drop
+       this and the fade still works while the rise silently does nothing. */
+    @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+      .about {
+        transition: opacity var(--reveal-out) ease-out;
+      }
+
+      /* The span, never the <a> — see the note on the markup. A transform here
+         would make this element the containing block for `.about a::after` and
+         collapse the portrait's hit area onto the word. */
+      .about a span {
+        display: inline-block;
+        transform: translateY(var(--rise));
+        transition: transform var(--reveal-out) ease-out;
+      }
+
+      .masthead-aside:hover .about,
+      .masthead-aside:focus-within .about {
+        transition-duration: var(--reveal-in);
+      }
+
+      /* `transform: none`, not `translateY(0)`. A specified transform of zero
+         still establishes a containing block; `none` does not, so at rest the
+         hit area is byte-for-byte the one that shipped. The span makes this
+         belt-and-braces rather than the fix, and it stays for that reason. */
+      .masthead-aside:hover .about a span,
+      .masthead-aside:focus-within .about a span {
+        transform: none;
+        transition-duration: var(--reveal-in);
+        transition-delay: var(--reveal-stagger);
       }
     }
   }
@@ -914,11 +1022,19 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
        portrait absorbed the bordered link that used to sit under it. It is the
        same device on a different object, held to every term below.
 
-       NO `transition`, NO `transform`, NO DURATION, NO EASING. The Plate is in
-       one state or the other on the frame the pointer arrives, which is the
-       same class of thing as `:focus-visible` and is why a site with no motion
-       can carry it. Putting a duration on this one declaration is adding motion
-       to the site, and that is an amendment to docs/design-direction.md first.
+       IT IS TIMED NOW (ADR-0009). The scrim fades over --reveal-in, the three
+       lines rise --rise into it one --reveal-stagger behind, and all of it is
+       gated on `prefers-reduced-motion: no-preference` in the block below. This
+       comment used to read "NO transition, NO transform, NO duration, NO
+       easing" and to say that putting a duration on this declaration was an
+       amendment to docs/design-direction.md first. The amendment was made, so
+       the sentence is retired rather than overruled — and the boundary it was
+       protecting still is one: the Plate and the portrait are ONE device, and a
+       duration that lands on only one of them is the drift to catch.
+
+       THE DECLARATIONS BELOW STAY UNTIMED, and that is the point of the split.
+       This pair is still the whole reveal on a coarse pointer and under
+       `reduce`. The motion is a branch off it, never a rewrite of it.
 
        `:focus-within` IS NOT A COURTESY. The overlay <a> is the Plate's only
        focusable thing, so this is how a keyboard visitor reads the same
@@ -939,6 +1055,77 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
     @media not (hover: hover) {
       .meta {
         opacity: 1;
+      }
+    }
+
+    /* THE MOTION. The scrim fades in place and the text rises into it; the full
+       argument for that division is on the portrait's copy of this block above,
+       and the short version is that --scrim's top edge is a falloff rather than
+       an edge, so translating it reads as a panel sliding in.
+
+       ONE OPACITY, NOT TWO. `.meta`'s opacity fades the scrim AND the three
+       lines inside it, which is the whole of "the text and the background
+       fade". A second opacity on the lines would multiply two curves for
+       nothing; --reveal-stagger is what separates them.
+
+       THE THREE LINES ARE ONE ARRIVAL, so they share a delay rather than being
+       staggered against each other. 60ms x 3 down a band this size would be the
+       removed `rise` entrance rebuilt inside a hover, which is a different
+       decision and not this one.
+
+       WHY `.title a span` AND NOT `.title`, which is the trap this whole block
+       is arranged around: `.title a::after` is the Plate's whole-tile hit area,
+       stretched with `inset: 0` against `.plate`. A transform on ANY ancestor
+       of that pseudo-element makes the ancestor its containing block, and the
+       hit area collapses out of the image and onto the band. The Plate goes on
+       revealing perfectly and stops being clickable above the metadata. It is
+       the same class of bug as the `position: absolute` one recorded further
+       up, and it fails the same way: silently, and only under a pointer.
+
+       AND NO, SETTING THE HOVERED STATE TO `transform: none` IS NOT ENOUGH ON
+       ITS OWN. Mid-transition the computed transform is not none, so the naive
+       version has a --reveal-in-long dead zone over the render on every pointer
+       entry — long enough for a fast click to land in it. The span keeps the
+       anchor out of the transformed subtree entirely. */
+    @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+      .meta {
+        transition: opacity var(--reveal-out) ease-out;
+      }
+
+      /* `display: inline-block` ON THE SPAN ONLY, and it is required rather
+         than tidy: `transform` does not apply to a non-replaced inline box, and
+         a <span> in an <a> is one. Without it the two <p> lines rise and the
+         title does not, which looks like a typo in the selector list. The <p>s
+         are already block boxes and must not be given it — inline-block would
+         take them off the flex column's full width. */
+      .title a span {
+        display: inline-block;
+      }
+
+      .ordinal,
+      .title a span,
+      .spec {
+        transform: translateY(var(--rise));
+        transition: transform var(--reveal-out) ease-out;
+      }
+
+      .plate:hover .meta,
+      .plate:focus-within .meta {
+        transition-duration: var(--reveal-in);
+      }
+
+      /* `none` rather than `translateY(0)`: a specified zero transform still
+         establishes a containing block and `none` does not, so at rest the hit
+         area is exactly the one that shipped. */
+      .plate:hover .ordinal,
+      .plate:hover .title a span,
+      .plate:hover .spec,
+      .plate:focus-within .ordinal,
+      .plate:focus-within .title a span,
+      .plate:focus-within .spec {
+        transform: none;
+        transition-duration: var(--reveal-in);
+        transition-delay: var(--reveal-stagger);
       }
     }
 

@@ -148,22 +148,101 @@ h3 {
   color: var(--muted);
 }
 
-/* ---- no motion -----------------------------------------------------------
-   THIS FILE DECLARES NO TRANSITION, NO ANIMATION AND NO @view-transition, and
-   that is the current state of the whole site rather than an omission here.
+/* ---- Registration ---------------------------------------------------------
+   THE SITE'S ONE MOTION DEVICE, and this is one of its two homes. The other is
+   the scoped block of src/pages/index.astro, which carries the two pointer
+   reveals. Same move in both places on purpose (ADR-0009, ADR-0010): an opacity
+   change and an 8px rise, ease-out, over --reveal-in. That is what makes it one
+   device seen twice rather than two systems sharing a page.
 
-   Registration, the Navigation Cross-fade and the Carry all lived below this
-   line and are gone. What is left is the plain document: pages paint in their
-   final state and a navigation is an ordinary full page load.
+   THE FOUR VALUES ARE HERE AND NOT IN tokens.css. They used to live on <main>
+   in index.astro, beside --scrim, and moved when Registration became a third
+   consumer. tokens.css is colour, type and spacing, and none of these is any of
+   those; :root beside the rules that use them is the right place.
 
-   THERE IS ALSO NO `prefers-reduced-motion` QUERY LEFT ANYWHERE, which follows.
-   The substrate declared every hidden and animated state ONLY under
-   `no-preference`, so that `reduce` was the plain document rather than a branch
-   that switched things off. Remove the animated state and the query has nothing
-   to guard. Do not add a bare `reduce` block back: it would be a rule that
-   disables something nothing declares.
+   IN IS SLOWER THAN OUT, and --reveal-out is unused by Registration — nothing
+   un-registers. It is here because it is one of the four and splitting the set
+   across two files is how one of them drifts. index.astro consumes it.
 
-   The specs, the durations, and the measured findings behind all of it are kept
-   in docs/motion.md. Read it before adding motion here — several of the traps it
-   records are silent, including one where a component's `transition` shorthand
-   replaces an entrance declared in this file and nothing warns. */
+   --rise IS 8px BECAUSE THE REVEALS' BAND IS A GRADIENT. The travel has to stay
+   inside the alpha that ADR-0008's contrast table was derived at. Registration
+   inherits the number rather than choosing its own; raise it and re-read that
+   table, because nothing in CI will. */
+:root {
+  --rise: 8px;
+  --reveal-in: 440ms;
+  --reveal-out: 280ms;
+  --reveal-stagger: 60ms;
+}
+
+/* TWO TIERS, AND THE SPLIT IS ABOUT LCP RATHER THAN ABOUT DESIGN.
+
+   [data-anim="now"] is the first screen. It animates from this stylesheet with
+   no script on the path. An element at opacity 0 is not an LCP candidate, but
+   the browser records LCP at an element's first NON-ZERO paint rather than at
+   animation end — so a keyframe that starts on the first frame costs about one
+   frame, while an element un-hidden by JavaScript puts the whole script parse
+   ahead of the hero. THE HERO CARRIES NO --d: an animation-delay on the LCP
+   element is added to LCP one for one.
+
+   [data-anim="scroll"] is everything below the fold. It starts hidden and one
+   IntersectionObserver in Base.astro adds .is-in once and then unobserves. That
+   is also why the <noscript> block is back in Base.astro — anything that starts
+   hidden and is revealed by script needs it, or the page is invisible with
+   scripting off.
+
+   NOT HOVER-GATED, and that is deliberate rather than an omission. The two
+   reveals are, because a reveal a coarse pointer can never trigger has to be
+   handed over unconditionally. An entrance has no equivalent failure: a phone
+   scrolls. Gating this on hover would mean the entire mobile audience never
+   sees the site move.
+
+   THE HIDDEN STATE IS DECLARED ONLY INSIDE THE no-preference GATE. Never as a
+   `reduce` block that turns something off. That inverted form computes the
+   animated path first and fails TOWARD motion; this one fails toward stillness,
+   and under `reduce` the page simply paints. This is the third
+   prefers-reduced-motion query on the site, after the two in index.astro's
+   scoped block — one per reveal. All three are no-preference gates, and THAT is
+   the invariant rather than the count.
+
+   A transform HAS A SILENT TRAP. It becomes the containing block for
+   `.title a::after` / `.about a::after`, which collapses the whole-tile hit
+   area on `/`. A registering Plate holds a non-none transform for the full
+   440ms, so a data-anim placed between `.plate` and the anchor gives the tile a
+   dead click target that then fixes itself. Registration goes on the
+   <li class="plate">. Relatedly: a component's scoped `transition` shorthand
+   REPLACES one inherited from this file at higher specificity, so Registration
+   goes on wrappers and never on an <img> a component also styles. Both of these
+   look exactly like a page with no animation. docs/motion.md has the rest. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-anim] {
+    opacity: 0;
+    transform: translateY(var(--rise));
+  }
+
+  [data-anim='now'] {
+    animation: register var(--reveal-in) ease-out var(--d, 0ms) both;
+  }
+
+  /* The observer adds this once and stops watching, so an element that has
+     registered never registers again — not on scroll back, not on resize. */
+  [data-anim='scroll'].is-in {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity var(--reveal-in) ease-out var(--d, 0ms),
+      transform var(--reveal-in) ease-out var(--d, 0ms);
+  }
+}
+
+@keyframes register {
+  from {
+    opacity: 0;
+    transform: translateY(var(--rise));
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

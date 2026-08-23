@@ -135,12 +135,29 @@ const ogImageURL = new URL(ogImage.src, Astro.site);
     {structuredData && (
       <script type="application/ld+json" is:inline set:html={JSON.stringify(structuredData)} />
     )}
-    {/* NO <noscript> BLOCK, AND NOTHING NEEDS ONE. There used to be one here
-        un-hiding Registration's [data-anim] elements, because an entrance that
-        starts at opacity 0 and is revealed by script is invisible without it.
-        Nothing on the site now starts hidden, so with scripting off every page
-        is simply the page. Anything added here that hides an element until
-        JavaScript runs needs this block back — see docs/motion.md. */}
+    {/* THE <noscript> BLOCK IS BACK, and it is load-bearing rather than
+        defensive. Registration's Tier B elements ([data-anim="scroll"]) start
+        at opacity 0 and are un-hidden by the observer below, so without this a
+        visitor with scripting off gets a page of invisible content — the exact
+        condition the comment that used to sit here named. Tier A does not need
+        it, because a CSS keyframe runs without a script.
+
+        :root-QUALIFIED TO OUTRANK base.css. The hidden state there is
+        `[data-anim]` at (0,1,0) inside a media query, and a media query adds no
+        specificity, so an unqualified rule here would tie and lose on order.
+
+        The transform matters as much as the opacity: leaving it at
+        translateY(8px) would shift every registering element 8px up forever,
+        which is a layout bug rather than an invisible one and therefore the
+        half that gets forgotten. */}
+    <noscript>
+      <style is:inline>
+        :root [data-anim] {
+          opacity: 1;
+          transform: none;
+        }
+      </style>
+    </noscript>
   </head>
   <body>
     <slot />
@@ -153,12 +170,12 @@ const ogImageURL = new URL(ogImage.src, Astro.site);
       // The Cloudflare beacon below is not authored here and is not a precedent
       // for one.
       //
-      // IT WAS THREE. Registration's IntersectionObserver and the Traverse's
-      // pointer listener were both here and are gone with the rest of the motion
-      // substrate; docs/motion.md keeps them. NEITHER OF THE TWO LEFT DRAWS
-      // ANYTHING — one fetches an image early, the other opens a <dialog> — so
-      // there is no animation in this file and nothing here should acquire one
-      // without reading that doc first.
+      // IT IS THREE AGAIN. Registration's IntersectionObserver was removed with
+      // the rest of the motion substrate and ADR-0010 brought it back; the
+      // Traverse's pointer listener is still gone and docs/motion.md keeps it.
+      // ONLY ONE OF THE THREE DRAWS ANYTHING, and it does it by adding a class
+      // and then getting out of the way — the CSS in base.css owns every value.
+      // The other two fetch an image early and open a <dialog>.
       //
       // Inline on purpose. Issue #12 measured the substrate at 195 B gzip with
       // ZERO extra requests: Astro inlines a script that imports nothing. Every
@@ -225,6 +242,86 @@ const ogImageURL = new URL(ogImage.src, Astro.site);
 
           plate.addEventListener('pointerenter', warm);
           plate.addEventListener('pointerdown', warm);
+        }
+      }
+
+      // ---- Registration -------------------------------------------------------
+      // Un-hides each [data-anim="scroll"] element once, as it first comes into
+      // view, and then stops watching it. base.css holds the move, the timing
+      // and the hidden state; this adds a class and sets one custom property.
+      //
+      // TIER B ONLY. The first screen is [data-anim="now"] and animates from
+      // the stylesheet with no script involved, which is the whole reason the
+      // first screen can register at all: an element un-hidden by JavaScript is
+      // not an LCP candidate until the script has run, so marking the hero
+      // "scroll" would put this block on the LCP Path. It is not, and it must
+      // not become so. See ADR-0010.
+      //
+      // GATED ON no-preference IN JS AS WELL AS IN CSS, and the JS gate is the
+      // one doing real work: under `reduce` base.css never hides anything, so
+      // without this check the observer would spend a pass adding .is-in to
+      // elements that were never hidden. Harmless, and pointless.
+      //
+      // NOT HOVER-GATED, unlike the warming above. A phone scrolls.
+      //
+      // unobserve() IS THE FIRE-ONCE RULE, and it is the whole mechanism: there
+      // is no scroll listener, no rAF, and nothing left running once the last
+      // element has registered. Scrolling back up finds an element that is
+      // simply in its final state.
+      //
+      // THE STAGGER IS PER BATCH, IN GROUPS OF FOUR. `entries` is what the
+      // browser hands over in one callback, so elements that cross the line
+      // together are the ones that stagger against each other; anything
+      // arriving alone gets no delay and enters immediately. Capped at four
+      // because that is the site's stagger group, and because six Plates
+      // entering at once with an uncapped index would put the last one 300ms
+      // behind a scroll the visitor has already finished.
+      //
+      // rootMargin PULLS THE BOTTOM EDGE IN 10%, so an element registers just
+      // after it has entered rather than exactly on the boundary. On the
+      // boundary the entrance happens in the sliver of a row nobody is looking
+      // at yet, which reads as content that was already there.
+      //
+      // THE HUGE TOP MARGIN IS A BUG FIX AND IT IS NOT OPTIONAL. An
+      // IntersectionObserver only queues an entry when the ratio CHANGES
+      // between two computed frames. A scroll that carries an element from
+      // below the viewport to above it inside one frame goes 0 -> 0, so no
+      // entry is ever delivered — and because the element starts hidden and
+      // fire-once means nothing comes back for it, it stays at opacity 0
+      // FOREVER. Measured on this page: a 700px-per-step scroll left two of the
+      // six Plates permanently invisible.
+      //
+      // Extending the root upward by a screen height each side of forever makes
+      // the observed region "everything above the 90% line", which an element
+      // cannot leave once it has entered. So a jump cannot skip it: it is
+      // either not yet reached, or intersecting and about to register. This is
+      // also why the fix is not a scroll listener — the region does the work
+      // and the observer still fires once per element and then unobserves.
+      //
+      // Do not trim this to something that looks tidier. A page-height jump, a
+      // scrollbar drag, an anchor landing mid-document and a restored scroll
+      // position all produce exactly the frame this guards.
+      if (matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+        const registering = document.querySelectorAll<HTMLElement>('[data-anim="scroll"]');
+
+        if (registering.length) {
+          const observer = new IntersectionObserver(
+            (entries) => {
+              let n = 0;
+
+              for (const entry of entries) {
+                if (!entry.isIntersecting) continue;
+                const el = entry.target as HTMLElement;
+                el.style.setProperty('--d', `calc(${Math.min(n, 3)} * var(--reveal-stagger))`);
+                el.classList.add('is-in');
+                observer.unobserve(el);
+                n += 1;
+              }
+            },
+            { rootMargin: '200000px 0px -10% 0px' },
+          );
+
+          for (const el of registering) observer.observe(el);
         }
       }
 
