@@ -57,122 +57,157 @@ const expanded = await Promise.all(
 );
 ---
 
-<Base title={`${title} | Coulter Heiberger`} description={summary} image={images[0]}>
-  <main>
-    {/* The hero leads. This page IS the Plate in its second presentation, and
-        putting the work first is the same argument content-architecture.md §1
-        makes for `/` not being a landing page.
+<Base title={`${title} | Coulter Heiberger`} description={summary} eyebrow="Project" image={images[0]}>
+  {/* The hero leads the PAGE'S OWN CONTENT. This page IS the Plate in its
+      second presentation, and putting the work first is the same argument
+      content-architecture.md §1 makes for `/` not being a landing page.
 
-        It also keeps the page image-LCP, which is the regime ADR-0002 costed
-        the ~220 KB hero crossover in. Three hundred pixels of heading above it
-        would hand the LCP to an <h1> on mobile and quietly move the page into
-        the other regime. */}
-    <div class="hero">
-      <Plate frame={images[0]} priority />
+      IT NO LONGER LEADS THE DOCUMENT, and that is a deliberate reversal rather
+      than an oversight. This comment used to end: "It also keeps the page
+      image-LCP, which is the regime ADR-0002 costed the ~220 KB hero crossover
+      in. Three hundred pixels of heading above it would hand the LCP to an <h1>
+      on mobile and quietly move the page into the other regime." That is exactly
+      what ADR-0011 did, on purpose: the Masthead is site furniture now and sits
+      above this in Base.astro, so on a phone the LCP element is its positioning
+      paragraph and this page is text-LCP.
+
+      "QUIETLY" WAS THE OBJECTION, AND IT IS THE PART THAT WAS ANSWERED. The move
+      was measured before it shipped and the numbers are in ADR-0011. `/` had
+      already made the same shift when the Masthead landed there — index.astro
+      carries those measurements — so this is the eight other routes joining a
+      regime one route was already in, not a new one being entered blind.
+
+      WHAT STILL HOLDS: ADR-0002's ~220 KB crossover and lighthouserc.cjs's
+      hero-bytes table were both derived with the hero as the LCP element, and
+      they still describe the landscape case, where it is. */}
+  {/* REGISTRATION, TIER A: the first screen animates from the stylesheet with
+      no script on the path, so the hero can start on the first frame. It is
+      the LCP element on this page — the hero leads precisely to keep the page
+      image-LCP — so it carries NO --d. An animation-delay on the LCP element
+      is added to LCP one for one (ADR-0010).
+
+      THE OTHER THREE ARE THE GROUP OF FOUR the design spec names, at the
+      site's 60ms unit: title, summary, facts. The three facts are one <dl>
+      and register together rather than as three, which is ADR-0009's argument
+      about the metadata band applied to the same kind of content — it is one
+      datum arriving, not three.
+
+      The Plate wrapper carries data-anim, never the <Plate> itself: a
+      component's scoped `transition` shorthand replaces one inherited from
+      base.css at higher specificity, which is finding #1 in docs/motion.md
+      and looks exactly like a page with no animation. */}
+  <div class="hero" data-anim="now">
+    <Plate frame={images[0]} priority />
+  </div>
+
+  <h2 data-anim="now" style="--d: calc(1 * var(--reveal-stagger))">{title}</h2>
+  <p class="summary" data-anim="now" style="--d: calc(2 * var(--reveal-stagger))">{summary}</p>
+
+  {/* Credit and the Specification Line together — provenance and
+      construction, the pair CONTEXT.md defines against each other. `credit`
+      appears here and nowhere else on the site (content-architecture.md §2). */}
+  <dl class="facts" data-anim="now" style="--d: calc(3 * var(--reveal-stagger))">
+    <div>
+      <dt class="t-label">Credit</dt>
+      <dd class="t-spec">{credit}</dd>
     </div>
-
-    <h1>{title}</h1>
-    <p class="summary">{summary}</p>
-
-    {/* Credit and the Specification Line together — provenance and
-        construction, the pair CONTEXT.md defines against each other. `credit`
-        appears here and nowhere else on the site (content-architecture.md §2). */}
-    <dl class="facts">
-      <div>
-        <dt class="t-label">Credit</dt>
-        <dd class="t-spec">{credit}</dd>
-      </div>
-      <div>
-        <dt class="t-label">Year</dt>
-        <dd class="t-spec">{year}</dd>
-      </div>
-      <div>
-        <dt class="t-label">Specification</dt>
-        <dd class="t-spec">{spec}</dd>
-      </div>
-    </dl>
-
-    <div class="prose">
-      <Content />
+    <div>
+      <dt class="t-label">Year</dt>
+      <dd class="t-spec">{year}</dd>
     </div>
+    <div>
+      <dt class="t-label">Specification</dt>
+      <dd class="t-spec">{spec}</dd>
+    </div>
+  </dl>
 
-    {/* The gallery. Frames at NATIVE ASPECT — no crop, no `framing`, because
-        nothing here is being fitted to a band: the two art-directed crops exist
-        for the Plate, which has a layout to satisfy, and a Frame does not.
+  {/* TIER B FROM HERE DOWN: below the fold, so these start hidden and the
+      observer in Base.astro un-hides each one once as it comes into view.
 
-        No entrance on any of them, and none is coming back by default. An image
-        the visitor scrolled to is not information arriving, it is the thing they
-        came to see, and twelve of them entering down one column is precisely the
-        performance the motion spec was written to refuse. See docs/motion.md.
+      THE WRAPPER REGISTERS, NOT THE PARAGRAPHS. The body is MDX and its
+      children cannot be marked in this template, but that is not why: it is
+      one block of writing arriving, and registering it line by line is the
+      performance the direction refuses. Same argument as the <dl> above. */}
+  <div class="prose" data-anim="scroll">
+    <Content />
+  </div>
 
-        No captions and no process/finished label. ~15 of the 47 Frames are
-        working images rather than finished camera renders and they render
-        identically; the body prose above makes that argument better than a
-        badge would. See content-architecture.md §4.
+  {/* The gallery. Frames at NATIVE ASPECT — no crop, no `framing`, because
+      nothing here is being fitted to a band: the two art-directed crops exist
+      for the Plate, which has a layout to satisfy, and a Frame does not.
 
-        EACH FRAME IS A LINK TO ITS OWN FULL-SIZE FILE, and Base.astro's script
-        intercepts the click into the Expanded View. A link rather than a button
-        on purpose: with scripting off, or on a cmd-click, it still does the
-        thing a visitor wanted, and its accessible name comes from the alt text
-        already on the image inside it. A <button> here would be a control that
-        does nothing when the script does not run, and lighthouserc.cjs asserts
-        `link-name` and `button-name` alike without being able to tell the
-        difference. */}
-    <ul class="gallery">
-      {frames.map((frame, i) => (
-        <li>
-          <a class="expand" href={expanded[i].src}>
-            {/* <Picture>, and here it IS the right tool — which is worth saying
-                because Plate.astro argues at length for hand-assembling one.
-                That argument is about COMPOSITION: a Plate needs a different
-                crop per breakpoint, and <Picture> switches format, not framing.
-                A Frame is one crop at one aspect and needs exactly the format
-                switch, so the component that does only that is the correct one.
+      No entrance on any of them, and none is coming back by default. An image
+      the visitor scrolled to is not information arriving, it is the thing they
+      came to see, and twelve of them entering down one column is precisely the
+      performance the motion spec was written to refuse. See docs/motion.md.
 
-                AVIF WITH A WEBP FALLBACK, where this was WebP alone. The Plate
-                pipeline has always led with AVIF and the gallery never did, and
-                on mobile that is not a cosmetic gap: `loading="lazy"` does not
-                mean "not now" — Chrome's lazy threshold widens as the connection
-                slows, so on the throttled 4G the perf gate emulates, the first
-                few Frames are fetched WHILE the hero is still arriving and take
-                bandwidth from the LCP element. Cecret's terrain map was the
-                largest single asset on its page at 199.1 KB, landing at 2.8s.
-                Measured through sharp at the width actually served, AVIF q50
-                against WebP q80: 199.1 KB -> 93.6 KB, and 122.4 -> 57.4 at the
-                rung below. A 53% cut on the thing that was crowding the hero. */}
-            <Picture
-              src={frame.src}
-              alt={frame.alt}
-              width={bodyWidth}
-              sizes={bodySizes}
-              formats={FRAME_FORMATS}
-              fallbackFormat={FRAME_FALLBACK}
-              layout="constrained"
-              loading="lazy"
-              decoding="async"
-            />
-          </a>
-        </li>
-      ))}
-    </ul>
+      No captions and no process/finished label. ~15 of the 47 Frames are
+      working images rather than finished camera renders and they render
+      identically; the body prose above makes that argument better than a
+      badge would. See content-architecture.md §4.
 
-    {/* ONE dialog per page, not one per Frame. The script sets its src from the
-        link that was clicked, so the file is fetched on demand and nothing is
-        downloaded for a Frame nobody opens — a Gate in CONTEXT.md's sense.
+      EACH FRAME IS A LINK TO ITS OWN FULL-SIZE FILE, and Base.astro's script
+      intercepts the click into the Expanded View. A link rather than a button
+      on purpose: with scripting off, or on a cmd-click, it still does the
+      thing a visitor wanted, and its accessible name comes from the alt text
+      already on the image inside it. A <button> here would be a control that
+      does nothing when the script does not run, and lighthouserc.cjs asserts
+      `link-name` and `button-name` alike without being able to tell the
+      difference. */}
+  <ul class="gallery">
+    {frames.map((frame, i) => (
+      <li data-anim="scroll">
+        <a class="expand" href={expanded[i].src}>
+          {/* <Picture>, and here it IS the right tool — which is worth saying
+              because Plate.astro argues at length for hand-assembling one.
+              That argument is about COMPOSITION: a Plate needs a different
+              crop per breakpoint, and <Picture> switches format, not framing.
+              A Frame is one crop at one aspect and needs exactly the format
+              switch, so the component that does only that is the correct one.
 
-        The <img> ships with no src and an empty alt, and both are replaced at
-        open time. Empty rather than absent because an image with no alt is an
-        `image-alt` failure the moment it has a src, and the window between
-        those two assignments is not somewhere to be clever.
+              AVIF WITH A WEBP FALLBACK, where this was WebP alone. The Plate
+              pipeline has always led with AVIF and the gallery never did, and
+              on mobile that is not a cosmetic gap: `loading="lazy"` does not
+              mean "not now" — Chrome's lazy threshold widens as the connection
+              slows, so on the throttled 4G the perf gate emulates, the first
+              few Frames are fetched WHILE the hero is still arriving and take
+              bandwidth from the LCP element. Cecret's terrain map was the
+              largest single asset on its page at 199.1 KB, landing at 2.8s.
+              Measured through sharp at the width actually served, AVIF q50
+              against WebP q80: 199.1 KB -> 93.6 KB, and 122.4 -> 57.4 at the
+              rung below. A 53% cut on the thing that was crowding the hero. */}
+          <Picture
+            src={frame.src}
+            alt={frame.alt}
+            width={bodyWidth}
+            sizes={bodySizes}
+            formats={FRAME_FORMATS}
+            fallbackFormat={FRAME_FALLBACK}
+            layout="constrained"
+            loading="lazy"
+            decoding="async"
+          />
+        </a>
+      </li>
+    ))}
+  </ul>
 
-        Close is a word, not a glyph: it needs no aria-label, it renders in the
-        specification line's own type role, and there is no icon set on this
-        site for it to be the first member of. */}
-    <dialog class="expanded">
-      <button type="button" class="t-spec close" data-close>Close</button>
-      <img alt="" />
-    </dialog>
-  </main>
+  {/* ONE dialog per page, not one per Frame. The script sets its src from the
+      link that was clicked, so the file is fetched on demand and nothing is
+      downloaded for a Frame nobody opens — a Gate in CONTEXT.md's sense.
+
+      The <img> ships with no src and an empty alt, and both are replaced at
+      open time. Empty rather than absent because an image with no alt is an
+      `image-alt` failure the moment it has a src, and the window between
+      those two assignments is not somewhere to be clever.
+
+      Close is a word, not a glyph: it needs no aria-label, it renders in the
+      specification line's own type role, and there is no icon set on this
+      site for it to be the first member of. */}
+  <dialog class="expanded">
+    <button type="button" class="t-spec close" data-close>Close</button>
+    <img alt="" />
+  </dialog>
 </Base>
 
 <style>
@@ -186,40 +221,53 @@ const expanded = await Promise.all(
      Recorded honestly: this is a READING of docs/design-direction.md, not a
      measurement. The repo holds no layout geometry from the precedent analysis
      — the prototype is gone (issue #11) — so the only numbers behind it are
-     tokens.css and the page shell. */
-  main {
-    max-width: var(--measure-page);
-    margin-inline: auto;
-    padding: var(--rhythm) var(--gap);
-  }
+     tokens.css and the page shell.
 
+     THE SHELL ITSELF IS NO LONGER DECLARED HERE. `max-width: --measure-page`,
+     `margin-inline: auto` and the --gap gutter were restated in this file and in
+     three others; base.css states them once now, for every direct child of
+     <body>, so the Masthead lands on the same left edge this page argues for
+     without a fifth copy. The datum edge is the same edge; it is just no longer
+     four files agreeing to draw it. */
   .hero {
     margin-bottom: var(--s5);
   }
 
-  /* ONE COLUMN BELOW THE HERO. Heading, summary, prose and every Frame share
-     --body-col. The hero above runs the full shell, so the page is one wide
-     plate over one narrower column, both starting on the same left edge.
+  /* ONE COLUMN BELOW THE HERO, AND IT IS THE FULL SHELL. Heading, summary,
+     prose and every Frame run the same width the hero does, so the page is one
+     column from the top of the image to the last Frame — one left edge and now
+     one right edge as well.
 
-     IT USED TO SAY "half the page shell" and that stopped being true when the
-     shell narrowed from 1600 to 1280 and --body-col stayed at 800. The column
-     is now 62.5% of the shell. What matters here is unchanged and is the shared
-     LEFT EDGE, not the fraction — see the token's own comment for why the
-     arithmetic was not restored.
+     IT USED TO STOP SHORT, at --body-col (800px against a 1280px shell), and
+     the argument was rhythm: a narrower body under a wide hero gave a 5-Frame
+     and a 12-Frame Project the same shape. That has been traded away on
+     purpose. The work is what the page is for and it was being shown at 62.5%
+     of the room the page already had. --body-col still exists and still serves
+     `/` and /about/ime/; this page no longer reads it.
 
-     This replaced two measures with one: the text used to sit at --measure
-     (64ch) and the Frames at --gallery-col (1080px), which drew two right edges
-     down the page for no reason a reader could see. What it costs the reading
-     measure is recorded on the token itself, in tokens.css. */
-  h1 {
+     Text and Frames still share ONE measure, which is the part that was never
+     about the number: two right edges down the page is what the single column
+     replaced, and it still does. What the wider measure costs the prose is
+     recorded on the --body-col token in tokens.css and is now larger.
+
+     The cap is base.css's --measure-page and the padding is --gap, so nothing
+     below needs a max-width of its own. layout.ts composes `bodySizes` from the
+     same token, so the width the CSS draws and the width the browser fetches
+     cannot drift apart.
+
+     IT IS AN h2 NOW, AND NOTHING MOVED. tokens.css's rule has always been that
+     h1 is the site's NAME and h2 is a page's own title; this heading was an h1
+     holding --t-h2 because the site's name was not on this page. ADR-0011 put
+     the Masthead on every route, so the name is here and this is the page's
+     title, which is what it always said it was. The size is the one it already
+     had — only the tag changed. */
+  h2 {
     font-size: var(--t-h2);
     line-height: 1.02;
-    max-width: var(--body-col);
   }
 
   .summary {
     margin: var(--s3) 0 0;
-    max-width: var(--body-col);
     color: var(--muted);
   }
 
@@ -244,16 +292,12 @@ const expanded = await Promise.all(
 
   .prose {
     margin-top: var(--rhythm);
-    max-width: var(--body-col);
   }
 
-  /* Capped by the same token layout.ts composes `sizes` from, so the width the
-     CSS draws and the width the browser fetches cannot drift apart. */
   .gallery {
     list-style: none;
     margin: var(--rhythm) 0 0;
     padding: 0;
-    max-width: var(--body-col);
   }
 
   .gallery li + li {

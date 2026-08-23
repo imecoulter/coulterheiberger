@@ -83,7 +83,7 @@ are not Rendered Assets, and neither goes through §3's ritual:
 - **The site-wide Social Card** (`src/assets/social-card.jpg`). It has no master, it is built from
   committed fonts by `scripts/dev/build-social-card.mjs`, and §3's ritual would refuse it outright at
   the 3200 px minimum. See `docs/content-architecture.md` §6.
-- **The portrait** (`src/assets/portrait.jpg`), on the Masthead and on `/about/ime/`. It is a
+- **The portrait** (`src/assets/portrait.jpg`), on the Masthead, which is on every page. It is a
   photograph, and `CONTEXT.md` scopes a Rendered Asset to "visual output produced offline in a 3D
   authoring toolchain" — so §1's render preset has nothing to say about it, and §3 would put it in
   `src/content/projects/<slug>/`, which would make the person a Project. Built by

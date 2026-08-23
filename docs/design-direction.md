@@ -222,48 +222,95 @@ styling decision — and it is now also a change to the font build.
 
 ## Motion
 
-**The site does not move.** Nothing animates and nothing transitions. Pages paint in their final
-state and a navigation is an ordinary full page load.
+**The site moves in two ways, and they are one device.** An element enters once as it first comes
+into view, and two elements reveal a label under a pointer. Both are an `opacity` change and an 8px
+rise, both `ease-out`, both at the same duration. There is nothing else.
+
+### Registration
+
+**Every substantial element enters once as it arrives.** Opacity 0 to 1 with a `translateY` of
+`--rise` (8px), over `--reveal-in` (760ms) `ease-out`, staggered `--reveal-stagger` (60ms) apart in
+groups of four. It fires once and never re-triggers on scroll back. The Masthead registers on every
+page as one header rather than five lines; on `/` each Plate follows it, and on a Project page the
+hero, the title, the summary, the facts, the body as one block, and each Frame in the gallery ([ADR-0010](./adr/0010-registration-returns.md)).
+
+**One pace serves both, and it is 760ms.** The entrance and the two reveals use the same duration,
+the same 60ms stagger and the same 8px, which is what makes this one device rather than two that
+happen to coexist. The pair shipped at 440ms and was slowed on owner review; the in:out ratio is
+unchanged. It is deliberately slower than ADR-0009's refused 480ms — see
+[ADR-0010](./adr/0010-registration-returns.md), which overturns that rejection and records what it
+costs the reveals.
+
+**The first screen registers too, and that is the change ADR-0010 made.** It was excluded before, on
+the grounds that the LCP element must not start hidden. That is true of an element un-hidden by
+script and false of a CSS keyframe: the browser records LCP at an element's first *non-zero* paint,
+not when its animation ends. So the first screen animates from the stylesheet with no JavaScript on
+the path, and everything below the fold is un-hidden by one `IntersectionObserver`. The hero carries
+no stagger delay, because a delay on the LCP element is added to LCP directly.
+
+**It is gated on `prefers-reduced-motion: no-preference` and nothing else.** Not on `hover`. A reveal
+a coarse pointer can never trigger has to degrade, which is why the two reveals are hover-gated; an
+entrance has no such problem, because a phone scrolls. Under `reduce` the page paints in its final
+state, and the hidden state is declared only inside the `no-preference` query so that it does.
+
+**This section used to refuse all of this**, and the refusal was written on headroom rather than on
+fit: the JS budget, the LCP rule above, and a library comparison against a page that already loads
+in under 100ms. Headroom is not a design constraint. What survives is narrower and still binding: an
+entrance introduces content the visitor has not seen yet, so it fires once, at the moment that
+content arrives, and never again. A mark that re-fires on content already read is performing.
+
+### The two reveals
 
 **Two elements respond to a pointer, and they are the only two.** On `/`, a Plate reveals its
-metadata and the Masthead portrait reveals its `About` label, both under `:hover` and
-`:focus-within` ([ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md)). Each is an
-`opacity` swap with no `transition`, no `transform` and no timing function: the element is in one
-state or the other on the frame the pointer arrives, which is why a site with no motion can carry
-them. **That boundary is the thing to hold, and it is the swap rather than the count.** The next
-element that wants to *fade* in is motion, and it needs this document amended first, on the terms
-below.
+metadata and the Masthead portrait reveals its `About` label — one component since ADR-0011, and the portrait's copy is on every route but `/about/ime/` — both under `:hover` and
+`:focus-within` ([ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md)). **Each is
+timed** ([ADR-0009](./adr/0009-the-two-reveals-are-timed.md)): the scrim fades in over 760ms, the
+text rises 8px into it 60ms behind, both `ease-out`, and leaving is quicker than arriving at 480ms.
+All of it is gated on `hover: hover` and `prefers-reduced-motion: no-preference`, where the un-timed
+`opacity` swap that shipped first is still what a `reduce` visitor and every coarse pointer gets.
 
-**It was one, and the second is an amendment rather than a drift.** The portrait was a square with a
-bordered `About` link set underneath it — two objects making one offer, and the link was the only
-text on `/` whose affordance was a border rather than the datum. Folding the label onto the face
-makes the portrait behave like the six Plates below it: one target, one revealed label, one
-instant swap. Adding a *third* is this section again, and the question to answer is not "may I have
-another" but "is this the same device, or a new one".
+**The boundary is the device rather than the count.** Same two objects, same two triggers, one
+reveal. A third element revealing a label this way is the same decision again; an element that wants
+to move for any *other* reason is a new one, and it is this section again first.
 
-Apart from those two and the focus outline, nothing on the site has a state.
+**The scrim itself never moves, and that is not a detail.** Its top edge is a gradient falloff.
+Translate it and the boundary slides down the render, which reads as a black panel arriving on the
+work rather than as a label surfacing out of it. Only the text travels.
 
-This is the current direction, not a gap waiting to be filled. It replaced five interlocking
-categories — Registration, the Navigation Cross-fade, the Carry, the Traverse, and a fade on the
-Expanded View — which were removed in one pass after clicking a Project put three of them on screen
-at once and the result read as artefacts rather than as craft.
+**It was one reveal, and the second is an amendment rather than a drift.** The portrait was a square
+with a bordered `About` link set underneath it — two objects making one offer, and the link was the
+only text on `/` whose affordance was a border rather than the datum. Folding the label onto the face
+makes the portrait behave like the six Plates below it: one target, one revealed label, one reveal.
+Adding a *third* is this section again, and the question to answer is not "may I have another" but
+"is this the same device, or a new one".
 
-**What that leaves is the argument the moves were always held to.** A mark that fires on content the
-visitor is already looking at is performing; a page whose entire content is six Plates does not need
-six entrances to introduce them. Every one of those refusals survives the removal, because a site
-with no motion refuses all of them by construction.
+Apart from those two, Registration, and the focus outline, nothing on the site has a state.
 
-**The refusals, if any of it returns.** Entrances are line-level, fire once, never re-trigger on
-scroll back, and never touch the first screen. Nothing parallaxes. At most two elements animate at a
-time. No animation library and no client-side router: [issue #12](https://github.com/imecoulter/coulterheiberger-com/issues/12)
-priced the router alone at 5,494 B gzip against 426 B for the entire hand-rolled substrate, on a site
-whose page loads already land in under 100 ms.
+### What is still refused
+
+Five categories were removed in one pass after clicking a Project put three of them on screen at
+once and the result read as artefacts rather than as craft. Registration is back because its removal
+was argued on headroom. The other four are not, and neither is anything below.
+
+- **Nothing parallaxes, and nothing scrubs.** `animation-timeline: view()` is disqualified on
+  capability rather than support: it reads progress from scroll *position*, so it necessarily
+  reverses on scroll back, and the entrance fires once.
+- **No navigation transition.** A navigation is an ordinary full page load. The Navigation Cross-fade
+  and the Carry stay removed.
+- **No animation library and no client-side router.** [Issue #12](https://github.com/imecoulter/coulterheiberger-com/issues/12)
+  priced the router alone at 5,494 B gzip and the smallest library at 3,187 B, against a hand-rolled
+  substrate in the hundreds of bytes.
+- **Native scroll.** No Lenis, no Locomotive, no `ScrollSmoother`.
+- **One authored `<script>`.** The observer is a third behaviour inside the one that exists, not a
+  second file and not an island.
+- **At most two elements animating at a time**, which is what the stagger and the fire-once rule are
+  for. Six Plates entering together is the failure this constrains.
 
 **The order is binding: this document is amended first, then a mechanism is chosen to serve it.**
-Never the reverse. The full spec as it shipped, every measurement behind it, and four findings that
+Never the reverse. The full spec as it shipped, every measurement behind it, and the findings that
 each cost real time to discover are kept in [docs/motion.md](./motion.md). Read that before
-proposing motion here — three of the four traps it records fail silently, and one of them looks
-exactly like a page with no animation.
+proposing motion here — three of the traps it records fail silently, and one of them looks exactly
+like a page with no animation.
 
 ## Consequence for content production
 

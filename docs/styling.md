@@ -13,6 +13,9 @@ src/styles/base.css      reset, element defaults, type roles
 src/styles/fonts.css     @font-face only — two faces, nothing else
 src/layouts/Base.astro   imports the above once for every page; holds the only <script>
 src/components/*.astro   everything else, in a scoped <style> block
+                         Masthead.astro and Meta.astro are the site's furniture:
+                         one <header> on every page, and the revealed band that
+                         both a Plate and the Masthead portrait render
 ```
 
 That is the whole convention. **Do not invent a fourth location.** No `global.css`, no
@@ -65,7 +68,7 @@ px** and that is deliberate:
 | token | role |
 | --- | --- |
 | `--measure-page` | the page shell, 1600px — was hard-coded in two components before this |
-| `--plate-meta` | the Masthead's portrait column on `/` |
+| `--plate-meta` | the Masthead's portrait column, on every page |
 | `--body-col` | the whole body column on `/projects/<slug>/`: heading, summary, prose and every Frame |
 | `--gap` | the spacing atom: Plate to Plate, Plate to screen edge, column to column. 20px / 48px |
 
@@ -318,35 +321,97 @@ SVG.**
 
 ## Motion
 
-**There is none.** No `transition`, no `animation`, no `@keyframes`, and no `@view-transition`.
+**One device, two applications, two files.** The move is an `opacity` change plus a `translateY` of
+`--rise` (8px), `ease-out`, over `--reveal-in` (760ms). Nothing else on the site animates: no
+`@view-transition`, no scroll-linked timeline, no library.
 
-**Two `:hover` rules exist and neither is motion**, both on `/` and both the same device: a Plate's
-metadata band, and the Masthead portrait's `About` label. Each is a bare `opacity` swap with no
-duration and no easing, so the element is in one state or the other on the frame the pointer
-arrives. This paragraph used to claim "no `:hover` rule anywhere in `src/`", which was already
-untrue of the Plate; see [docs/motion.md](./motion.md) for the boundary and
-[ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md) for the band's contrast bound.
+**The four custom properties are on `:root` in `src/styles/base.css`**: `--rise`, `--reveal-in`
+(760ms), `--reveal-out` (480ms), `--reveal-stagger` (60ms). They are deliberately **not** in
+`tokens.css`, which is colour, type and spacing. They moved here from `index.astro`'s scoped block
+when Registration became a third consumer
+([ADR-0010](./adr/0010-registration-returns.md)).
 
-There is also **no `prefers-reduced-motion` query left**, and that
-follows rather than being an omission: the substrate declared every hidden and animated state only
-under `no-preference`, so that `reduce` was the plain document rather than a branch that switched
-things off. Remove the animated state and the query has nothing to guard. **Do not add a bare
-`reduce` block back** — it would disable something nothing declares.
+**Registration** is in `base.css`: `@keyframes register`, and one
+`@media (prefers-reduced-motion: no-preference)` block containing the hidden state. Two tiers, keyed
+off one attribute:
 
-The one authored `<script>` in `Base.astro` now holds two behaviours, and neither draws anything:
-warming the hero (a cache warm on `pointerenter`, no visual) and the Expanded View (`showModal()` and
-a `src` swap). It measures **421 B gzip / 834 B raw**, one inline block, zero extra requests — 0.8%
-of ADR-0002's 50 KB. The rule was always one authored `<script>`, not one behaviour, and it is
-intact.
+| | |
+| --- | --- |
+| `[data-anim="now"]` | first screen. Runs the keyframe from the stylesheet on load, no script. The hero gets no `--d` |
+| `[data-anim="scroll"]` | below the fold. Starts hidden; the observer in `Base.astro` adds `.is-in` once, then `unobserve`s |
+| `--d` | the stagger, `calc(n * var(--reveal-stagger))`, groups of four |
 
-Everything that was here — Registration, the Navigation Cross-fade, the Carry, the Traverse, the
-Expanded View's fade — is in [docs/motion.md](./motion.md), with its measurements, its byte costs,
-and four findings that each fail silently. **Read it before writing a `transition` into this
-codebase.** One of the four is specifically about a component's `transition` shorthand replacing a
-global rule at a higher specificity, which looks exactly like a page with no animation.
+**The two reveals** are in `src/pages/index.astro`'s scoped block, unchanged by ADR-0010: a Plate's
+metadata band and the Masthead portrait's `About` label — one component since ADR-0011 — each fading its scrim in over 760ms and
+rising its text 8px into it 60ms behind, out at 480ms
+([ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md),
+[ADR-0009](./adr/0009-the-two-reveals-are-timed.md)). The untimed `opacity` swap still sits outside
+the guard and is still the whole reveal under `reduce` and on a coarse pointer.
+
+**Every `prefers-reduced-motion` query on the site is a `no-preference` gate, never a `reduce`
+block.** There are three: one in `base.css` guarding Registration, and two in `index.astro`'s scoped
+block, one per reveal. The hidden and animated states are declared
+*inside* the gate, so `reduce` is the plain document rather than a branch that switches motion off.
+That form fails toward stillness; the inverted form computes the animated path first and fails toward
+motion. **Never add a bare `reduce` block, and never invert either of these two.**
+
+**Registration is not hover-gated; the reveals are.** A reveal a coarse pointer cannot trigger has to
+degrade, which is what the `@media not (hover: hover)` blocks do. An entrance has no such problem
+because a phone scrolls, so hover-gating it would mean mobile never sees the site move.
+
+**The `<noscript>` block in `Base.astro` is load-bearing again.** Tier B starts hidden and is
+un-hidden by script, so the block un-hides `[data-anim]`, `:root`-qualified to outrank `base.css`'s
+equal-specificity rules. Without it, scripting-off visitors get a page of invisible elements.
+
+The one authored `<script>` in `Base.astro` now holds three behaviours: warming the hero (a cache
+warm on `pointerenter`, no visual), Registration's `IntersectionObserver`, and the Expanded View
+(`showModal()` and a `src` swap). The rule was always one authored `<script>`, not one behaviour, and
+it is intact; current byte cost is in [docs/motion.md](./motion.md) §costs.
+
+**A `transform` here has a silent trap.** It becomes the containing block for `.title a::after` /
+`.about a::after` and collapses the whole-tile hit area, which is why the reveals' rise is carried by
+a `<span>` inside each anchor, and why Registration goes on the `<li class="plate">` and never
+between it and the anchor. Relatedly: a component's scoped `transition` shorthand *replaces* a global
+one at higher specificity, so Registration goes on wrappers and never on an `<img>` a component also
+styles. Both of these look exactly like a page with no animation.
+
+The Navigation Cross-fade, the Carry, the Traverse and the Expanded View's fade are still removed and
+are recorded with their measurements in [docs/motion.md](./motion.md). **Read it before writing a
+`transition` into this codebase.**
 
 The design this implements is the Motion section of [docs/design-direction.md](./design-direction.md),
 and the order is binding: **that document is amended first, then a mechanism is chosen to serve it.**
+
+## The h1 reserves its second line on phones
+
+**A layout-shift fix, and the shift it prevents is invisible at desktop widths.**
+
+`font-display: swap` means the display face paints in a fallback and then swaps, and Montserrat is
+much wider than the fallbacks in `--f-display`. Measured in a browser at the 38.4px this band clamps
+to: "Coulter Heiberger" is **348px in Montserrat against 303px in the fallback**, and the column is
+`vw - 55`. So between **360px and 402px the fallback fits on one line and Montserrat does not**. When
+the font landed the h1 went 36.86px to 73.72px and took the portrait and the whole Plate list down
+37px with it — CLS 0.0128, arriving in the middle of Registration's entrance.
+
+That band is 375, 390 and 393: iPhone, iPhone Pro Max, Pixel. `@media (max-width: 403px)` gives the
+h1 a `min-height` of two lines, so the box is the size it will end up being before the swap happens.
+Verified 0 CLS at 320, 360, 375, 390, 402, 412, 480, 768 and 1440 with the font delayed 1.2s.
+
+**The 403px is derived from a string, not chosen.** Change the name, the gutters, `--t-h1` or the
+Montserrat subset and it has to be re-measured; nothing in CI can, and the failure is silent and
+only on a phone.
+
+**Two font-layer fixes were tried first and both were rejected on evidence.** A metric-matched
+fallback (`size-adjust` + `ascent-override` on a `local()` face) is the textbook answer, and it needs
+one ratio per platform fallback — but a headless container has neither Arial nor Helvetica Neue and
+**silently measures the default sans while returning entirely plausible numbers**, so the ratios
+cannot be verified anywhere in this project's toolchain, and a wrong ratio reintroduces the shift
+while looking like a fix. `font-display: optional` was measured here and did not hold: Chrome applied
+the face at t=1551ms with the request delayed 1.5s. Reserving the box needs no font metrics at all.
+
+Neither of those is closed forever. If the display face is ever wanted guaranteed-on-first-paint, the
+route is a preload plus `optional` — and [docs/motion.md](./motion.md) and `src/styles/fonts.css`
+both carry the measurement that refused the preload, which would have to be re-taken first.
 
 ## The Plate link on `/`
 

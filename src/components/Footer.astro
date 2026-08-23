@@ -22,22 +22,19 @@ import { EMAIL, LINKEDIN } from '../site';
 </footer>
 
 <style>
-  /* Aligned to the same measure and gutter as every page's <main>, so the
-     footer sits on the page's left edge rather than the viewport's. That
-     measure is now the --measure-page token rather than 1600px written out
-     here and again in the page — it was two copies of one number, and
-     src/layout.ts composes `sizes` from the token as well.
+  /* THE MEASURE AND THE CENTRING ARE IN base.css NOW, on the rule that names all
+     three direct children of <body>. They were restated here — width, max-width
+     and margin-inline — so that the footer sat on the page's left edge rather
+     than the viewport's, which is still what happens; it is just no longer this
+     file's job to say so. That rule carries the argument for why `width: 100%`
+     is not redundant with `align-items: stretch`.
 
-     `width: 100%` for the reason spelled out in base.css: <body> is a flex
-     column, and `margin-inline: auto` on a flex item beats `align-items:
-     stretch`, so without it this shrink-to-fits and centres itself. */
+     THE PADDING STAYS, because it is the one part that is genuinely this
+     element's: half a --rhythm, against <main>'s full one above it. */
   footer {
     display: flex;
     flex-wrap: wrap;
     gap: var(--s2) var(--s4);
-    width: 100%;
-    max-width: var(--measure-page);
-    margin-inline: auto;
     padding: calc(var(--rhythm) * 0.5) var(--gap);
   }
 

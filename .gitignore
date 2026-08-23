@@ -10,6 +10,12 @@ dist/
 # lighthouse ci run output — untracked but unignored until now (found by
 # research on issue #5)
 .lighthouseci/
+# local TEMP for lighthouse: chrome-launcher's cleanup throws EPERM against the
+# Windows user temp dir, which aborts `lhci collect` after "Generating results"
+# and leaves .lighthouseci/ empty while the run still exits 0. Point TEMP/TMP
+# here to get results out of it.
+.tmp-lh/
+
 # agent worktrees
 .claude/worktrees/
 # playwright-mcp scratch (screenshots, snapshots) from checking pages by eye

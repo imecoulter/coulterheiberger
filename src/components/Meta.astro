@@ -1,0 +1,600 @@
+---
+/* THE REVEALED BAND. One device, two consumers: each Plate on `/` and the
+   Masthead portrait on every page but /about/ime/.
+
+   IT IS A COMPONENT BECAUSE THE MASTHEAD LEFT THE INDEX. Both copies used to be
+   markup in index.astro, styled by one set of rules deliberately written without
+   a `.plate` ancestor so they reached both — and index.astro:619 called that
+   "what makes 'one device seen twice' a fact about the stylesheet rather than a
+   claim in a comment". Astro scopes by attribute, so the moment the Masthead
+   became a component of its own those rules stopped reaching its band. The
+   choice was to fork the device or to extract it. About.astro:143 had already
+   named this exact trade and deferred it once, "worth revisiting if a third page
+   ever opens this way"; six Project pages and a 404 are that third page.
+
+   WHY NOT A STYLESHEET. docs/styling.md names three homes for CSS and then says
+   "Do not invent a fourth location" — no band.css. It would also ship the band's
+   geometry, its scrim and its motion to /about/ime/ and /404, which render no
+   band at all, because everything imported in Base.astro lands on every page.
+
+   WHAT THIS COSTS, STATED PLAINLY: the band's geometry depends on selectors it
+   does not own — `.plate` and `.masthead-aside` — so those cross the scope
+   boundary with `:global()` below. Two ancestor class names reaching in is a
+   real debt, and it is much the smaller one: a fork is invisible, and nothing in
+   CI can see it. check-css.mjs asserts refusals and token contrast; it has no
+   duplication check and cannot acquire one.
+
+   THE :global() FORM IS THE WHOLE COMPOUND — `:global(.plate:hover)`, never
+   `:global(.plate):hover`. Same shape as [slug].astro's
+   `:global(html:has(dialog.expanded[open]))`. */
+interface Props {
+  /** 0 for the About band, 1..n for a Plate. Padded to two digits here so the
+      Plates and the Masthead cannot pad it differently. */
+  ordinal: number;
+  title: string;
+  href: string;
+  spec: string;
+  year: string | number;
+}
+
+const { ordinal, title, href, spec, year } = Astro.props;
+
+/* Moved here with the markup it formats. It was a page-level helper in
+   index.astro when the Plates were its only caller. */
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+
+{/* ALWAYS IN THE DOM, hidden only by opacity: a screen reader reads a complete
+    Plate, a crawler indexes one, and the document without CSS is the list it has
+    always been. Never `display: none` and never `hidden`. */}
+<div class="meta">
+  <p class="t-spec ordinal">{pad(ordinal)}</p>
+
+  {/* THE <span> IS LOAD-BEARING AND THE BUG IT PREVENTS IS SILENT. The rise is a
+      transform, a transform makes its element the containing block for
+      positioned descendants, and `.title a::after` is the stretched hit area
+      covering the whole Plate — or the whole portrait. Transform the <a> and
+      that `inset: 0` collapses onto the title: the reveal still looks right and
+      most of the image stops being clickable. The span carries the motion so the
+      anchor never has to. */}
+  <h2 class="title">
+    <a href={href}><span>{title}</span></a>
+  </h2>
+
+  {/* The Specification Line. `credit` is deliberately NOT here —
+      content-architecture.md §2 puts provenance on the detail page's fact block,
+      and an index that states where every piece was made is an index about
+      employment. */}
+  <p class="t-spec spec">
+    {spec} <span class="year">{year}</span>
+  </p>
+</div>
+
+<style>
+  /* THE METADATA BLOCK. In flow here, under the image, which is what it is on a
+     phone and under any coarse pointer. It only becomes an overlay in the wide
+     mode below.
+
+     --scrim IS DECLARED ON IT, and the move is what makes this component
+     correct rather than merely tidy. It used to sit on index.astro's `main` and
+     reach both bands by inheritance, and its own comment authorised exactly this
+     with the trigger "if a third route ever reveals a label on an image it gets
+     promoted, and the derivation moves with it". The trigger fired — the band is
+     on the Project pages and /404 now — but the promotion that comment expected
+     was to tokens.css, and that is the wrong target: componentising collapsed
+     two consumers on one page into one consumer in one file, and a token exists
+     to stop two places writing one value. base.css sets the same precedent for
+     --rise and the --reveal-* trio, which are on :root beside the rules that
+     read them rather than in tokens.css.
+
+     LEAVING IT BEHIND WOULD HAVE FAILED SILENTLY, which is the reason this
+     paragraph exists. On a Project page `var(--scrim)` would resolve to the
+     guaranteed-invalid value, `background` would be dropped, and --ink text
+     would paint over an unmodified render. Neither instrument can see that:
+     check-css.mjs's contrast pass harvests :root and compares tokens to
+     --ground, and Lighthouse does not evaluate contrast over an image at all.
+
+     THE 0.94 IS A MEASUREMENT RATHER THAN A TASTE. ADR-0008 originally refused a
+     gradient here on the grounds that one cannot promise 4.5:1 over arbitrary
+     pixels. That is true of an unbounded gradient; this one is bounded, and the
+     bound is what makes it safe:
+
+       A black scrim at alpha over a white pixel composites to 255(1 - alpha),
+       and the text needs 4.5:1 against that. For --muted (luminance 0.198,
+       which is the 4.96:1 check-css.mjs reports on the Ground) the backdrop
+       must sit at or below (0.198 + 0.05) / 4.5 - 0.05 = 0.0051, a channel
+       value of about 16, so alpha >= 0.938. For --ink (luminance 0.792) the
+       same arithmetic gives alpha >= 0.595.
+
+     THAT GAP IS THE WHOLE DESIGN, and it took two rounds of owner review to see
+     it. The band began as an opaque --ground block, then as a fade above a 0.97
+     plateau, and both came back as "too much black". The instruction that
+     resolved it was "start the fade right from the bottom of the frame instead
+     of starting above the text".
+
+     A FADE THAT STARTS AT THE BOTTOM CANNOT CARRY --muted, and this is
+     arithmetic rather than preference. Continuous means alpha is ALREADY falling
+     where the text sits, so the binding point is the TOP of the text rather than
+     the bottom of the band. --muted needs 0.94 there, which is another way of
+     writing "no fade through the text" — the plateau was not a cautious choice,
+     it was the only shape --muted admits. Measured at the text's top edge:
+
+       alpha    --muted        --ink
+       0.66     1.65 FAIL      5.79 ok
+       0.70     2.01 FAIL      6.83 ok
+       0.94     4.52 ok        15.34 ok
+
+     SO THE BAND'S SMALL TEXT IS --ink, and that is a real cost paid
+     deliberately. `.spec` in the Masthead still refuses exactly this override,
+     and it is right to: on the Ground, colour is a free choice and a spec line
+     that reads one way beside another spec line is not a style. OVER AN IMAGE IT
+     IS NOT A FREE CHOICE. The text colour is the only thing setting how much
+     render can show through, because it sets the alpha floor. --muted buys a
+     slab; --ink buys a fade.
+
+     0.66 AT THE TEXT'S TOP, NOT 0.595. Same reasoning ADR-0003 applies to
+     --muted: pin for margin, not for the floor. 0.66 measures 5.79 against a
+     white pixel, so a render would have to be brighter than white to trouble it,
+     and the scrim is light enough that the image reads through the text.
+
+     IT REACHES 1 AT THE BOTTOM EDGE, AND THAT IS A JOIN RATHER THAN A SLAB. The
+     stop before this one bottomed out at 0.85, which left the image faintly
+     visible along the frame's last few pixels and then cut hard to the page
+     beneath — a seam exactly one Plate-edge wide. --ground is #000000, so an
+     opaque foot IS the page: the band stops having a bottom edge and the frame
+     dissolves into the ground instead of ending on it. The foot is 10% of the
+     band, ~28px, and it sits under the specification line rather than behind the
+     block.
+
+     SEVEN STOPS AND NO PLATEAU ABOVE THE FOOT. Alpha falls continuously from 10%
+     to the top and never holds, which is what makes the band read as the image
+     receding rather than as a panel laid on it. Retune a band's height and
+     re-check the alpha at the text's TOP edge, by hand — CI cannot. The way to
+     check it is to force the bands visible, hide their text so only the scrim is
+     painted, screenshot the text zone and take the brightest pixel in it.
+
+     HIDE THE DEV TOOLBAR BEFORE MEASURING. It paints a rgb(66,68,72) pill over
+     the bottom centre of the viewport, which lands inside three of the six
+     bands and reports 2.30. That is the toolbar, not the page. */
+  .meta {
+    margin: var(--s3) 0 0;
+
+    --scrim: linear-gradient(
+      to top,
+      rgb(0 0 0 / 1) 0%,
+      rgb(0 0 0 / 0.98) 10%,
+      rgb(0 0 0 / 0.88) 25%,
+      rgb(0 0 0 / 0.68) 45%,
+      rgb(0 0 0 / 0.45) 62%,
+      rgb(0 0 0 / 0.2) 80%,
+      rgb(0 0 0 / 0) 100%
+    );
+  }
+
+  /* `z-index: 1` IS LOAD-BEARING AND THE BUG IT FIXES IS SILENT, which is the
+     same sentence `.title a::after` carries and a different bug.
+
+     In the Masthead above 1200px the <picture> becomes `position: absolute` so
+     the face can take the prose's height. A positioned element paints above a
+     non-positioned in-flow one regardless of DOM order, so without this the band
+     renders UNDERNEATH the portrait: the reveal fires, the opacity changes, and
+     nothing appears. Caught in a browser, because it looks exactly like a rule
+     that never matched.
+
+     It applies in both modes rather than being scoped to the branch that needs
+     it. A z-index that only exists on one side of a breakpoint is a bug waiting
+     for the other side to grow a positioned child. */
+  :global(.masthead-aside) .meta {
+    z-index: 1;
+  }
+
+  .ordinal {
+    margin: 0;
+  }
+
+  /* THE INDEX MARK, in ink. It was signal red, and the change is a direction
+     call rather than a compliance one: the site is greyscale everywhere the
+     images are not, so that the eye goes to the work instead of to the furniture
+     around it.
+
+     WHAT THIS LEAVES BEHIND: --signal is used by exactly one selector on the
+     whole site, the :focus-visible outline in base.css. The token stays and its
+     3:1 floor in scripts/check-css.mjs stays with it.
+
+     A background, never a colour: --signal fails 4.5:1 as text and check-css.mjs
+     refuses it in a `color:` declaration by name.
+
+     26px AND 2px ARE NOT SPACING, which is why the check in check-css.mjs is
+     scoped to margin, padding and gap rather than to every length. This is the
+     size of a drawn mark. */
+  .ordinal::before {
+    content: '';
+    display: block;
+    width: 26px;
+    height: 2px;
+    margin-bottom: var(--s2);
+    background: var(--ink);
+  }
+
+  .title {
+    margin: var(--s2) 0 0;
+    font-size: var(--t-h3);
+    line-height: 1.1;
+  }
+
+  /* One link per band, and it covers the whole image. The <a> is on the title so
+     its accessible name is the Project's name — or `About` — and the
+     pseudo-element extends the hit area over the image without adding a second
+     link to the same URL for a screen reader to read out twice.
+
+     WRAPPING THE <picture> INSTEAD WOULD FOLD THE ALT TEXT INTO THE LINK'S NAME.
+     On the Masthead that link would announce as "Coulter Heiberger, smiling, in
+     glasses and a light blue collared shirt against a warm stucco wall. About".
+     This way there is one link named `About` and one image keeping its own
+     description.
+
+     `z-index: 1` IS LOAD-BEARING AND THE BUG IT FIXES IS SILENT. Without it an
+     overlay can sit under the image and the image takes the click, so the single
+     largest, most obviously clickable thing on the page does nothing. Confirmed
+     once with elementsFromPoint over the image centre, which returned the
+     overlay present, and under.
+
+     The cause was painting order rather than geometry: grid items paint as
+     atomic units in document order, so a later sibling paints over an earlier
+     sibling's positioned descendant. Here the <picture> comes FIRST and this
+     overlay follows it, which is the arrangement that does not trip it — and the
+     z-index is kept anyway, because it is one declaration against a bug that
+     costs a browser session to rediscover. Do not "fix" a recurrence by
+     reordering the DOM; that trades a silent mouse bug for a reading-order one.
+
+     IT IS ALSO THE BAND'S ONLY FOCUSABLE THING, which is what `:focus-within`
+     below hangs on.
+
+     THE `inset: 0` RESOLVES AGAINST THE CONSUMER, NOT AGAINST THIS COMPONENT.
+     `.meta` is deliberately never positioned — see the note on the wide-mode
+     geometry — so the nearest positioned ancestor is `.plate` or
+     `.masthead-aside`, both of which carry `position: relative`. A consumer that
+     renders this band without one gets a hit area stretched to the viewport. */
+  .title a {
+    text-decoration: none;
+  }
+
+  .title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .spec {
+    margin: var(--s3) 0 0;
+  }
+
+  /* The year rides the specification line rather than sitting under it: over an
+     image it is one more line to reserve height for, and the two are the same
+     voice at the same size saying two halves of one fact.
+
+     THE SEPARATOR IS SPACE, NOT THE MIDDLE DOT. The dot separates tools INSIDE a
+     specification line, and reusing it here would make the year read as one more
+     tool. */
+  .year::before {
+    content: '';
+    display: inline-block;
+    width: var(--s4);
+  }
+
+  /* ---- wide mode ---------------------------------------------------------
+     Same condition as the Plates, the crops, and tokens.css's --gap switch: a
+     SHAPE, not a width. See WIDE_MODE in src/layout.ts. */
+  @media (min-aspect-ratio: 1 / 1) {
+    /* THE BAND. Fixed height so all six Plates read as one row of the same
+       object rather than as six blocks sized by how long their titles are, and
+       bottom aligned inside it so the datum sits on the image's own edge.
+
+       IT WAS AN OPAQUE `--ground` BLOCK SIZED BY ITS CONTENT, filling the bottom
+       ~30% of the image, which meant pointing at the work hid the work. ADR-0008
+       is amended with the measurement that makes the scrim safe; the derivation
+       is on --scrim above.
+
+       280px IS A DRAWN DIMENSION, not spacing, which is why check-css.mjs's
+       refusal is scoped to margin, padding and gap rather than to every length —
+       the same category as the ordinal's 26px rule.
+
+       IT GOT TALLER WHILE THE BLACK GOT SMALLER, which sounds contradictory and
+       is the whole adjustment. The band's height is the length the gradient has
+       to fall off over, NOT the amount of ground painted: what a visitor reads
+       as "black" is the region near full strength, and that is set by the text
+       plus its padding rather than by this number. Going 260 -> 280 bought 47px
+       more fade; dropping the vertical padding to --s3 took 27px off the slab.
+       Shorten the band and the falloff gets steeper, not lighter.
+
+       PADDING IS --s3 VERTICAL, --s4 HORIZONTAL. The horizontal value holds the
+       text's inset from the image edge; the vertical one sets how far up the
+       gradient the text's top edge reaches, which is the number the contrast
+       check turns on. The text spans 7% to 45% of the band, and the scrim is at
+       0.66 by 45%, worth 5.79:1 to --ink.
+
+       THERE IS NO PLATEAU LEFT TO SHRINK. Raise this padding or shorten the band
+       and the text's top edge climbs into thinner scrim — re-check it against
+       the table on --scrim rather than assuming, because nothing in CI will say
+       so.
+
+       NEVER `position: absolute` ON THIS BLOCK, and that is the fix for a bug
+       that shipped: CLICKING A PLATE'S IMAGE DID NOTHING. Positioned, `.meta`
+       becomes the containing block for `.title a::after`, so its `inset: 0`
+       resolved to the 169px band instead of to the 570px Plate. Measured before
+       the fix: `a.offsetParent === .meta` returned true. Grid stacking removes
+       the cause rather than patching the symptom — `.meta` is a grid item and
+       not positioned, so the nearest positioned ancestor is the consumer again.
+       If the band ever needs to escape its cell, move the overlay off
+       `.title a` first.
+
+       THE ROW STILL RESOLVES TO THE IMAGE'S HEIGHT, so revealing the band cannot
+       move anything. That was the reason for absolute positioning and it
+       survives: the band is 280px against a hero of ~510px, the picture is the
+       taller item, and it sizes the row. */
+    /* THE TWO CONSUMERS GATE IT DIFFERENTLY, and that is the one thing they do
+       not share. The Masthead's portrait is a 200px square below 1200px — a
+       280px band on it is a black tile with a face behind it — so its band waits
+       for the branch where the column stretches to the prose beside it. A
+       Plate's image is full width in this mode and needs no second condition.
+       Everything the two bands genuinely share is unscoped. */
+    :global(.plate) .meta {
+      grid-area: 1 / 1;
+      align-self: end;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      height: 280px;
+      margin: 0;
+      padding: var(--s3) var(--s4);
+      background: var(--scrim);
+      opacity: 0;
+    }
+
+    /* --ink, NOT .t-spec's --muted, on the ordinal and the specification line.
+       The full argument is on --scrim: a scrim that fades from the bottom edge
+       cannot hold --muted at AA, so over an image the text colour is what
+       decides how much render shows through. The title is an h2 at --t-h3 and is
+       already --ink, so this brings the other two lines to the colour the title
+       has always had in this band rather than introducing a new one.
+
+       UNSCOPED, unlike the geometry above. Both bands paint small text over a
+       render and the alpha arithmetic that forces --ink is the same arithmetic
+       in both. */
+    .meta .t-spec {
+      color: var(--ink);
+    }
+
+    /* THE SITE'S TWO `:hover` RULES (ADR-0008, docs/motion.md) ARE NOW ONE RULE
+       SERVING BOTH OBJECTS, which is what the extraction bought. They were a
+       Plate's band and the Masthead portrait's `About` label, held to identical
+       terms by hand in one file. The hovered SELECTORS still cannot be shared —
+       one is `.plate`, one is `.masthead-aside` — so those are listed; every
+       term they act on is single-sourced below.
+
+       IT IS TIMED (ADR-0009). The scrim fades over --reveal-in, the three lines
+       rise --rise into it one --reveal-stagger behind, and all of it is gated on
+       `prefers-reduced-motion: no-preference` in the block below.
+
+       THE DECLARATIONS HERE STAY UNTIMED, and that is the point of the split.
+       This pair is still the whole reveal on a coarse pointer and under
+       `reduce`. The motion is a branch off it, never a rewrite of it.
+
+       `:focus-within` IS NOT A COURTESY. The overlay <a> is the only focusable
+       thing in either object, so this is how a keyboard visitor reads the same
+       specification line a pointer visitor does. Without it the metadata would
+       be reachable by a mouse and by a screen reader and by nobody else.
+
+       (hover: hover) GUARDS BOTH STATES TOGETHER. A coarse pointer never enters
+       the hidden state at all, which is the point: guarding only the `:hover`
+       half is the silent version of this bug, leaving the block at opacity 0 on
+       a phone with no way to ever reveal it — on the Masthead, that is the one
+       control leading to /about/ime/. */
+    @media (hover: hover) {
+      :global(.plate:hover) .meta,
+      :global(.plate:focus-within) .meta {
+        opacity: 1;
+      }
+    }
+
+    @media not (hover: hover) {
+      .meta {
+        opacity: 1;
+      }
+    }
+
+    /* THE MOTION. The scrim fades in place and the text rises into it, rather
+       than the whole band translating: --scrim's top edge is a falloff rather
+       than an edge, so translating it reads as a panel sliding in.
+
+       ONE OPACITY, NOT TWO. `.meta`'s opacity fades the scrim AND the three
+       lines inside it, which is the whole of "the text and the background fade".
+       A second opacity on the lines would multiply two curves for nothing;
+       --reveal-stagger is what separates them.
+
+       THE THREE LINES ARE ONE ARRIVAL, so they share a delay rather than being
+       staggered against each other. 60ms x 3 down a band this size would be the
+       removed `rise` entrance rebuilt inside a hover, which is a different
+       decision and not this one.
+
+       WHY `.title a span` AND NOT `.title`, which is the trap this whole block
+       is arranged around: `.title a::after` is the whole-image hit area,
+       stretched with `inset: 0` against the consumer. A transform on ANY
+       ancestor of that pseudo-element makes the ancestor its containing block,
+       and the hit area collapses out of the image and onto the band. The object
+       goes on revealing perfectly and stops being clickable above the metadata.
+
+       AND NO, SETTING THE HOVERED STATE TO `transform: none` IS NOT ENOUGH ON
+       ITS OWN. Mid-transition the computed transform is not none, so the naive
+       version has a --reveal-in-long dead zone over the render on every pointer
+       entry — long enough for a fast click to land in it. The span keeps the
+       anchor out of the transformed subtree entirely.
+
+       A BRANCH OFF THE SWAP ABOVE, NEVER A REPLACEMENT FOR IT. The opacity
+       endpoints are not restated in here: move them in and a visitor who asked
+       their OS for less motion loses the reveal entirely, which is the silent
+       version of this. */
+    @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+      .meta {
+        transition: opacity var(--reveal-out) ease-out;
+      }
+
+      /* `display: inline-block` ON THE SPAN ONLY, and it is required rather than
+         tidy: `transform` does not apply to a non-replaced inline box, and a
+         <span> in an <a> is one. Without it the two <p> lines rise and the title
+         does not, which looks like a typo in the selector list. The <p>s are
+         already block boxes and must not be given it — inline-block would take
+         them off the flex column's full width. */
+      .title a span {
+        display: inline-block;
+      }
+
+      /* THE RISE IS SCOPED TO THE CONSUMERS, and it has to be. Both bands use
+         these three classes, but each is only an overlay inside its own gate —
+         the Masthead's above 1200px, a Plate's in this mode. Where the block
+         sits in flow it is visible with no reveal to rise out of, so unscoped
+         these lines would hold an 8px offset that nothing ever resets, which
+         reads as a spacing bug on a window 1100px wide. */
+      :global(.plate) .ordinal,
+      :global(.plate) .title a span,
+      :global(.plate) .spec {
+        transform: translateY(var(--rise));
+        transition: transform var(--reveal-out) ease-out;
+      }
+
+      :global(.plate:hover) .meta,
+      :global(.plate:focus-within) .meta {
+        transition-duration: var(--reveal-in);
+      }
+
+      /* `transform: none`, not `translateY(0)`. A specified transform of zero
+         still establishes a containing block; `none` does not, so at rest
+         `.title a::after` resolves against the consumer exactly as it did before
+         this block existed. The <span> in the markup makes this belt-and-braces
+         rather than the fix, and it stays for that reason. */
+      :global(.plate:hover) .ordinal,
+      :global(.plate:hover) .title a span,
+      :global(.plate:hover) .spec,
+      :global(.plate:focus-within) .ordinal,
+      :global(.plate:focus-within) .title a span,
+      :global(.plate:focus-within) .spec {
+        transform: none;
+        transition-duration: var(--reveal-in);
+        transition-delay: var(--reveal-stagger);
+      }
+    }
+
+    /* NO FONT-SIZE HERE, and that is deliberate. The obvious move over a render
+       is to drop the title to the mono datum voice, and it would have been a
+       fourth type treatment — the exact mechanism base.css records for how this
+       site once reached ten treatments. The title is an h2 at --t-h3 over an
+       image the same way it is one beside an image.
+
+       THE TIGHTER SPEC MARGIN, --s1 RATHER THAN --s3. It used to need restating
+       for the Masthead's band, because `.masthead .spec` at (0,2,0) beat this
+       bare `.spec` inside the header and left the About band at the wide 20px
+       while the six below it sat at 8px. The Masthead is a separate component
+       now, so its scope attribute and this one do not see each other and the
+       restatement is gone. */
+    .spec {
+      margin: var(--s1) 0 0;
+    }
+  }
+
+  /* ---- the Masthead's band, and its second condition is the point ----------
+     BOTH CONDITIONS, not just the shape. The mode switch is an ASPECT RATIO, so
+     an 844x390 landscape phone reaches the wide branch with the portrait still
+     at its 200px square — and a 280px band on a 200px face is a black tile with
+     a face behind it. 1200px is where that column stops being a fixed square and
+     stretches to the prose beside it, which is the condition the band actually
+     needs. Same boundary and same reasoning as the two Masthead rules that set
+     up the stretch.
+
+     THE HEIGHT GATE IS ARITHMETIC, not caution. The scrim's contrast bound puts
+     the text's TOP edge at or below 45% of the band, and this content is ~110px
+     tall, so the band cannot be much under 280px without pushing the small text
+     into thinner scrim. 280px over a 200px square would be taller than the face.
+
+     BELOW THIS THE BLOCK SITS IN FLOW under the portrait, visible, exactly as a
+     Plate's metadata does on a phone. EVERY hover and motion rule for this
+     consumer is inside this gate for that reason: in flow there is no reveal to
+     rise out of, so an unscoped rise would hold an 8px offset that nothing ever
+     resets, which reads as a spacing bug on a window 1100px wide. */
+  @media (min-aspect-ratio: 1 / 1) and (min-width: 1200px) {
+    /* Every number here is the Plates'. Same height, same padding, same scrim,
+       same bottom alignment — if one of them moves, both move, or the two
+       objects stop being one device. They are restated rather than shared
+       because the two gates differ, which is the one genuine difference between
+       the consumers. */
+    :global(.masthead-aside) .meta {
+      grid-area: 1 / 1;
+      align-self: end;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      height: 280px;
+      margin: 0;
+      padding: var(--s3) var(--s4);
+      background: var(--scrim);
+      opacity: 0;
+    }
+
+    /* Both states guarded together, for the reason the Plates' copy gives:
+       guarding only the `:hover` half leaves the band at opacity 0 on a coarse
+       pointer with no way to ever reveal it — and this is the one control on the
+       page leading to /about/ime/.
+
+       `:focus-within` IS NOT A COURTESY. The title's <a> is the only focusable
+       thing in this column, so without it a keyboard visitor would tab onto an
+       invisible link. */
+    @media (hover: hover) {
+      :global(.masthead-aside:hover) .meta,
+      :global(.masthead-aside:focus-within) .meta {
+        opacity: 1;
+      }
+    }
+
+    @media not (hover: hover) {
+      :global(.masthead-aside) .meta {
+        opacity: 1;
+      }
+    }
+
+    /* A BRANCH OFF THE SWAP ABOVE, NEVER A REPLACEMENT FOR IT. The opacity
+       endpoints are not restated in here: move them in and a visitor who asked
+       their OS for less motion loses the reveal entirely. */
+    @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+      :global(.masthead-aside) .meta {
+        transition: opacity var(--reveal-out) ease-out;
+      }
+
+      :global(.masthead-aside) .ordinal,
+      :global(.masthead-aside) .title a span,
+      :global(.masthead-aside) .spec {
+        transform: translateY(var(--rise));
+        transition: transform var(--reveal-out) ease-out;
+      }
+
+      :global(.masthead-aside:hover) .meta,
+      :global(.masthead-aside:focus-within) .meta {
+        transition-duration: var(--reveal-in);
+      }
+
+      /* `transform: none`, not `translateY(0)`. A specified transform of zero
+         still establishes a containing block; `none` does not, so at rest
+         `.title a::after` — the portrait's whole-face hit area — resolves
+         against `.masthead-aside` exactly as it did before this block existed. */
+      :global(.masthead-aside:hover) .ordinal,
+      :global(.masthead-aside:hover) .title a span,
+      :global(.masthead-aside:hover) .spec,
+      :global(.masthead-aside:focus-within) .ordinal,
+      :global(.masthead-aside:focus-within) .title a span,
+      :global(.masthead-aside:focus-within) .spec {
+        transform: none;
+        transition-duration: var(--reveal-in);
+        transition-delay: var(--reveal-stagger);
+      }
+    }
+  }
+</style>

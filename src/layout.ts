@@ -154,7 +154,6 @@ export const objectPosition = (framing: string) =>
 
 const PAGE = px('--measure-page');
 const PLATE_META = px('--plate-meta');
-const BODY_COL = px('--body-col');
 
 /** --gap is declared twice: the base value, then the wide-mode override.
 
@@ -205,18 +204,24 @@ export const plateTallSizes = FULL_SM;
 export const detailWideSizes = FULL_LG;
 export const detailTallSizes = FULL_SM;
 
-/** The body column: half the page shell, and everything below a Project's hero
-    sits in it — heading, summary, prose and every Frame alike. Narrower than the
-    hero on purpose: the body starts on the same datum edge and stops short of
-    it, which is the only thing making a 5-Frame Project and a 12-Frame Project
-    read at the same rhythm.
+/** The body column, and it is now the FULL page shell. Everything below a
+    Project's hero sits in it — heading, summary, prose and every Frame alike.
 
-    Text and Frames share one measure because they are one column, not two
-    things that happen to be stacked. See the token's own comment for what that
-    costs the reading measure. */
-export const bodyWidth = BODY_COL;
+    IT USED TO BE --body-col, 800px, and stopping short of the hero was the
+    argument: same datum edge, narrower measure, one rhythm across a 5-Frame and
+    a 12-Frame Project. That has been overruled deliberately — the work is what
+    the page is for, and a Frame shown at 800px inside a 1280px shell was
+    presenting it at 62.5% of the room available. The shared LEFT EDGE, which is
+    what the direction actually names, is unchanged: the body now shares the
+    hero's right edge too.
+
+    Text and Frames still share one measure because they are one column, not two
+    things that happen to be stacked. The reading measure that --body-col's own
+    comment worried about is now wider still; that is the cost, and it is the
+    trade the width was widened to make. */
+export const bodyWidth = PAGE;
 export const bodySizes =
-  `(min-width: ${BODY_COL + GAP_LG * 2}px) ${BODY_COL}px, ` +
+  `(min-width: ${SHELL_CAPS_AT}px) ${PAGE}px, ` +
   `${WIDE_MODE} calc(100vw - ${GAP_LG * 2}px), ` +
   FULL_SM;
 

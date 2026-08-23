@@ -1,17 +1,9 @@
 ---
 import { getCollection } from 'astro:content';
-import { Picture } from 'astro:assets';
 import Base from '../layouts/Base.astro';
 import Plate from '../components/Plate.astro';
-import portrait from '../assets/portrait.jpg';
-import {
-  detailWideSizes,
-  portraitSizes,
-  PORTRAIT_WIDTH,
-  PORTRAIT_WIDTHS,
-  FRAME_FORMATS,
-  FRAME_FALLBACK,
-} from '../layout';
+import Meta from '../components/Meta.astro';
+import { detailWideSizes } from '../layout';
 import { EMAIL, LINKEDIN } from '../site';
 
 /* sameAs is legal here because the footer renders the link — the governing rule
@@ -32,6 +24,11 @@ import { EMAIL, LINKEDIN } from '../site';
 // document asks for one, and the rule at the top of content-architecture.md
 // cuts both ways: structured data nobody consumes is a second description of
 // the page to keep in sync with the first.
+//
+// IT STAYS ON THIS PAGE rather than moving to Base.astro with the Masthead. The
+// Masthead is now on every route, and a Person graph on every route is the same
+// claim asserted nine times — `url` says which page is the practice's, and it
+// says this one.
 const person = {
   '@context': 'https://schema.org',
   '@type': 'Person',
@@ -54,635 +51,142 @@ const person = {
 // `order` is curation, not chronology — see content-architecture.md §2. `year`
 // is display only and is never the sort key.
 const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
-
-const ordinal = (n: number) => String(n).padStart(2, '0');
 ---
 
 <Base
   title="Coulter Heiberger | Technical Artist"
   description="Real-time systems for spatial environments: terrain, architecture, simulation, and interactive experiences."
+  eyebrow="Selected work"
   structuredData={person}
 >
-  <main>
-    {/* THE MASTHEAD (CONTEXT.md), and it is deliberately not a Plate. The Plate
-        contract is what makes six Projects differ in subject rather than in
-        status, and a person entered into it would be exactly the status
-        difference the contract removes. So this borrows the Plate's grid and
-        its left datum edge, and nothing else: no ordinal, no link overlay, no
-        art-directed crop, and it sits outside the <ol>.
+  {/* THE MASTHEAD IS NOT HERE ANY MORE, and its absence is the change rather
+      than an omission. It was this page's opening header for the whole life of
+      the site; it is Base.astro's now and it renders above this <main> on every
+      route, with `Selected work` passed as its eyebrow above. See
+      docs/adr/0011 and src/components/Masthead.astro. */}
 
-        WHAT MAKES IT BELONG ANYWAY is the specification line below. The datum
-        is the specification line (docs/design-direction.md), so an element that
-        carries one is measured by the same reference as everything under it,
-        without being the same kind of object.
+  {/* ONE COLUMN OF EVEN PLATES, and it is a decision rather than the absence
+      of one. ADR-0008 built a Bento here — Cells of differing size packed from
+      a seeded set of Bands — and it was reverted at owner review: six
+      Projects is not enough work for differing sizes to read as curation
+      rather than as noise. The collage, its geometry and the arithmetic that
+      made its Cells even are kept in the ADR, because the thing that would
+      bring it back is more Projects, and that is a content change with a
+      design consequence rather than a fresh idea.
 
-        THE COLUMNS ARE SWAPPED against a Plate, and that is the whole visual
-        argument: a Plate is an image with metadata beside it, this is prose
-        with a face beside it. Same two columns, same gap, same edge, opposite
-        weights. */}
-    <header class="masthead">
-      <div class="masthead-text">
-        <span class="t-label eyebrow">Selected work</span>
-        <h1>Coulter Heiberger</h1>
+      WHAT SURVIVED IT is everything the collage was actually for: the
+      standardised spacing atom, the revealed metadata, and the check that
+      keeps the first one honest. */}
+  {/* data-hero-sizes is what the PROJECT PAGE lays its hero out at, parked on
+      `/` for the warming in Base.astro to read. The two pages share one
+      srcset and differ only in `sizes`, so this one string is the whole
+      difference between the file a visitor already has and the one the next
+      document will ask for — the script hands it to a detached Image and lets
+      the browser pick the rung itself, rather than doing that arithmetic
+      twice in two languages.
 
-        {/* ADR-0005: the display line is `Technical Artist`, unqualified. Not
-            "Technical Artist / Architectural Visualization", not a
-            parenthetical. Qualifiers go on the specification line below, where
-            they read as scope rather than as a job title that could not decide
-            what it was. */}
-        <p class="t-label role">Technical Artist</p>
+      ONE COPY, ON THE LIST, not one per Plate: it is the same string for all
+      six, and this document is on the LCP Path. It comes from layout.ts for
+      the reason every other `sizes` does — a hand-copied number here would
+      drift from the CSS silently and warm the wrong file, which looks exactly
+      like no warming at all. */}
+  <ol class="plates" data-hero-sizes={detailWideSizes}>
+    {
+      projects.map((project, i) => {
+        /* `first` IS ONLY ABOUT `priority`. The LCP element takes eager, sync
+           and fetchpriority high, and there is at most one per page.
 
-        <p class="positioning">
-          I build real-time systems for spatial environments: terrain,
-          architecture, simulation, and interactive experiences. Most of the work
-          starts with real-world data, processed into environments that hold up
-          at 1:1 scale under true coordinates.
-        </p>
+           SINCE THE MASTHEAD, THE LCP ELEMENT ON THIS PAGE DEPENDS ON THE
+           VIEWPORT, and `priority` is a build-time boolean that cannot say so.
+           Measured under the budget's own configuration (mobile, devtools
+           throttling, median of 3), not assumed:
 
-        {/* THE PRACTICE'S OWN SPECIFICATION LINE. Same type role and same
-            separator as every Plate's, because it is the same line doing the
-            same job one level up: the six below say what a Project was made
-            with, this says what the practice is made of.
+             mobile 390x844   the Masthead portrait   1641 ms
+             desktop 1440x900 this <img>              (unthrottled)
 
-            IT DOES NOT OPEN WITH `TECHNICAL ARTIST`, and ADR-0005's example
-            string does. That example is written for a site where the role is
-            NOT already on the page; here the display line sits two lines above
-            in this exact mono, so leading with it printed the same words twice
-            in the same style within 60 px. The ADR's rule is that qualifiers
-            live on the spec line rather than on the display line, and that rule
-            is better served by the line carrying only what the display line
-            does not say. Seen on the rendered page, which is where ADR-0005
-            says this kind of call gets made. */}
-        <p class="t-spec spec">Real-time 3D · Geospatial pipelines · Interactive systems</p>
-      </div>
+           The Masthead is roughly one screen on a phone, so this band drops
+           below the fold and the largest thing painted is inside the header
+           instead. This page is not image-LCP on a phone and has not been since
+           the Masthead landed on it.
 
-      <div class="masthead-aside">
-        {/* <Picture>, not the Plate's hand-assembled <picture>. That component
-            exists to switch COMPOSITION across the mode boundary, and a square
-            portrait has one composition — so the component that only switches
-            format is the correct one, which is the same call
-            `/projects/<slug>/` makes for a Frame.
+           THE NUMBER MOVED WHEN THE PORTRAIT WENT EAGER (ADR-0011). It was 2002
+           ms with the portrait lazy, and before the Masthead existed here the
+           LCP element was THIS image at 2512 ms — so the header did not cost
+           this page LCP, it bought it ~870 ms.
 
-            AVIF WITH A WEBP FALLBACK, from the same two constants the gallery
-            uses. Not a new decision: this element sits in the first viewport on
-            `/`, so it is fetched immediately whatever `loading` says, and the
-            gallery's own measurement was a 53% cut moving WebP q80 to AVIF q50.
-            Keeping the formats in layout.ts is also what stops CI's
-            processed-image cache going stale on them — the note there explains
-            what that cost once.
+           PRIORITY STAYS, and the reason is the desktop row above. On a
+           landscape window this band is still in view and still the LCP element,
+           so dropping it would make the LCP element `loading="lazy"`, which is
+           the one thing never to do to it (ADR-0010).
 
-            NOT `priority`. The first Plate keeps it: this is a 320 px square
-            against a 21:9 band, so it is not the LCP element on any viewport
-            where the band is in view, and claiming the LCP slot for a face
-            would take it off the work. Measured under `npm run budget`, not
-            assumed — see the note on `first` below. */}
-        <Picture
-          src={portrait}
-          alt="Coulter Heiberger, smiling, in glasses and a light blue collared shirt against a warm stucco wall."
-          width={PORTRAIT_WIDTH}
-          height={PORTRAIT_WIDTH}
-          widths={PORTRAIT_WIDTHS}
-          sizes={portraitSizes}
-          formats={FRAME_FORMATS}
-          fallbackFormat={FRAME_FALLBACK}
-          loading="lazy"
-          decoding="async"
-        />
+           What would change this is the mobile hero becoming the LCP element
+           again — i.e. the Masthead getting shorter. Re-read the numbers above
+           before assuming either way.
 
-        {/* THE PORTRAIT IS THE LINK, and this label is how it says so.
+           It used to do a second job. Every Plate arrived on scroll — the
+           metadata `rise`, the image `wipe` — and `first` was excluded from
+           that, because an element at opacity 0 is not an LCP candidate. The
+           entrances went at owner review and the substrate behind them has now
+           gone too; docs/motion.md holds both, and the LCP constraint is the
+           thing to re-read before any of it comes back. */
+        const first = i === 0;
 
-            IT WAS AN ORDINARY BORDERED LINK SET UNDER THE FACE, on the argument
-            that "this element has two things in it a visitor might want and
-            only one of them is a link". Owner review overturned the premise:
-            there are not two things here, there is one offer — go read about
-            him — and splitting it across a face and a word underneath made the
-            face inert and made the word the only affordance on `/` drawn with a
-            border rather than with the datum. Folding the label onto the
-            portrait makes this behave like the six Plates below it: one target,
-            one revealed label, one instant swap. design-direction.md is amended
-            for the second `:hover`; docs/motion.md holds the boundary.
+        return (
+          /* One Plate, one row, and every row identical. The <li> is the
+             positioning context for the link overlay and the clip box for the
+             revealed metadata — see the two notes in the style block.
 
-            THE SAME `::after` TRICK AS `.title a`, and deliberately the same
-            shape rather than an <a> wrapped round the <picture>. Wrapping would
-            fold the portrait's alt text into the link's accessible name, so the
-            link would announce as "Coulter Heiberger, smiling, in glasses and a
-            light blue collared shirt against a warm stucco wall. About". This
-            way there is one link named "About" and one image keeping its own
-            description, which is what the Plate pattern already buys.
+             data-anim IS ON THE <li> AND MUST STAY THERE. Registration holds
+             a transform for 760ms, and a transform makes its element the
+             containing block for positioned descendants — so a data-anim one
+             element inward would collapse `.title a::after`'s stretched hit
+             area for the length of the entrance and then fix itself, which is
+             about as silent as a bug gets. The <li> is already the `::after`'s
+             containing block by virtue of `position: relative`, so putting it
+             here changes nothing about the overlay. See ADR-0010.
 
-            The <p> is new and is doing structural work, not decorative: the
-            label needs a block-level box to be a grid item stacked on the
-            portrait, and a bare <a> in the grid would stretch to the cell. */}
-        <p class="about">
-          <a class="t-label" href="/about/ime/">About</a>
-        </p>
-      </div>
-    </header>
+             THE FIRST PLATE IS TIER A, the rest are Tier B. The first one is
+             the desktop LCP element and animates from the stylesheet on the
+             first frame; the other five start hidden and wait for the
+             observer in Base.astro. No stagger on the first, for the reason
+             ADR-0010 gives and the Masthead's own note repeats. */
+          <li
+            class="plate"
+            data-anim={first ? 'now' : 'scroll'}
+          >
+            <Plate frame={project.data.images[0]} priority={first} />
 
-    {/* ONE COLUMN OF EVEN PLATES, and it is a decision rather than the absence
-        of one. ADR-0008 built a Bento here — Cells of differing size packed from
-        a seeded set of Bands — and it was reverted at owner review: six
-        Projects is not enough work for differing sizes to read as curation
-        rather than as noise. The collage, its geometry and the arithmetic that
-        made its Cells even are kept in the ADR, because the thing that would
-        bring it back is more Projects, and that is a content change with a
-        design consequence rather than a fresh idea.
+            {/* THE REVEALED METADATA (ADR-0008), and it is src/components/Meta.astro
+                now rather than markup here. It was lifted out when the Masthead
+                left this file: the Masthead portrait's About block is the SAME
+                device, and it was only ever one device because both copies sat
+                in this file under one set of unscoped rules. Astro scopes by
+                attribute, so the moment the Masthead became a component those
+                rules stopped reaching it, and the choice was to extract the band
+                or to fork it. The component's own header carries the argument.
 
-        WHAT SURVIVED IT is everything the collage was actually for: the
-        standardised spacing atom, the revealed metadata, and the check that
-        keeps the first one honest. */}
-    {/* data-hero-sizes is what the PROJECT PAGE lays its hero out at, parked on
-        `/` for the warming in Base.astro to read. The two pages share one
-        srcset and differ only in `sizes`, so this one string is the whole
-        difference between the file a visitor already has and the one the next
-        document will ask for — the script hands it to a detached Image and lets
-        the browser pick the rung itself, rather than doing that arithmetic
-        twice in two languages.
-
-        ONE COPY, ON THE LIST, not one per Plate: it is the same string for all
-        six, and this document is on the LCP Path. It comes from layout.ts for
-        the reason every other `sizes` does — a hand-copied number here would
-        drift from the CSS silently and warm the wrong file, which looks exactly
-        like no warming at all. */}
-    <ol class="plates" data-hero-sizes={detailWideSizes}>
-      {
-        projects.map((project, i) => {
-          /* `first` IS ONLY ABOUT `priority`. The LCP element takes eager, sync
-             and fetchpriority high, and there is at most one per page.
-
-             SINCE THE MASTHEAD, THE LCP ELEMENT ON THIS PAGE DEPENDS ON THE
-             VIEWPORT, and `priority` is a build-time boolean that cannot say so.
-             Measured, not assumed:
-
-               mobile 390x844, throttled 4G   p.positioning   750-811 ms
-               desktop 1440x900               this <img>       (unthrottled)
-
-             The Masthead is roughly one screen on a phone, so the band drops
-             below the fold and the positioning paragraph becomes the largest
-             thing painted. `/` moved into the text-LCP regime the precedent
-             analysis found every fast site in — LCP Path on this document is now
-             6.5 KB.
-
-             PRIORITY STAYS ANYWAY, and the reason is the desktop row above. On a
-             landscape window the band is still in view and still the LCP element,
-             so dropping this would make the LCP element `loading="lazy"`, which
-             is the one thing never to do to it. On mobile it costs nothing
-             measurable: at 750 ms the hero has not finished either way, which is
-             why the LCP Path number is 6.5 KB and not 100.
-
-             What would change this is the mobile hero becoming the LCP element
-             again — i.e. the Masthead getting shorter. Re-read the numbers above
-             before assuming either way.
-
-             It used to do a second job. Every Plate arrived on scroll — the
-             metadata `rise`, the image `wipe` — and `first` was excluded from
-             that, because an element at opacity 0 is not an LCP candidate. The
-             entrances went at owner review and the substrate behind them has now
-             gone too; docs/motion.md holds both, and the LCP constraint is the
-             thing to re-read before any of it comes back. */
-          const first = i === 0;
-
-          return (
-            /* One Plate, one row, and every row identical. The <li> is the
-               positioning context for the link overlay and the clip box for the
-               revealed metadata — see the two notes in the style block. */
-            <li class="plate">
-              <Plate frame={project.data.images[0]} priority={first} />
-
-              {/* THE REVEALED METADATA (ADR-0008). Always in the DOM, hidden
-                  only by opacity: a screen reader reads a complete Plate, a
-                  crawler indexes one, and the document without CSS is the list
-                  it has always been. Never `display: none` and never `hidden`.
-
-                  THE SUMMARY IS NOT HERE and its absence is the one content cut
-                  this arrangement makes. It is prose, it is two to four lines,
-                  and there is no Cell width where two to four lines of Georgia
-                  can appear over a render without the block becoming the Cell.
-                  It is on the Project page, which is where someone who wants to
-                  read about the work is going. What is left is the datum: the
-                  ordinal, the name, the specification line, the year. */}
-              <div class="meta">
-                <p class="t-spec ordinal">{ordinal(project.data.order)}</p>
-
-                <h2 class="title">
-                  <a href={`/projects/${project.id}/`}>{project.data.title}</a>
-                </h2>
-
-                {/* The Specification Line. `credit` is deliberately NOT here —
-                    content-architecture.md §2 puts provenance on the detail
-                    page's fact block, and an index that states where every
-                    piece was made is an index about employment. */}
-                <p class="t-spec spec">
-                  {project.data.spec} <span class="year">{project.data.year}</span>
-                </p>
-              </div>
-            </li>
-          );
-        })
-      }
-    </ol>
-  </main>
+                THE SUMMARY IS NOT IN IT and its absence is the one content cut
+                this arrangement makes. It is prose, it is two to four lines,
+                and there is no Cell width where two to four lines of Georgia
+                can appear over a render without the block becoming the Cell.
+                It is on the Project page, which is where someone who wants to
+                read about the work is going. What is left is the datum: the
+                ordinal, the name, the specification line, the year. */}
+            <Meta
+              ordinal={project.data.order}
+              title={project.data.title}
+              href={`/projects/${project.id}/`}
+              spec={project.data.spec}
+              year={project.data.year}
+            />
+          </li>
+        );
+      })
+    }
+  </ol>
 </Base>
 
 <style>
-  /* All THREE type roles are live on this page now, where before it was two.
-     The serif arrives with the summaries: docs/design-direction.md says `/` is
-     Montserrat and mono only "because four lines with no prose on them have
-     nothing for the serif to do", and six summaries are prose. Three is the
-     cap, not a quota, and the serif is a system stack — 0 B on the wire. */
-  main {
-    max-width: var(--measure-page);
-    margin-inline: auto;
-    padding: var(--rhythm) var(--gap);
-
-    /* THE SCRIM, AND THE 0.94 IS A MEASUREMENT RATHER THAN A TASTE. Both
-       reveals on this page paint text over a render, and ADR-0008 originally
-       refused a gradient there on the grounds that one cannot promise 4.5:1
-       over arbitrary pixels. That is true of an unbounded gradient; this one is
-       bounded, and the bound is what makes it safe:
-
-         A black scrim at alpha over a white pixel composites to 255(1 - alpha),
-         and the text needs 4.5:1 against that. For --muted (luminance 0.198,
-         which is the 4.96:1 check-css.mjs reports on the Ground) the backdrop
-         must sit at or below (0.198 + 0.05) / 4.5 - 0.05 = 0.0051, a channel
-         value of about 16, so alpha >= 0.938. For --ink (luminance 0.792) the
-         same arithmetic gives alpha >= 0.595.
-
-       THAT GAP IS THE WHOLE DESIGN, and it took two rounds of owner review to
-       see it. The band began as an opaque --ground block, then as a fade above
-       a 0.97 plateau, and both came back as "too much black". The instruction
-       that resolved it was "start the fade right from the bottom of the frame
-       instead of starting above the text".
-
-       A FADE THAT STARTS AT THE BOTTOM CANNOT CARRY --muted, and this is
-       arithmetic rather than preference. Continuous means alpha is ALREADY
-       falling where the text sits, so the binding point is the TOP of the text
-       rather than the bottom of the band. --muted needs 0.94 there, which is
-       another way of writing "no fade through the text" — the plateau was not a
-       cautious choice, it was the only shape --muted admits. Measured at the
-       text's top edge:
-
-         alpha    --muted        --ink
-         0.66     1.65 FAIL      5.79 ok
-         0.70     2.01 FAIL      6.83 ok
-         0.94     4.52 ok        15.34 ok
-
-       SO THE BAND'S SMALL TEXT IS --ink, and that is a real cost paid
-       deliberately. `.masthead .spec` two screens down still refuses exactly
-       this override, and it is right to: on the Ground, colour is a free choice
-       and a spec line that reads one way beside another spec line is not a
-       style. OVER AN IMAGE IT IS NOT A FREE CHOICE. The text colour is the only
-       thing setting how much render can show through, because it sets the alpha
-       floor. --muted buys a slab; --ink buys a fade. The override is confined to
-       these two bands and stated on the rules that carry it.
-
-       0.66 AT THE TEXT'S TOP, NOT 0.595. Same reasoning ADR-0003 applies to
-       --muted: pin for margin, not for the floor. 0.66 measures 5.79 against a
-       white pixel, so a render would have to be brighter than white to trouble
-       it, and the scrim is light enough that the image reads through the text.
-
-       IT IS DECLARED HERE, NOT IN tokens.css, because that file is custom
-       properties that name a value the design uses everywhere and this one has
-       exactly two consumers, both on this page. If a third route ever reveals a
-       label on an image it gets promoted, and the derivation moves with it.
-
-       IT REACHES 1 AT THE BOTTOM EDGE, AND THAT IS A JOIN RATHER THAN A SLAB.
-       The stop before this one bottomed out at 0.85, which left the image faintly
-       visible along the frame's last few pixels and then cut hard to the page
-       beneath — a seam exactly one Plate-edge wide. --ground is #000000, so an
-       opaque foot IS the page: the band stops having a bottom edge and the frame
-       dissolves into the ground instead of ending on it. The foot is 10% of the
-       band, ~28px, and it sits under the specification line rather than behind
-       the block.
-
-       SEVEN STOPS AND NO PLATEAU ABOVE THE FOOT. Alpha falls continuously from
-       10% to the top and never holds, which is what makes the band read as the
-       image receding rather than as a panel laid on it. Retune a band's height
-       and re-check the
-       alpha at the text's TOP edge, by hand — CI cannot: Lighthouse does not
-       evaluate contrast over an image, and check:css compares tokens to --ground
-       rather than to a composite. The way to check it is to force the bands
-       visible, hide their text so only the scrim is painted, screenshot the text
-       zone and take the brightest pixel in it.
-
-       HIDE THE DEV TOOLBAR BEFORE MEASURING. It paints a rgb(66,68,72) pill
-       over the bottom centre of the viewport, which lands inside three of the
-       six bands and reports 2.30. That is the toolbar, not the page. */
-    --scrim: linear-gradient(
-      to top,
-      rgb(0 0 0 / 1) 0%,
-      rgb(0 0 0 / 0.98) 10%,
-      rgb(0 0 0 / 0.88) 25%,
-      rgb(0 0 0 / 0.68) 45%,
-      rgb(0 0 0 / 0.45) 62%,
-      rgb(0 0 0 / 0.2) 80%,
-      rgb(0 0 0 / 0) 100%
-    );
-  }
-
-  /* ---- the Masthead ------------------------------------------------------
-     Two columns, text then face, and the right-hand one is --plate-meta.
-
-     IT USED TO BE "the Plate's grid with the columns swapped", and the grid it
-     was swapping is gone: a Plate below is one full-width band with no metadata
-     column beside it. What survives is the width and the shared left datum
-     edge. --plate-meta now has exactly this one consumer, which is why the
-     token's comment says so rather than describing a column that no longer
-     exists. */
-  .masthead {
-    display: grid;
-    gap: var(--s4);
-    margin-bottom: var(--rhythm);
-  }
-
-  /* Same condition as the Plates, the crops, and tokens.css's --gap switch: a
-     SHAPE, not a width. See WIDE_MODE in src/layout.ts.
-
-     The portrait column is placed explicitly rather than reordered: DOM order
-     is the reading order, and
-     `order` would make the visual arrangement contradict it rather than place
-     it. Here the text is first in both, so this is only a placement. */
-  @media (min-aspect-ratio: 1 / 1) {
-    .masthead {
-      grid-template-columns: minmax(0, 1fr) var(--plate-meta);
-      gap: var(--gap);
-
-      /* `stretch`, not `start`. This is what gives the portrait column the text
-         block's height for the rule under `.masthead-aside` to fill. It is the
-         grid default, and it is written out because it is load-bearing here:
-         restoring `start` would silently collapse the face back to a square and
-         the change would look like nothing more than a shorter image. */
-      align-items: stretch;
-    }
-  }
-
-  .eyebrow {
-    display: block;
-    margin-bottom: var(--s3);
-  }
-
-  /* The positioning paragraph, and the reason the serif is on this page at all
-     above the Plate summaries. No font-size: it is body prose and it is set
-     like body prose, which is the correction tokens.css records against the
-     15 px summary size this page used to mint for itself.
-
-     --body-col rather than the column's full width. The wide column runs to
-     ~1230 px at the page cap, and 17 px Georgia across that is far past any
-     reading measure. The Plate summaries do not need this because 320 px caps
-     them already. */
-  .positioning {
-    margin: var(--s3) 0 0;
-    max-width: var(--body-col);
-    color: var(--muted);
-  }
-
-  /* NO COLOUR OVERRIDE. This was --ink for one draft, to give the practice's own
-     line more weight than the six below it. That is exactly the move base.css
-     refuses by name: a type style that reads one way in one place and another
-     way next to it is not a style, and it is how the footer address became the
-     site's tenth treatment. The specification line is one style, and the
-     Masthead's is a specification line. Margin only.
-
-     THE TWO BANDS DO OVERRIDE IT, and this rule is still right. The difference
-     is not that they were allowed a preference and this line was not: over an
-     image the text colour SETS THE SCRIM'S ALPHA FLOOR, so it stops being a
-     colour choice and becomes a legibility one — --muted would force 0.94 and
-     leave no fade. The derivation is on --scrim. On the Ground there is no such
-     forcing function, which is why this line has nothing to trade and keeps the
-     shared colour. */
-  .masthead .spec {
-    margin: var(--s3) 0 0;
-  }
-
-  /* THE PORTRAIT IS CAPPED, and the cap is mirrored in `portraitSizes`
-     (src/layout.ts) so the width the CSS draws and the width the browser
-     fetches cannot drift.
-
-     Below the mode switch it is 200 px and NOT the full content width. A face
-     at 100vw is the entire first screen on a phone, it would take the LCP
-     element off the work and onto the author, and it would push the first Plate
-     a screen and a half down. The cap is the whole reason this reads as a
-     masthead rather than as a profile page. */
-  /* <picture> is inline by default, which puts a descender's worth of gap under
-     it — the same rule Plate.astro and the Project gallery each carry, and the
-     same `:global()` reach the gallery uses, because the element comes from a
-     component rather than from this template. */
-  /* THE PORTRAIT AND ITS LABEL SHARE ONE GRID CELL. Same stacking shape as a
-     Plate below, and adopted for the same two reasons: the label can be
-     revealed without moving anything, and `.about` stays UNPOSITIONED so its
-     `::after` overlay resolves against THIS element instead of against itself.
-     The long note on `.plate` records what getting that wrong costs, because it
-     had already shipped once.
-
-     WIDTH RATHER THAN A CAP ON THE IMAGE. The 200px used to sit on the <img>;
-     it is on the container now because the label band has to be the width of
-     the face and not the width of the column. Above the mode switch this is
-     released and the column decides. */
-  .masthead-aside {
-    position: relative;
-    isolation: isolate;
-    display: grid;
-    width: 200px;
-  }
-
-  .masthead-aside :global(picture) {
-    display: block;
-    grid-area: 1 / 1;
-  }
-
-  .masthead-aside :global(img) {
-    width: 100%;
-    aspect-ratio: 1;
-    object-fit: cover;
-  }
-
-  /* IT TAKES THE WHOLE COLUMN ONLY ON A GENUINELY LARGE WINDOW, and the second
-     condition is the point. The mode switch is a SHAPE, so a 844x390 landscape
-     phone gets the desktop grid — a fixed 320 px portrait beside a text column
-     that has shrunk to about 430 px. Seen at that size: the face is the largest
-     thing on screen and the Masthead stops being mostly words.
-
-     `min-width: 1200px` is tokens.css's existing boundary for exactly this, "how
-     much air a genuinely large window gets once it is already in the wide mode".
-     Reused rather than a new number, so there is still one of them. Below it the
-     portrait stays at its stacked size and the column simply has air in it. */
-  /* THE FACE MATCHES THE HEIGHT OF THE PROSE BESIDE IT. Asked for directly at
-     owner review: the two columns read as one object rather than as a square
-     parked next to a paragraph.
-
-     `align-items: stretch` on the Masthead grid (below) hands this column the
-     text block's height, and the portrait then fills it. `height: 100%` has to
-     beat base.css's `img { height: auto }`, and dropping `aspect-ratio` is what
-     lets it — with both set, the ratio wins and the stretch is silently
-     ignored. `object-fit: cover` absorbs the difference, which is the same
-     mechanism a Plate's band uses one level down.
-
-     BOTH CONDITIONS, not just the shape. The mode switch is an aspect ratio, so
-     an 844x390 landscape phone reaches the wide branch; stretching a face to a
-     text column there makes it the largest thing on screen. Under 1200px the
-     portrait keeps its stacked square and the column simply has air in it.
-     Same boundary and same reasoning as the rule this replaced. */
-  @media (min-aspect-ratio: 1 / 1) and (min-width: 1200px) {
-    .masthead-aside {
-      width: auto;
-    }
-
-    /* THE PORTRAIT IS TAKEN OUT OF FLOW, and that is the whole mechanism rather
-       than a detail. `align-items: stretch` alone does nothing here: while the
-       <picture> is an in-flow grid item it is the TALLEST item in the row, so
-       it sizes the row and then "fills" a height it set itself. The first
-       attempt at this looked like it worked only because a 320px square and the
-       prose beside it happened to land within 17px of each other.
-
-       Absolute is what breaks the circle. Out of flow, the portrait contributes
-       nothing to the row, so the row is the TEXT's height and the portrait
-       fills that. Ask for the face to drive the Masthead's height again and
-       this is the declaration to remove, not `align-items`.
-
-       `.about` is then the only in-flow item in this column, which is fine: it
-       is 96px against prose several times that, so it never becomes the
-       measure. `object-fit: cover` on the <img> absorbs the ratio change, and
-       `aspect-ratio: auto` is required to let it — with a ratio still set, the
-       ratio wins and `height: 100%` is silently ignored. */
-    .masthead-aside :global(picture) {
-      position: absolute;
-      inset: 0;
-    }
-
-    .masthead-aside :global(img) {
-      height: 100%;
-      aspect-ratio: auto;
-    }
-  }
-
-  /* THE `ABOUT` LABEL, and it is the Plate's revealed band at portrait scale:
-     same scrim, same instant swap, same `(hover: hover)` pair. Two objects on
-     this page reveal a label on an image and they are deliberately one device,
-     not two treatments — see the band's own note under the Plates for the
-     contrast bound the scrim has to clear.
-
-     SHORTER BAND, SAME GRADIENT. --scrim puts its 0.94 stop at 62% of whatever
-     box it is painted in, and one label line plus --s3 of padding sits at about
-     41% of this band. The invariant is that the text stays below the stop, not
-     that the two bands are the same height. */
-  /* `z-index: 1` IS LOAD-BEARING AND THE BUG IT FIXES IS SILENT, which is the
-     same sentence the Plate's overlay carries and a different bug.
-
-     Above 1200px the <picture> becomes `position: absolute` so the face can
-     take the prose's height. A positioned element paints above a non-positioned
-     in-flow one regardless of DOM order, so without this the label and its
-     scrim render UNDERNEATH the portrait: the reveal fires, the opacity
-     changes, and nothing appears. Caught in a browser, because it looks exactly
-     like a rule that never matched.
-
-     It applies in both modes rather than being scoped to the branch that needs
-     it. A z-index that only exists on one side of a breakpoint is a bug waiting
-     for the other side to grow a positioned child. */
-  .about {
-    grid-area: 1 / 1;
-    align-self: end;
-    z-index: 1;
-    display: flex;
-    align-items: flex-end;
-    height: 96px;
-    margin: 0;
-    padding: var(--s3);
-    background: var(--scrim);
-  }
-
-  /* No underline and no border. The affordance is the reveal and the target is
-     the whole face, which is exactly what the border used to stand in for when
-     this was a word sitting on its own under the image.
-
-     --ink RATHER THAN .t-label's --muted, and the reason is the scrim's, not
-     this element's: see the alpha table on --scrim. --muted would force the
-     scrim to 0.94 behind this word and there would be no fade left. */
-  .about a {
-    color: var(--ink);
-    text-decoration: none;
-  }
-
-  /* The whole portrait is the hit area. Identical to `.title a::after` on a
-     Plate, including the z-index, and the note there explains why that
-     declaration is kept even where DOM order already covers it. */
-  .about a::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-  }
-
-  /* THE SITE'S SECOND `:hover` RULE, and it is the first one's device on a
-     different object (docs/design-direction.md, docs/motion.md).
-
-     NO `transition`, NO `transform`, NO DURATION, NO EASING — the same terms the
-     Plate's reveal is held to, and the reason a site with no motion can carry
-     either. Putting a duration on this is adding motion to the site.
-
-     `:focus-within` IS NOT A COURTESY. The label's <a> is the only focusable
-     thing in this column, so without it a keyboard visitor would tab onto an
-     invisible link.
-
-     BOTH STATES ARE GUARDED TOGETHER, and guarding only the `:hover` half is the
-     silent version of this bug: it would leave the label at opacity 0 on a
-     phone with no way to ever reveal it, on the one control that leads to
-     /about/ime/. */
-  /* THE REVEAL IS SCOPED TO THE WIDE MODE, exactly as the Plate's band is, and
-     that nesting is the point rather than an accident of where the rules were
-     written. Below the switch the page is stacked and NOTHING on it hides: a
-     Plate's metadata drops into flow under its image at full opacity, so a
-     label that stayed hidden on the portrait would be the one element on a
-     phone concealing itself. It sits permanently on the face there, which is
-     also the only thing telling a touch visitor the face is a target.
-
-     Caught by measuring rather than by reading: at a 390px window the band
-     reported opacity 0 while every Plate below it reported 1. */
-  @media (min-aspect-ratio: 1 / 1) {
-    .about {
-      opacity: 0;
-    }
-
-    /* Both states guarded together, for the reason spelled out on the Plate's
-       copy of this pair: guarding only the `:hover` half leaves the label at
-       opacity 0 on a coarse pointer with no way to ever reveal it, on the one
-       control that leads to /about/ime/. */
-    @media (hover: hover) {
-      .masthead-aside:hover .about,
-      .masthead-aside:focus-within .about {
-        opacity: 1;
-      }
-    }
-
-    @media not (hover: hover) {
-      .about {
-        opacity: 1;
-      }
-    }
-  }
-
-  /* The only --t-h1 on the site. Tracking comes from base.css at -0.02em; this
-     rule used to restate it as -0.022em, a difference of two thousandths of an
-     em that no one could see and that made the site's largest heading the one
-     place the shared value did not apply. */
-  h1 {
-    font-size: var(--t-h1);
-    line-height: 0.96;
-  }
-
-  /* THE ROLE IS A LABEL, and it now says so. It was Montserrat at its own size,
-     which made it a fourth heading size on a page that already had two — and the
-     argument for it ("a title, not reading, in the same voice as the name") is
-     equally an argument for the mono datum voice, which is where the Social Card
-     has always set this exact string.
-
-     So the eyebrow and the role now bracket the name in the same style: what the
-     page is above it, who the site is below it, and one very large name between.
-     Everything else here is furniture in the same 11-12px mono, which is the
-     whole point of a datum. */
-  .role {
-    margin: var(--s3) 0 0;
-  }
-
   /* ---- the Plates --------------------------------------------------------
      An <ol> because the Plates are ordered and `order` is the curation. The
      list markers go; the semantics stay.
@@ -692,8 +196,19 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
      is what the whole spacing pass was for and it is the part of ADR-0008 that
      outlived the collage: the page is one field with one measure in it, rather
      than blocks with their own margins. `--rhythm` still separates the Masthead
-     from the work, because that is a change of subject rather than a step in a
-     list. */
+     from the work — it is `.masthead`'s own bottom margin now, in
+     src/components/Masthead.astro, because that is a change of subject rather
+     than a step in a list.
+
+     THE SHELL IS GONE FROM THIS FILE. `main { max-width: --measure-page;
+     margin-inline: auto; padding: ... }` was restated here and in three other
+     files; base.css now states it once for every direct child of <body>. This
+     page's <main> is Base.astro's.
+
+     --scrim WENT WITH THE BAND, into src/components/Meta.astro, and the 70-line
+     contrast derivation went with it. It was declared on this page's <main> and
+     reached both bands by inheritance, which stopped being possible the moment
+     one of those bands rendered on a different route. */
   .plates {
     list-style: none;
     margin: 0;
@@ -702,148 +217,43 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
     gap: var(--gap);
   }
 
-  /* `isolation: isolate` confines the overlay's z-index below to this Plate.
-     Without it that `z-index: 1` competes in the root stacking context, because
+  /* `isolation: isolate` confines the overlay's z-index to this Plate. Without
+     it that `z-index: 1` competes in the root stacking context, because
      `position: relative` with `z-index: auto` does not open one. Plates do not
      overlap today, which is exactly why it is worth one declaration now rather
-     than a puzzle later. */
+     than a puzzle later.
+
+     `position: relative` IS WHAT Meta.astro RESOLVES ITS HIT AREA AGAINST.
+     `.title a::after` is stretched with `inset: 0` and `.meta` is deliberately
+     never positioned, so the nearest positioned ancestor is this element. A
+     consumer of that component without this declaration gets a hit area
+     stretched to the viewport. */
   .plate {
     position: relative;
     isolation: isolate;
   }
 
-  /* THE METADATA BLOCK. In flow here, under the image, which is what it is on a
-     phone and under any coarse pointer. It only becomes an overlay in the wide
-     mode below. */
-  .meta {
-    margin: var(--s3) 0 0;
-  }
+  /* ---- the Plates, wide mode --------------------------------------------
+     THE PLATE STACKS ITS TWO CHILDREN IN ONE GRID CELL, and this is the fix for
+     a bug that shipped: CLICKING A PLATE'S IMAGE DID NOTHING.
 
-  .ordinal {
-    margin: 0;
-  }
+     `.meta` used to be `position: absolute`. That made it the containing block
+     for `.title a::after` — the pseudo-element whose whole job is to be the
+     Plate's hit area — so its `inset: 0` resolved to the 169px metadata band
+     instead of to the 570px Plate. Measured in a browser before the fix:
+     `a.offsetParent === .meta` returned true. The largest and most obviously
+     clickable thing on the page was inert everywhere except the strip of text
+     that only appears on hover.
 
-  /* THE PLATE INDEX MARK, in ink. It was signal red, and the change is a
-     direction call rather than a compliance one: the site is greyscale
-     everywhere the images are not, so that the eye goes to the work instead of
-     to the furniture around it.
+     Grid stacking removes the cause rather than patching the symptom. The band
+     is a grid item and not positioned, so the nearest positioned ancestor is
+     `.plate` again. The refusal is restated on the band's own geometry in
+     Meta.astro, which is where someone would reintroduce it.
 
-     WHAT THIS LEAVES BEHIND: --signal is used by exactly one selector on the
-     whole site, the :focus-visible outline in base.css. The token stays and its
-     3:1 floor in scripts/check-css.mjs stays with it.
-
-     A background, never a colour: --signal fails 4.5:1 as text and
-     check-css.mjs refuses it in a `color:` declaration by name.
-
-     26px AND 2px ARE NOT SPACING, which is why the check in check-css.mjs is
-     scoped to margin, padding and gap rather than to every length. This is the
-     size of a drawn mark. */
-  .ordinal::before {
-    content: '';
-    display: block;
-    width: 26px;
-    height: 2px;
-    margin-bottom: var(--s2);
-    background: var(--ink);
-  }
-
-  .title {
-    margin: var(--s2) 0 0;
-    font-size: var(--t-h3);
-    line-height: 1.1;
-  }
-
-  /* One link per Plate, and it covers the whole row. The <a> is on the title so
-     its accessible name is the Project's name; the pseudo-element extends the
-     hit area over the image without adding a second link to the same URL for a
-     screen reader to read out twice.
-
-     `z-index: 1` IS LOAD-BEARING AND THE BUG IT FIXES IS SILENT. Without it an
-     overlay can sit under the image and the image takes the click, so the
-     single largest, most obviously clickable thing on the page does nothing.
-     Confirmed once with elementsFromPoint over the image centre, which returned
-     the overlay present, and under.
-
-     The cause was painting order rather than geometry: grid items paint as
-     atomic units in document order, so a later sibling paints over an earlier
-     sibling's positioned descendant. Here the <picture> comes FIRST and this
-     overlay follows it, which is the arrangement that does not trip it — and
-     the z-index is kept anyway, because it is one declaration against a bug
-     that costs a browser session to rediscover. Do not "fix" a recurrence by
-     reordering the DOM; that trades a silent mouse bug for a reading-order one.
-
-     IT IS ALSO THE PLATE'S ONLY FOCUSABLE THING, which is what `:focus-within`
-     below hangs on. */
-  .title a {
-    text-decoration: none;
-  }
-
-  .title a::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-  }
-
-  .spec {
-    margin: var(--s3) 0 0;
-  }
-
-  /* The year rides the specification line rather than sitting under it: over an
-     image it is one more line to reserve height for, and the two are the same
-     voice at the same size saying two halves of one fact.
-
-     THE SEPARATOR IS SPACE, NOT THE MIDDLE DOT. The dot separates tools INSIDE a
-     specification line, and reusing it here would make the year read as one more
-     tool. */
-  .year::before {
-    content: '';
-    display: inline-block;
-    width: var(--s4);
-  }
-
-  /* ---- the Plates, wide mode -------------------------------------------- */
+     THE ROW RESOLVES TO THE IMAGE'S HEIGHT, so revealing the band still cannot
+     move anything: the band is 280px against a hero of ~510px, the picture is
+     the taller item, and it sizes the row. */
   @media (min-aspect-ratio: 1 / 1) {
-    /* THE OVERLAY. Absolute, so revealing it cannot move anything: the Plate's
-       height is the image's and does not depend on this block's content. That
-       is the reason it is positioned rather than in flow, and it is what makes
-       an instant state change safe to hang on `:hover` at all — a reveal that
-       reflowed the page under the pointer would be exactly the layout shift
-       this site's budget is asserted against.
-
-       OPAQUE GROUND, NOT A SCRIM. A gradient over a render cannot promise 4.5:1
-       against arbitrary pixels, and --muted holds its ratio against --ground and
-       nothing else. Flat, hard-edged, zero radius and zero shadow: a plate of
-       ground laid over the image rather than an atmospheric effect. ADR-0008.
-
-       Padding on the block rather than a margin on the Plate, so the ground runs
-       to the image's own edges and only the text is inset. */
-    /* THE PLATE STACKS ITS TWO CHILDREN IN ONE GRID CELL, and this is the fix
-       for a bug that shipped: CLICKING A PLATE'S IMAGE DID NOTHING.
-
-       `.meta` used to be `position: absolute` here. That made it the containing
-       block for `.title a::after` — the pseudo-element three rules down whose
-       whole job is to be the Plate's hit area — so its `inset: 0` resolved to
-       the 169px metadata band instead of to the 570px Plate. Measured in a
-       browser before the fix: `a.offsetParent === .meta` returned true. The
-       largest and most obviously clickable thing on the page was inert
-       everywhere except the strip of text that only appears on hover.
-
-       Note what this is NOT: the `z-index: 1` on that pseudo-element guards a
-       different failure, where the overlay sits UNDER the image. That one is
-       real and its note is kept. This one is the overlay being the wrong SIZE,
-       and no z-index can help with it.
-
-       Grid stacking removes the cause rather than patching the symptom.
-       `.meta` is a grid item and not positioned, so the nearest positioned
-       ancestor is `.plate` again — which has carried `position: relative` all
-       along. Do not reintroduce `position: absolute` on this block; if the band
-       ever needs to escape the cell, move the overlay off `.title a` first.
-
-       THE ROW RESOLVES TO THE IMAGE'S HEIGHT, so revealing the band still
-       cannot move anything. That was the reason for absolute positioning and it
-       survives: the band is 260px against a hero of ~510px, the picture is the
-       taller item, and it sizes the row. */
     .plate {
       display: grid;
       grid-template-columns: minmax(0, 1fr);
@@ -851,104 +261,6 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
 
     .plate :global(picture) {
       grid-area: 1 / 1;
-    }
-
-    /* THE BAND. Fixed height so all six read as one row of the same object
-       rather than as six blocks sized by how long their titles are, and bottom
-       aligned inside it so the datum sits on the Plate's own edge.
-
-       IT WAS AN OPAQUE `--ground` BLOCK SIZED BY ITS CONTENT, filling the
-       bottom ~30% of the image, which meant pointing at the work hid the work.
-       ADR-0008 is amended with the measurement that makes the scrim safe; the
-       derivation is on `--scrim` at the top of this block.
-
-       280px IS A DRAWN DIMENSION, not spacing, which is why check-css.mjs's
-       refusal is scoped to margin, padding and gap rather than to every length
-       — the same category as the ordinal's 26px rule.
-
-       IT GOT TALLER WHILE THE BLACK GOT SMALLER, which sounds contradictory and
-       is the whole adjustment. The band's height is the length the gradient has
-       to fall off over, NOT the amount of ground painted: what a visitor reads
-       as "black" is the region near full strength, and that is set by the text
-       plus its padding rather than by this number. Going 260 -> 280 bought
-       47px more fade; dropping the vertical padding to --s3 took 27px off the
-       slab. Shorten the band and the falloff gets steeper, not lighter.
-
-       PADDING IS --s3 VERTICAL, --s4 HORIZONTAL. The horizontal value holds the
-       text's inset from the image edge; the vertical one sets how far up the
-       gradient the text's top edge reaches, which is the number the contrast
-       check turns on. The text spans 7% to 45% of the band, and the scrim is at
-       0.66 by 45%, worth 5.79:1 to --ink.
-
-       THERE IS NO PLATEAU LEFT TO SHRINK. The two previous cuts both held a
-       constant alpha behind the text and the whole adjustment was how tall that
-       region was. It is gone: alpha now falls from the bottom edge of the frame
-       and never holds. Raise this padding or shorten the band and the text's top
-       edge climbs into thinner scrim — re-check it against the table on --scrim
-       rather than assuming, because nothing in CI will say so. */
-    .meta {
-      grid-area: 1 / 1;
-      align-self: end;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      height: 280px;
-      margin: 0;
-      padding: var(--s3) var(--s4);
-      background: var(--scrim);
-      opacity: 0;
-    }
-
-    /* --ink, NOT .t-spec's --muted, on the ordinal and the specification line.
-       The full argument is on --scrim: a scrim that fades from the bottom edge
-       cannot hold --muted at AA, so over an image the text colour is what
-       decides how much render shows through. The title is an h3 and is already
-       --ink, so this brings the other two lines to the colour the title has
-       always had in this band rather than introducing a new one. */
-    .meta .t-spec {
-      color: var(--ink);
-    }
-
-    /* THE FIRST OF THE SITE'S TWO `:hover` RULES (ADR-0008, docs/motion.md).
-       The second is the Masthead portrait's `About` label above, added when the
-       portrait absorbed the bordered link that used to sit under it. It is the
-       same device on a different object, held to every term below.
-
-       NO `transition`, NO `transform`, NO DURATION, NO EASING. The Plate is in
-       one state or the other on the frame the pointer arrives, which is the
-       same class of thing as `:focus-visible` and is why a site with no motion
-       can carry it. Putting a duration on this one declaration is adding motion
-       to the site, and that is an amendment to docs/design-direction.md first.
-
-       `:focus-within` IS NOT A COURTESY. The overlay <a> is the Plate's only
-       focusable thing, so this is how a keyboard visitor reads the same
-       specification line a pointer visitor does. Without it the metadata would
-       be reachable by a mouse and by a screen reader and by nobody else.
-
-       (hover: hover) GUARDS BOTH STATES TOGETHER. A coarse pointer never enters
-       the hidden state at all, which is the point: guarding only the `:hover`
-       half is the silent version of this bug, leaving the block at opacity 0 on
-       a phone with no way to ever reveal it. */
-    @media (hover: hover) {
-      .plate:hover .meta,
-      .plate:focus-within .meta {
-        opacity: 1;
-      }
-    }
-
-    @media not (hover: hover) {
-      .meta {
-        opacity: 1;
-      }
-    }
-
-    /* NO FONT-SIZE HERE, and that is deliberate. The obvious move over a render
-       is to drop the title to the mono datum voice, and it would have been a
-       fourth type treatment written inside a page's own scoped block — the exact
-       mechanism base.css records for how this site once reached ten. The title
-       is an h3 over an image the same way it is an h3 beside one. */
-    .spec {
-      margin: var(--s1) 0 0;
     }
   }
 </style>

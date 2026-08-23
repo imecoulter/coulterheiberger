@@ -1,63 +1,125 @@
 # Motion
 
-**Nothing on this site moves today.** Every animation, transition and hover effect was removed in one
-pass, back to the plain document: pages paint in their final state and a navigation is an ordinary
-full page load. This document is the record of what was there, why each piece was built the way it
-was, and what it cost — kept so that rebuilding motion starts from the measurements rather than from
-scratch.
+**One device moves on this site, and it is applied in two places.** Every animation, transition and
+hover effect was removed in one pass, back to the plain document; two of them have since been argued
+back in, one at a time and each with an ADR. Most of this document is still the record of what was
+there, why each piece was built the way it was, and what it cost — kept so that rebuilding motion
+starts from the measurements rather than from scratch.
 
-**Two `:hover` rules came back, and neither is motion.**
-[ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md) gave a Plate on `/` a metadata block that appears
-under `:hover` and `:focus-within`. The sentence above used to end "and no element responds to a
-pointer"; it no longer can, so it is corrected rather than left to be discovered.
+**The move is an `opacity` change and an 8px rise, `ease-out`, over 760ms.** It happens when an
+element first comes into view (**Registration**), and it happens under a pointer on the two elements
+that reveal a label over an image on `/` (**the reveals**). Same numbers in both places, deliberately:
+that is what makes it one device rather than two systems sharing a page.
 
-**The second is the Masthead portrait's `About` label**, added when the portrait absorbed the
-bordered link that used to sit under it. It is the same device on a different object, which is the
-only reason it is a second rule rather than a second decision: same trigger pair, same swap, same
-absence of timing.
+**Registration.** [ADR-0010](./adr/0010-registration-returns.md) rebuilt the one-time entrance that
+the removal pass had cut, and extended it to the first screen, which it never covered before:
 
-Each is an `opacity: 0` to `opacity: 1` swap and nothing else — **no `transition`, no `transform`, no
-duration, no easing.** The element is in one state or the other on the frame the pointer arrives.
-That is the same class of thing as `:focus-visible`, which this document has always counted as
-not-motion, and it is the boundary to hold: adding a duration to either declaration is adding motion
-to the site, with everything below in this document applying to it.
+| | |
+| --- | --- |
+| Move | `opacity` 0→1, `translateY(var(--rise))`→`none` |
+| Timing | `--reveal-in` 760ms `ease-out`, `--reveal-stagger` 60ms apart in groups of four |
+| Fires | once per element; the observer `unobserve`s it and never re-triggers on scroll back |
+| Tier A | first screen, `data-anim="now"`, a CSS `@keyframes`, no JavaScript, hero at 0ms delay |
+| Tier B | below the fold, `data-anim="scroll"`, one `IntersectionObserver` adds `.is-in` |
+| Guard | `@media (prefers-reduced-motion: no-preference)` — **not** hover-gated |
 
-**Count the device, not the selectors.** The thing that stayed constant across the amendment is the
-instant swap. A third element revealing a label this same way is the same decision again; an element
-that wants to *ease* into view is a different one, and it needs
-[docs/design-direction.md](./design-direction.md) amended first.
+Registration and its four custom properties live in `src/styles/base.css`; the observer is a third
+behaviour inside the one authored `<script>` in `src/layouts/Base.astro`.
 
-**Two traps that this rule sits directly on top of**, both recorded further down and both silent:
+**The reveals.**
+[ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md) gave a Plate a metadata block
+that appears under `:hover` and `:focus-within`, and the Masthead portrait's `About` label followed
+when the portrait absorbed the bordered link that used to sit under it. It is one device on two
+objects, which is the only reason it is two rules rather than two decisions: same trigger pair, same
+reveal, same timing.
+
+Since [ADR-0011](./adr/0011-the-masthead-is-site-furniture.md) it is one COMPONENT as well as one
+device: `src/components/Meta.astro` is rendered by each Plate and by the Masthead portrait, so every
+term below is single-sourced rather than kept in step by hand. What is still written twice is the
+hovered selector — `.plate` against `.masthead-aside` — and the gate: a Plate's band needs only the
+wide mode, and the portrait's needs `min-width: 1200px` as well, because a 280px band over a 200px
+square is a black tile with a face behind it. The portrait's copy is now on every route except
+`/about/ime/`, where the band would be a control leading to the document it is already in.
+
+**[ADR-0009](./adr/0009-the-two-reveals-are-timed.md) timed them**, and this is the spec:
+
+| | |
+| --- | --- |
+| Scrim | `opacity` only. `--reveal-in` 760ms, `--reveal-out` 480ms, `ease-out` |
+| Text | `--rise` 8px, `translateY` to `none`, same durations, `--reveal-stagger` 60ms delay inbound only |
+| Guard | `@media (hover: hover) and (prefers-reduced-motion: no-preference)` |
+
+The four values used to be custom properties on `<main>` in `src/pages/index.astro`, beside
+`--scrim`. ADR-0010 moved them to `:root` in `src/styles/base.css`, because Registration is a third
+consumer and they were no longer one file's private numbers. They are still not in
+`src/styles/tokens.css`, which is colour, type and spacing.
+
+**This document used to say that neither rule was motion**, because each was an `opacity` swap with
+no duration — the same class of thing as `:focus-visible` — and that adding a duration to either was
+adding motion to the site, with everything below applying to it. Both halves of that were honoured:
+the duration was added, the amendment was made first, and everything below now applies. The
+paragraph is rewritten rather than deleted, because the reasoning is what governs the next change.
+
+**Count the device, not the selectors.** The thing that stayed constant across all three amendments
+is the move: an `opacity` change and an 8px rise at 760ms. An element entering that way, or a third
+element revealing a label that way, is the same decision again; an element that wants to move for any
+*other* reason — a different curve, a different distance, a scale, a scrub — is a new one, and it
+needs [docs/design-direction.md](./design-direction.md) amended first.
+
+**The motion is a branch off the swap, never a replacement for it.** The untimed `opacity`
+declarations are still in the file and are still the entire reveal under `reduce` and on a coarse
+pointer. The timed block restates no endpoints. Move them into the guard and `reduce` loses the
+reveal itself rather than its timing, which is the silent bug this arrangement exists to prevent.
+
+**Three traps that these rules sit directly on top of**, all silent:
+
+- A `transform` on any ancestor of `.title a::after` or `.about a::after` becomes that
+  pseudo-element's containing block, and the stretched `inset: 0` hit area collapses out of the image
+  and onto the band. The tile goes on revealing perfectly and stops being clickable above its
+  metadata. This is why the rise is carried by a `<span>` inside each anchor and never by the anchor,
+  the title or the band. `transform: none` on the hovered state is not a fix on its own: mid-transition
+  the computed transform is not `none`, which leaves a dead zone lasting the whole duration on every
+  pointer entry. **Registration sits on the same trap**, and worse, because it runs unprompted: a
+  `data-anim` placed between `.plate` and the anchor gives the tile a dead click target for 760ms
+  after it enters, which then fixes itself. It goes on the `<li class="plate">`.
 
 - The Plate's block must never be `display: none` or `hidden`. It carries the Plate's accessible
   metadata, and the whole reason an opacity swap was chosen over a display swap is that a screen
   reader, a crawler and a CSS-less document all keep reading it.
 - `@starting-style` and `transition-behavior: allow-discrete` are in the baseline for the Expanded
-  View's fade. Neither belongs here. Reaching for them to soften this reveal is how the reveal
-  becomes an animation without anyone deciding it should be one.
+  View's fade. Neither belongs here, and timing the reveal did not change that: both elements always
+  exist and neither ever changes `display`, so there is no discrete transition to allow. Reaching for
+  them here is how a reveal grows into an animation without anyone deciding it should.
 
 **Why it went.** The five categories interlocked, and clicking a Project put three of them on screen
 at once: the frame expanding, the image brightening, and content popping in and out. Rather than tune
 a system whose parts were coupled that tightly, it was taken out entirely.
 
-**This document is not the design direction.** `docs/design-direction.md` governs what the site is,
-and it currently says the site has no motion. Adding any of this back is an amendment to that
-document **first**, then an implementation. That order was binding before the removal and is
-unchanged by it.
+**This document is not the design direction.** `docs/design-direction.md` governs what the site is.
+Adding any of what is recorded below is an amendment to that document **first**, then an
+implementation. That order was binding before the removal, it was followed for ADR-0009 and again for
+ADR-0010, and nothing about having motion back relaxes it.
 
 ---
 
 ## Vocabulary
 
-These five terms are out of `CONTEXT.md` because nothing on the site names them any more. They are
-the vocabulary to return to, not synonyms to re-invent.
+These terms went out of `CONTEXT.md` when nothing on the site named them any more. **Registration
+has since gone back in** and is live vocabulary again; the other three are still the vocabulary to
+return to, not synonyms to re-invent.
 
-**Registration** — The one-time entrance of an element as it first enters the viewport. It marks the
-arrival of a piece of information rather than performing for the visitor: it never repeats on scroll
-back, and never applies to the first screen. Scoped hard at review to a piece of writing arriving.
-The term is free because the corner registration *marks* it might have collided with were cut as
-costume.
-_Avoid_: reveal, fade-in, scroll animation, entrance effect
+**Registration** — *Live again as of [ADR-0010](./adr/0010-registration-returns.md); the definition
+below is the one it came back under.* The one-time entrance of an element as it first comes into
+view. It marks the arrival of a piece of information rather than performing for the visitor: it never
+repeats on scroll back. The term is free because the corner registration *marks* it might have
+collided with were cut as costume.
+
+Two clauses of the historic definition did not survive. It is **no longer scoped to a piece of
+writing arriving** — it covers the Masthead, every Plate, and a Project page's hero, title, summary,
+facts, body and Frames. And it **does now apply to the first screen**; see the design spec below for
+what changed in that argument.
+_Avoid_: reveal (that is the pointer device), fade-in, scroll animation, entrance effect, scroll
+reveal, AOS
 
 **Navigation Cross-fade** — The brief cross-fade between two pages during an ordinary navigation. The
 site has no client-side router — every navigation is a full page load, and the cross-fade was the
@@ -85,34 +147,58 @@ the removal so that rebuilding the Traverse is a CSS-only change; see "What was 
 
 From `docs/design-direction.md`. This is the half that says what motion on this site is *for*.
 
-**Registration, not performance.** Line-level only. Fires once and never re-triggers on scroll back.
-Nothing parallaxes, and element-level Registration never scales. At most two elements animating at a
-time. (`draw rule` scales a hairline into existence, which is a draw rather than a zoom; no
-Registration move changes the size of content.)
+**Registration, not performance.** Fires once and never re-triggers on scroll back. Nothing
+parallaxes, nothing scrubs with scroll position, and Registration never scales. At most two elements
+animating at a time, which is what the stagger and the fire-once rule are for. (`draw rule` scaled a
+hairline into existence, which is a draw rather than a zoom; no Registration move changes the size of
+content.)
+
+**"Line-level only" did not survive ADR-0010.** The rebuilt Registration registers blocks — a whole
+Plate, a whole prose body, a whole Frame — because the elements it now covers are blocks. Splitting a
+Project's body into registering paragraphs is the thing that reads as performance, and it is the same
+argument ADR-0009 used for not staggering the three metadata lines against each other: it is one
+datum arriving, not three.
 
 That rule read a flat **"nothing scales"** until
 [#31](https://github.com/imecoulter/coulterheiberger-com/issues/31) adopted the Carry. The narrowing
 was written into the rule rather than granted as an exception beside it — a hard rule with an
 undocumented exception is not a hard rule.
 
-| name | move | duration |
-| --- | --- | --- |
-| rise | opacity 0→1, `translateY(10px)`→0 | 0.48 s ease-out |
-| draw rule | `scaleX(0)`→`scaleX(1)`, origin left | 0.62 s ease-out |
-| wipe | `clip-path: inset(100% 0 0 0)`→`inset(0)` | 0.56 s ease-out |
+The three historic moves, of which **only `rise` was rebuilt**:
 
-Staggered in groups of four at 60 ms. Fully disabled under `prefers-reduced-motion: reduce`.
+| name | move | duration | status |
+| --- | --- | --- | --- |
+| rise | opacity 0→1, `translateY(10px)`→0 | 0.48 s ease-out | **rebuilt at 8px / 0.44 s**, to match the reveals |
+| draw rule | `scaleX(0)`→`scaleX(1)`, origin left | 0.62 s ease-out | still removed |
+| wipe | `clip-path: inset(100% 0 0 0)`→`inset(0)` | 0.56 s ease-out | still removed |
 
-**`/` registered nothing, as of owner review.** Every Plate used to arrive on scroll, the metadata on
-`rise` and the image on `wipe`. On a page whose entire content *is* six Plates, six entrances meant
-the work announced itself before it showed itself. The last surviving user of Registration anywhere
-on the site was the body prose on `/projects/<slug>/`, which is a paragraph arriving under a heading
-and is what the mark was described for.
+Staggered in groups of four at 60 ms — that part is unchanged and is still the number in use.
 
-**Nothing on the first screen registers.** Content above the fold paints in its final state. This
-started as an LCP constraint — a hidden hero is not an LCP candidate, so it would make the paint wait
-on a script — but it is also the right call for the direction: a mark that fires on content the
-visitor is already looking at is performing, which is the thing the spec exists to refuse.
+**`rise` came back at the reveals' numbers rather than its own**, 760ms and 8px instead of 480ms and
+10px. The difference is not visible and a second timing pair in the codebase is. Three moves at once
+is the interlocking that got all five categories cut; one is an amendment.
+
+**`/` registered nothing, as of owner review — reversed by ADR-0010.** Every Plate used to arrive on
+scroll, the metadata on `rise` and the image on `wipe`, and the objection was that on a page whose
+entire content *is* six Plates, six entrances meant the work announced itself before it showed itself.
+The Plates register again now, but with one move instead of two per Plate: `rise` on the Plate as a
+whole, and no `wipe` on the image. The thing that read as announcement was the image wiping itself in
+under the metadata, which is the work performing its own arrival. A Plate fading up once is the work
+arriving.
+
+**"Nothing on the first screen registers" — also reversed, and the reasoning is worth keeping,
+because half of it was correct.** The LCP half is real *only for a script-driven entrance*: an element
+at `opacity: 0` is not an LCP candidate, so if a script is what un-hides it, the whole JavaScript
+parse lands on the LCP Path first. A CSS keyframe has a different shape — the browser records LCP at
+an element's first **non-zero** paint, not when the animation ends, so a fade that starts on the first
+frame costs about one frame. That is why Registration has two tiers: the first screen is marked in the
+template and animated from the stylesheet, and only below-the-fold elements wait for the observer. The
+hero carries no stagger delay, because an `animation-delay` on the LCP element is added to LCP one for
+one.
+
+The other half — "a mark that fires on content the visitor is already looking at is performing" —
+was a design argument and it did not survive owner review. The page a visitor actually arrives on was
+the one page that did not move.
 
 **Two page-to-page moves, and no client-side router** — see
 [issue #12](https://github.com/imecoulter/coulterheiberger-com/issues/12), which priced one at
@@ -155,18 +241,27 @@ From `docs/styling.md`. This is the implementation record.
 
 ### Registration
 
-Three moves (`rise`, `rule`, `wipe`) in `base.css`; one `IntersectionObserver` in `Base.astro` added
-`.is-in` once and stopped watching. The contract was three attributes and nothing else:
+*This is the live implementation as of ADR-0010, not a record. The historic three-move version is
+described underneath it.*
+
+`src/styles/base.css` holds the four custom properties on `:root`, the `@keyframes register`, and
+one `@media (prefers-reduced-motion: no-preference)` block with the hidden state inside it. The
+observer is a third behaviour in the one authored `<script>` in `src/layouts/Base.astro`. The
+contract is three attributes and nothing else:
 
 | | |
 | --- | --- |
-| `data-anim="rise\|rule\|wipe"` | opts an element in and picks its move |
-| `.is-in` | added by the observer; the only thing that part of the script did |
-| `--d` | stagger delay, set per element in groups of four at 60 ms |
+| `data-anim="now"` | Tier A. Runs `@keyframes register` from the stylesheet on load. No script involved |
+| `data-anim="scroll"` | Tier B. Starts hidden; the observer adds `.is-in` once and `unobserve`s |
+| `--d` | stagger delay, set inline by the template for Tier A and by the observer for Tier B, in groups of four at 60 ms |
 
-A `<noscript>` block in `Base.astro` un-hid `[data-anim]` elements, `:root`-qualified to outrank
-`base.css`'s equal-specificity rules. **Anything reintroduced that starts hidden needs that block
-back**, or the page is blank to a visitor with scripting off.
+A `<noscript>` block in `Base.astro` un-hides `[data-anim]`, `:root`-qualified to outrank
+`base.css`'s equal-specificity rules. **Anything that starts hidden needs that block**, or the page
+is blank to a visitor with scripting off. Tier A does not need it and Tier B does, so it is there.
+
+**What it was before.** Three moves (`rise`, `rule`, `wipe`), `data-anim="rise|rule|wipe"` picking
+between them, no first-screen tier, and the same `.is-in` / `--d` pair. Only `rise` was rebuilt, and
+the first-screen exclusion was the thing ADR-0010 changed most.
 
 ### Navigation Cross-fade
 
@@ -244,7 +339,7 @@ disappeared, which is the correct failure — and is what it does now.
 
 ---
 
-## Four findings that cost real time
+## Six findings that cost real time
 
 Each of these was found by running something, not by reading it. All four fail silently.
 
@@ -272,6 +367,38 @@ photograph. The review that reported "no hover effect" was reading the page corr
 is about where an effect is reachable, not whether it is present:** every unit-level check passed the
 whole time, because each one drove the axis that worked.
 
+**6. An entrance does not create layout shifts, but it makes the existing ones legible.** The first
+report after Registration shipped was that the top of `/` "snaps around on every other load". It was
+not the entrance: CLS measured 0.0002 with `data-anim` and 0.0002 without, identical. It was a webfont
+reflow that had always been there — Montserrat is 348px wide against the fallback's 303px for
+"Coulter Heiberger", so between 360px and 402px the h1 wrapped to a second line when the font landed
+and pushed the whole page down 37px. **What changed was that the entrance draws the eye to the title
+at exactly the moment the swap arrives.** Fixed by reserving the second line, not by touching motion;
+`docs/styling.md` has the derivation.
+
+Two lessons, and the second one cost more time than the first. **Measure the shift before assuming
+the animation caused it** — the instinct to blame the newest change was wrong here. And **a headless
+container is not a font environment**: it has neither Arial nor Helvetica Neue, so `local()` faces
+resolve to nothing and canvas measurement of "Arial" silently returns the default sans, which makes
+a metric-matched fallback look measurable when it is not. The tell was that a deliberately bogus
+family name measured identical to the real ones. Probe with a bogus family before trusting any font
+metric taken here.
+
+**5. An IntersectionObserver silently skips an element that crosses the viewport inside one frame,
+and with a fire-once entrance that element stays hidden forever.** IO only queues an entry when the
+intersection ratio *changes* between two computed frames. A scroll that carries an element from below
+the viewport to above it in a single frame goes 0 -> 0, no entry is delivered, `.is-in` is never
+added — and because the element starts at `opacity: 0` and nothing re-checks it, it is invisible for
+the rest of the session. Measured on `/` while building ADR-0010: a 700px-per-step scroll left **two
+of the six Plates permanently blank**, and the page looked like a page with two missing images rather
+than like a broken observer.
+
+The fix is not a scroll listener. It is `rootMargin: '200000px 0px -10% 0px'` — extending the root
+upward makes the observed region "everything above the 90% line", which an element cannot leave once
+it has entered, so a jump cannot skip it. **A page-height jump, a scrollbar drag, an anchor landing
+mid-document and a restored scroll position all produce that frame**, so this is a real-visitor bug
+and not a test artefact. Anything rebuilt on IO with a fire-once contract needs the same treatment.
+
 **4. `blocking="render"` is not honoured on `<link rel="preload" as="image">`.** Probed in Chrome:
 with the image stalled 2500 ms the page still painted at 36 ms. `rel="expect"` waits for an element
 to be parsed, not for bytes. **There is no way to make a document wait for an image**, which is why
@@ -281,20 +408,27 @@ the Carry needed both the held snapshot and the warming prefetch rather than eit
 
 ## Two rules that are invisible until something breaks
 
-**Nothing on the first screen carries `data-anim`.** An element at `opacity: 0` or fully clipped is
+**Nothing on the first screen waits for the script.** An element at `opacity: 0` or fully clipped is
 not an LCP candidate — [web.dev's LCP article](https://web.dev/articles/lcp) excludes "elements with
-an opacity of 0" — so animating the hero makes LCP wait for the script instead of the image decode.
-The perf gate will catch a violation, but only after it ships.
+an opacity of 0" — so an element *un-hidden by JavaScript* makes LCP wait for the script instead of
+the image decode. This rule used to read "nothing on the first screen carries `data-anim`", and
+ADR-0010 narrowed it rather than dropping it: the first screen carries `data-anim="now"`, which is a
+CSS keyframe, and LCP is recorded at first **non-zero** paint rather than at animation end. What is
+still forbidden is Tier B above the fold, and any `animation-delay` on the hero, which is added to
+LCP one for one. The perf gate will catch a violation, but only after it ships.
 
-**The hidden state is declared only inside `@media (prefers-reduced-motion: no-preference)`**, for
-Registration, the Cross-fade and the Carry alike. This is the reduced-motion design, not a formatting
-habit: under `reduce` the page is simply the finished document — verified in a real browser, computed
-`opacity: 1`, no transform, no clip, `transition-duration: 0s`, and `pagereveal.viewTransition` null
-on a real navigation. **Do not rewrite any of them as a `reduce` block that turns things off.** That
-form computes the animated path first and fails *toward* motion; this one fails toward stillness.
+**The hidden state is declared only inside `@media (prefers-reduced-motion: no-preference)`**, and
+that was true of Registration, the Cross-fade and the Carry alike. This is the reduced-motion design,
+not a formatting habit: under `reduce` the page is simply the finished document — verified in a real
+browser, computed `opacity: 1`, no transform, no clip, `transition-duration: 0s`, and
+`pagereveal.viewTransition` null on a real navigation. **Do not rewrite any of them as a `reduce`
+block that turns things off.** That form computes the animated path first and fails *toward* motion;
+this one fails toward stillness.
 
-That inversion is also why there is no `prefers-reduced-motion` query left in the codebase at all:
-remove the animated state and the query has nothing to guard.
+**Every `prefers-reduced-motion` query in the codebase is a `no-preference` gate**, and there are
+three: Registration's in `src/styles/base.css`, and one per reveal in `src/pages/index.astro`'s
+scoped block. The count is not the rule — the form is. A bare `reduce` block anywhere, or any of
+these three inverted, is a bug.
 
 ---
 
@@ -341,9 +475,36 @@ Expanded View was **641 B gzip / 1,315 B raw**, 1.1% of ADR-0002's 50 KB budget,
 block and still zero extra requests. The whole substrate on the wire was **+426 B gzip on the
 document**.
 
-**After the removal it is 421 B gzip / 834 B raw** — warming plus the Expanded View, measured off
-`dist/index.html`. So the two motion behaviours were 220 B gzip of the 641, and what is left is the
+**After the removal it was 421 B gzip / 834 B raw** — warming plus the Expanded View, measured off
+`dist/index.html`. So the two motion behaviours were 220 B gzip of the 641, and what was left was the
 half that never drew anything.
+
+**As it ships today it is 637 B gzip / 1,263 B raw**, measured the same way: warming, Registration's
+observer, and the Expanded View. Registration's share is **+216 B gzip**, against 195 B for the
+historic three-move version — the extra is the two-tier selector and the batch stagger. Still one
+inline block, still zero extra requests, and 1.2% of ADR-0002's 50 KB budget.
+
+**Registration costs no measurable LCP**, which is the claim the whole two-tier design rests on and
+is the reason to state it with numbers. Median of six interleaved runs per arm, 1.6 Mbps / 150 ms RTT
+and 4x CPU throttle, 1440x900:
+
+| | with `data-anim` | stripped | delta |
+| --- | --- | --- | --- |
+| `/` | 1,288 ms | 1,292 ms | **−4 ms** |
+| `/projects/cecret/` | 1,028 ms | 1,024 ms | **+4 ms** |
+
+Both are inside run-to-run spread, and a negative delta is the tell that the two arms are the same
+page rather than that the entrance is free.
+
+**THE FIRST VERSION OF THAT MEASUREMENT SAID +156 ms AND IT WAS THE HARNESS.** Only the stripped arm
+went through Playwright's request interception, and `route.fulfill()` serves the document out of
+memory instead of across the emulated network — so the control arm was paying 150 ms of throttled
+latency that the test arm was not, and "the cost of Registration" was the cost of not being
+intercepted. What caught it was re-running with the duration changed to 100 ms and to 1,200 ms and
+getting 1,280 and 1,276: **a delta that does not move when the animation duration changes by 12x is
+not the animation.** This is the Carry's lesson in a different costume — read a suspicious motion
+delta as a broken harness first, and make both arms take the identical path before trusting either
+number.
 
 ### What each library option costs
 
@@ -409,8 +570,14 @@ trigger.
 
 ## Rebuilding any of this
 
-1. **Amend `docs/design-direction.md` first.** It currently states the site has no motion. Changing
-   what the site does starts there, then a mechanism is chosen to serve it. Never the reverse.
+0. **Registration is no longer on this list.** It was rebuilt by
+   [ADR-0010](./adr/0010-registration-returns.md), and the steps below were the instructions that
+   rebuild followed. They held up; steps 1, 3, 5, 6 and 7 each caught something. What remains
+   rebuildable from this document is the Navigation Cross-fade, the Carry, the Traverse and the
+   Expanded View's fade.
+1. **Amend `docs/design-direction.md` first**, then choose a mechanism to serve it. Never the
+   reverse. ADR-0009 and ADR-0010 are both worked examples: the direction was amended, then the
+   thing was built, and in neither case did the scope grow during implementation.
 2. **Drive it with a real pointer.** A dispatched `pointermove` bypasses hit testing entirely and
    reports success on a target no real cursor can reach. Finding #3 above passed every unit-level
    check while being invisible on the page. On `/` the Plate's link overlay owns the pointer over
@@ -421,10 +588,12 @@ trigger.
    which looks exactly like a change that did not apply. Removing motion is the dangerous direction
    here: the stale reading is the one that says the work failed, so it invites re-doing an edit that
    was already correct. Confirm the served bytes, not the process.
-4. **Re-run the library comparison against 641 B, not 195 B**, if it is reopened. Every candidate in
-   the table replaces Registration, and none of them would have made the Traverse or the Expanded
-   View smaller. At that point the candidate is `motion/mini` at 3.2 KB unless SplitText specifically
-   is what you need.
+4. **Re-run the library comparison against the current figure**, not against 195 B, if it is
+   reopened. Every candidate in the table replaces Registration, which is now shipped and costs what
+   the costs section below records; none of them would have made the Traverse or the Expanded View
+   smaller. At that point the candidate is `motion/mini` at 3.2 KB unless SplitText specifically is
+   what you need. Note also that a library means an `_astro/*.js` request on the LCP Path where the
+   inlined script has none, which is the part the byte comparison understates.
 5. **One authored `<script>` is the rule, not one behaviour.** A second file, an island, or a library
    is an amendment to the design direction, not an implementation detail. The Carry was explicitly
    never to be rescued with JavaScript for this reason: a ~200-byte click handler naming only the

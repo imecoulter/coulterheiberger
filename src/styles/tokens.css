@@ -195,5 +195,6 @@
    derived from anything, and with --rhythm defined as three gaps there is
    nothing left for a width breakpoint to say: the gap is already at its wide
    value by the time a window is 1200px across. The air a genuinely large window
-   gets is now the shell cap doing that job. index.astro still uses 1200px for
-   the Masthead portrait, which is a size question rather than a spacing one. */
+   gets is now the shell cap doing that job. Masthead.astro and Meta.astro still use
+   1200px for the Masthead portrait and its band, which is a size question
+   rather than a spacing one. */

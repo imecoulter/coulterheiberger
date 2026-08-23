@@ -5,6 +5,14 @@ date: 2026-08-21
 
 # The index, the revealed metadata, and one spacing atom
 
+> **Amended by [ADR-0011](./0011-the-masthead-is-site-furniture.md) (2026-08-23).** The two
+> reveals are one COMPONENT now, `src/components/Meta.astro`, rendered by each Plate and by
+> the Masthead portrait — the terms below are single-sourced rather than kept in step by
+> hand. They are also no longer both on `/`: the Masthead is site furniture, so the
+> portrait's copy is on every route except `/about/ime/`. `--scrim` and its contrast
+> derivation moved into that component with it.
+
+
 Three things were decided together and one of them was reverted. What ships:
 
 1. **`/` is one column of Plates, all the same size**, full width, one per row.
@@ -133,6 +141,14 @@ state change with no `transition`, no `transform` and no timing function — the
 state or the other on the frame the pointer arrives. That is what makes it compatible with a site
 that has no motion, and it is the boundary to hold: the next thing that wants to fade in is motion
 and needs the amendment ADR-0007's document demands.
+
+> **Amended by [ADR-0009](./0009-the-two-reveals-are-timed.md) (2026-08-22).** The reveal is timed
+> now: the scrim fades over 220ms and the text rises 8px into it, gated on
+> `prefers-reduced-motion: no-preference`. The paragraph above is kept as written because its
+> reasoning is what ADR-0009 had to answer, and it was answered on its own terms — the direction was
+> amended first, and what got a duration is this same device rather than a new one. The untimed
+> declarations it describes are still in the file and are still the whole reveal under `reduce` and
+> on a coarse pointer.
 
 ## What it costs the desktop LCP Path, measured
 
