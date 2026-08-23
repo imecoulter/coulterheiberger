@@ -263,7 +263,7 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
                revealed metadata — see the two notes in the style block.
 
                data-anim IS ON THE <li> AND MUST STAY THERE. Registration holds
-               a transform for 440ms, and a transform makes its element the
+               a transform for 760ms, and a transform makes its element the
                containing block for positioned descendants — so a data-anim one
                element inward would collapse `.title a::after`'s stretched hit
                area for the length of the entrance and then fix itself, which is
@@ -775,6 +775,45 @@ const ordinal = (n: number) => String(n).padStart(2, '0');
   h1 {
     font-size: var(--t-h1);
     line-height: 0.96;
+  }
+
+  /* RESERVE THE SECOND LINE ON PHONES, AND IT IS A LAYOUT-SHIFT FIX RATHER THAN
+     A SPACING CHOICE.
+
+     `font-display: swap` on the display face means the name paints in a
+     fallback and then swaps, and Montserrat is much wider: measured in a
+     browser at the clamped 38.4px this band uses, "Coulter Heiberger" is 348px
+     in Montserrat against 303px in the fallback. The column is `vw - 55`, so
+     between 360px and 402px THE FALLBACK FITS ON ONE LINE AND MONTSERRAT DOES
+     NOT. When the download landed the h1 went 36.86px -> 73.72px, taking the
+     portrait and the entire Plate list down 37px with it — a 0.0128 shift
+     arriving in the middle of Registration's entrance, which is what made the
+     top of the page look like it was snapping into place.
+
+     That band is 375, 390 and 393: iPhone, iPhone Pro Max and Pixel. It is
+     invisible at every desktop width, so this is a bug you cannot see where you
+     develop. Below 360 both faces wrap and this is a no-op; at 403 and up
+     neither wraps and the rule is off, which is why the query stops there
+     rather than at a round breakpoint.
+
+     WHY NOT FIX IT IN THE FONT LAYER. Two ways were tried and both were
+     rejected on evidence. A metric-matched fallback (size-adjust +
+     ascent-override on a local() face) is the textbook answer and needs one
+     ratio per platform fallback — but a headless container has neither Arial
+     nor Helvetica Neue and silently measures the default sans while returning
+     entirely plausible numbers, so the ratios cannot be verified anywhere in
+     this project's toolchain, and a wrong ratio reintroduces the shift while
+     looking like a fix. `font-display: optional` was measured here and did not
+     hold: Chrome applied the face at t=1551ms with the request delayed 1.5s.
+     Reserving the box needs no font metrics and no per-platform anything.
+
+     THE 403px IS DERIVED, NOT CHOSEN, and it is derived from a string. Change
+     the name, the gutters, --t-h1, or the Montserrat subset, and re-measure it:
+     nothing in CI can. The failure is silent and only on a phone. */
+  @media (max-width: 403px) {
+    h1 {
+      min-height: calc(2 * 0.96 * var(--t-h1));
+    }
   }
 
   /* THE ROLE IS A LABEL, and it now says so. It was Montserrat at its own size,

@@ -9,7 +9,7 @@ date: 2026-08-23
 nothing responds to scroll."** The middle clause survives. The other two do not.
 
 **Registration is back.** Every substantial element on a page now enters once as it first comes into
-view: `opacity` 0 to 1 with a `translateY` of 8px, over 440ms `ease-out`, staggered 60ms apart in
+view: `opacity` 0 to 1 with a `translateY` of 8px, over 760ms `ease-out`, staggered 60ms apart in
 groups of four. It fires once and never re-triggers on scroll back. On `/` that is the Masthead and
 each Plate; on a Project page it is the hero, the title, the summary, the facts, the body as one
 block, and each Frame in the gallery.
@@ -62,12 +62,26 @@ frame. Hence two tiers:
 **The hero carries no stagger delay.** An `animation-delay` on the LCP element is added to LCP
 directly, one for one. Everything else on the first screen staggers behind it.
 
-## The pace is ADR-0009's pace, on purpose
+## One pace for both, and it moved to 760ms
 
-440ms in, 60ms of stagger, 8px of travel. Those are the numbers the two reveals already use, and
-reusing them is the whole point: the entrance and the reveal are then **one device seen twice**
-rather than two systems that happen to share a page. The historic entrance ran at 480ms and 10px.
-The difference is not visible; a second timing pair in the codebase is.
+760ms in, 480ms out, 60ms of stagger, 8px of travel. **Registration and the two reveals share every
+one of those**, and sharing them is the point: the entrance and the reveal are then one device seen
+twice rather than two systems that happen to occupy a page.
+
+**The pair started at 440/280 and was slowed on owner review**, after the entrance shipped and read
+as too quick. The in:out ratio is carried through unchanged (440:280 and 760:480 are both 1.58), and
+the stagger and the travel are untouched.
+
+**This overturns a rejection in ADR-0009, and it should be read as one.** That document rejected
+480ms for the reveals — "correct there, too slow for a pointer sweeping a column of six" — and 760ms
+is half again slower than the number it refused. The rejection was written when the reveal was the
+only motion on the site and a pointer crossing six Plates was the only case it had to serve. With an
+entrance on the page the reveal is no longer setting the site's pace on its own, and the owner's
+call is that one pace reading as deliberate beats two paces each locally optimal. **If the reveals
+now feel sticky under a fast pointer, that is the cost this decision accepted**, and the fix is to
+split `--register-in` from `--reveal-in` rather than to quietly retune one of them.
+
+The historic entrance ran at 480ms and 10px, and is superseded by all of the above.
 
 So the four custom properties moved out of `src/pages/index.astro`'s scoped block and into `:root`
 in `src/styles/base.css`, where three consumers can reach them. They still do **not** go in
@@ -109,7 +123,7 @@ someone moving a `data-anim` attribute one element inward.
 
 A `transform` on any ancestor of `.title a::after` / `.about a::after` makes that ancestor the
 containing block and collapses the whole-tile hit area. A registering Plate holds a non-`none`
-transform for the full 440ms, so a Plate whose `data-anim` sat between `.plate` and the anchor would
+transform for the full 760ms, so a Plate whose `data-anim` sat between `.plate` and the anchor would
 have a dead click target during its entrance, and it would come back by itself a moment later.
 **Registration goes on `<li class="plate">`, and never between it and the `::after`.**
 

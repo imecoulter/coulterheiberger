@@ -170,8 +170,8 @@ h3 {
    table, because nothing in CI will. */
 :root {
   --rise: 8px;
-  --reveal-in: 440ms;
-  --reveal-out: 280ms;
+  --reveal-in: 760ms;
+  --reveal-out: 480ms;
   --reveal-stagger: 60ms;
 }
 
@@ -208,7 +208,7 @@ h3 {
    A transform HAS A SILENT TRAP. It becomes the containing block for
    `.title a::after` / `.about a::after`, which collapses the whole-tile hit
    area on `/`. A registering Plate holds a non-none transform for the full
-   440ms, so a data-anim placed between `.plate` and the anchor gives the tile a
+   760ms, so a data-anim placed between `.plate` and the anchor gives the tile a
    dead click target that then fixes itself. Registration goes on the
    <li class="plate">. Relatedly: a component's scoped `transition` shorthand
    REPLACES one inherited from this file at higher specificity, so Registration

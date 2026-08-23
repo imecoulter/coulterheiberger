@@ -229,14 +229,17 @@ rise, both `ease-out`, both at the same duration. There is nothing else.
 ### Registration
 
 **Every substantial element enters once as it arrives.** Opacity 0 to 1 with a `translateY` of
-`--rise` (8px), over `--reveal-in` (440ms) `ease-out`, staggered `--reveal-stagger` (60ms) apart in
+`--rise` (8px), over `--reveal-in` (760ms) `ease-out`, staggered `--reveal-stagger` (60ms) apart in
 groups of four. It fires once and never re-triggers on scroll back. On `/` that is the Masthead and
 each Plate; on a Project page it is the hero, the title, the summary, the facts, the body as one
 block, and each Frame in the gallery ([ADR-0010](./adr/0010-registration-returns.md)).
 
-**The pace is the reveals' pace, not a second one.** 440ms and 60ms are the numbers ADR-0009 already
-chose, and reusing them is what makes this one device rather than two that happen to coexist. The
-historic entrance ran at 480ms; the difference is not visible and a second timing pair is.
+**One pace serves both, and it is 760ms.** The entrance and the two reveals use the same duration,
+the same 60ms stagger and the same 8px, which is what makes this one device rather than two that
+happen to coexist. The pair shipped at 440ms and was slowed on owner review; the in:out ratio is
+unchanged. It is deliberately slower than ADR-0009's refused 480ms — see
+[ADR-0010](./adr/0010-registration-returns.md), which overturns that rejection and records what it
+costs the reveals.
 
 **The first screen registers too, and that is the change ADR-0010 made.** It was excluded before, on
 the grounds that the LCP element must not start hidden. That is true of an element un-hidden by
@@ -261,8 +264,8 @@ content arrives, and never again. A mark that re-fires on content already read i
 **Two elements respond to a pointer, and they are the only two.** On `/`, a Plate reveals its
 metadata and the Masthead portrait reveals its `About` label, both under `:hover` and
 `:focus-within` ([ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md)). **Each is
-timed** ([ADR-0009](./adr/0009-the-two-reveals-are-timed.md)): the scrim fades in over 440ms, the
-text rises 8px into it 60ms behind, both `ease-out`, and leaving is quicker than arriving at 280ms.
+timed** ([ADR-0009](./adr/0009-the-two-reveals-are-timed.md)): the scrim fades in over 760ms, the
+text rises 8px into it 60ms behind, both `ease-out`, and leaving is quicker than arriving at 480ms.
 All of it is gated on `hover: hover` and `prefers-reduced-motion: no-preference`, where the un-timed
 `opacity` swap that shipped first is still what a `reduce` visitor and every coarse pointer gets.
 

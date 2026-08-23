@@ -6,7 +6,7 @@ back in, one at a time and each with an ADR. Most of this document is still the 
 there, why each piece was built the way it was, and what it cost — kept so that rebuilding motion
 starts from the measurements rather than from scratch.
 
-**The move is an `opacity` change and an 8px rise, `ease-out`, over 440ms.** It happens when an
+**The move is an `opacity` change and an 8px rise, `ease-out`, over 760ms.** It happens when an
 element first comes into view (**Registration**), and it happens under a pointer on the two elements
 that reveal a label over an image on `/` (**the reveals**). Same numbers in both places, deliberately:
 that is what makes it one device rather than two systems sharing a page.
@@ -17,7 +17,7 @@ the removal pass had cut, and extended it to the first screen, which it never co
 | | |
 | --- | --- |
 | Move | `opacity` 0→1, `translateY(var(--rise))`→`none` |
-| Timing | `--reveal-in` 440ms `ease-out`, `--reveal-stagger` 60ms apart in groups of four |
+| Timing | `--reveal-in` 760ms `ease-out`, `--reveal-stagger` 60ms apart in groups of four |
 | Fires | once per element; the observer `unobserve`s it and never re-triggers on scroll back |
 | Tier A | first screen, `data-anim="now"`, a CSS `@keyframes`, no JavaScript, hero at 0ms delay |
 | Tier B | below the fold, `data-anim="scroll"`, one `IntersectionObserver` adds `.is-in` |
@@ -37,7 +37,7 @@ reveal, same timing.
 
 | | |
 | --- | --- |
-| Scrim | `opacity` only. `--reveal-in` 440ms, `--reveal-out` 280ms, `ease-out` |
+| Scrim | `opacity` only. `--reveal-in` 760ms, `--reveal-out` 480ms, `ease-out` |
 | Text | `--rise` 8px, `translateY` to `none`, same durations, `--reveal-stagger` 60ms delay inbound only |
 | Guard | `@media (hover: hover) and (prefers-reduced-motion: no-preference)` |
 
@@ -53,7 +53,7 @@ the duration was added, the amendment was made first, and everything below now a
 paragraph is rewritten rather than deleted, because the reasoning is what governs the next change.
 
 **Count the device, not the selectors.** The thing that stayed constant across all three amendments
-is the move: an `opacity` change and an 8px rise at 440ms. An element entering that way, or a third
+is the move: an `opacity` change and an 8px rise at 760ms. An element entering that way, or a third
 element revealing a label that way, is the same decision again; an element that wants to move for any
 *other* reason — a different curve, a different distance, a scale, a scrub — is a new one, and it
 needs [docs/design-direction.md](./design-direction.md) amended first.
@@ -72,7 +72,7 @@ reveal itself rather than its timing, which is the silent bug this arrangement e
   the title or the band. `transform: none` on the hovered state is not a fix on its own: mid-transition
   the computed transform is not `none`, which leaves a dead zone lasting the whole duration on every
   pointer entry. **Registration sits on the same trap**, and worse, because it runs unprompted: a
-  `data-anim` placed between `.plate` and the anchor gives the tile a dead click target for 440ms
+  `data-anim` placed between `.plate` and the anchor gives the tile a dead click target for 760ms
   after it enters, which then fixes itself. It goes on the `<li class="plate">`.
 
 - The Plate's block must never be `display: none` or `hidden`. It carries the Plate's accessible
@@ -166,7 +166,7 @@ The three historic moves, of which **only `rise` was rebuilt**:
 
 Staggered in groups of four at 60 ms — that part is unchanged and is still the number in use.
 
-**`rise` came back at the reveals' numbers rather than its own**, 440ms and 8px instead of 480ms and
+**`rise` came back at the reveals' numbers rather than its own**, 760ms and 8px instead of 480ms and
 10px. The difference is not visible and a second timing pair in the codebase is. Three moves at once
 is the interlocking that got all five categories cut; one is an amendment.
 
@@ -331,7 +331,7 @@ disappeared, which is the correct failure — and is what it does now.
 
 ---
 
-## Five findings that cost real time
+## Six findings that cost real time
 
 Each of these was found by running something, not by reading it. All four fail silently.
 
@@ -358,6 +358,23 @@ returned six samples of `50% 50%`, and a 40px vertical nudge moved the image 12p
 photograph. The review that reported "no hover effect" was reading the page correctly. **The lesson
 is about where an effect is reachable, not whether it is present:** every unit-level check passed the
 whole time, because each one drove the axis that worked.
+
+**6. An entrance does not create layout shifts, but it makes the existing ones legible.** The first
+report after Registration shipped was that the top of `/` "snaps around on every other load". It was
+not the entrance: CLS measured 0.0002 with `data-anim` and 0.0002 without, identical. It was a webfont
+reflow that had always been there — Montserrat is 348px wide against the fallback's 303px for
+"Coulter Heiberger", so between 360px and 402px the h1 wrapped to a second line when the font landed
+and pushed the whole page down 37px. **What changed was that the entrance draws the eye to the title
+at exactly the moment the swap arrives.** Fixed by reserving the second line, not by touching motion;
+`docs/styling.md` has the derivation.
+
+Two lessons, and the second one cost more time than the first. **Measure the shift before assuming
+the animation caused it** — the instinct to blame the newest change was wrong here. And **a headless
+container is not a font environment**: it has neither Arial nor Helvetica Neue, so `local()` faces
+resolve to nothing and canvas measurement of "Arial" silently returns the default sans, which makes
+a metric-matched fallback look measurable when it is not. The tell was that a deliberately bogus
+family name measured identical to the real ones. Probe with a bogus family before trusting any font
+metric taken here.
 
 **5. An IntersectionObserver silently skips an element that crosses the viewport inside one frame,
 and with a fire-once entrance that element stays hidden forever.** IO only queues an entry when the

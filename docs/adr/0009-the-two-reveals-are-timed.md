@@ -21,8 +21,11 @@ still applies.
 > before ADR-0010 was written; every "220ms" and "140ms" below is the value this ADR shipped and is
 > kept as a record. The ratio, the 60ms stagger, the 8px of travel, the scrim's stillness, the
 > containing-block trap and every entry in the Rejected table are unchanged and still binding.
-> ADR-0010 deliberately reuses this document's numbers rather than choosing its own, which is what
-> makes the entrance and the reveal one device instead of two.
+> ADR-0010 deliberately gives the entrance and the reveal ONE pace rather than two, which is what
+> makes them one device — and it then **moved that shared pace to 760ms in / 480ms out** on owner
+> review, because the entrance read as too quick at 440. So the reveals are now slower than this
+> document shipped them and slower than the 480ms it rejected below. **That rejection is overturned,
+> not overlooked**; ADR-0010 argues it and records what it costs a pointer sweeping six Plates.
 
 This is an amendment to Datum, like ADR-0007 and ADR-0008 before it. The datum, the specification
 line, the Plate contract, the three type roles, the one dark ground, `--gap` and the
@@ -131,7 +134,7 @@ sentence: `base.css` now carries Registration and the four custom properties mov
 | --- | --- |
 | **Translating the whole band, scrim included** | One element, one transition, much simpler CSS. Cut on sight: the gradient's falloff slides with it and the reveal reads as a panel sliding in, which is the thing the scrim replaced |
 | **Leaving it instant** | The state ADR-0008 shipped. Defensible as a state, and it reads as a layer failing to load |
-| **480ms, the historic `rise` duration** | `docs/motion.md`'s number, for a one-time scroll entrance. Correct there, too slow for a pointer sweeping a column of six *(Superseded: the reveals were later taken to 440ms, and ADR-0010 gave the rebuilt entrance the same number. The distinction this row drew turned out not to survive contact with the doubled durations.)* |
+| **480ms, the historic `rise` duration** | `docs/motion.md`'s number, for a one-time scroll entrance. Correct there, too slow for a pointer sweeping a column of six *(Superseded twice: the reveals went to 440ms, and ADR-0010 then took the shared pace to 760ms — half again slower than the number this row refused. The distinction it drew, that an entrance may be slow where a hover may not, was abandoned in favour of a single pace.)* |
 | **A second `opacity` on the text lines** | Multiplies two curves inside an element that is already fading. The stagger does the same job and can be read off the file |
 | **`@starting-style` / `transition-behavior: allow-discrete`** | In the baseline, and in the removed Expanded View's fade. Both elements always exist and never change `display`, so neither is needed. Reaching for them here is how a reveal becomes an animation without anyone deciding it should be |
 | **Staggering the three metadata lines against each other** | The removed `rise` entrance rebuilt inside a hover. The band is one datum arriving, not three, and 60ms x 3 is a performance on content the pointer is already on |

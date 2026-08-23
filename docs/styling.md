@@ -319,11 +319,11 @@ SVG.**
 ## Motion
 
 **One device, two applications, two files.** The move is an `opacity` change plus a `translateY` of
-`--rise` (8px), `ease-out`, over `--reveal-in` (440ms). Nothing else on the site animates: no
+`--rise` (8px), `ease-out`, over `--reveal-in` (760ms). Nothing else on the site animates: no
 `@view-transition`, no scroll-linked timeline, no library.
 
 **The four custom properties are on `:root` in `src/styles/base.css`**: `--rise`, `--reveal-in`
-(440ms), `--reveal-out` (280ms), `--reveal-stagger` (60ms). They are deliberately **not** in
+(760ms), `--reveal-out` (480ms), `--reveal-stagger` (60ms). They are deliberately **not** in
 `tokens.css`, which is colour, type and spacing. They moved here from `index.astro`'s scoped block
 when Registration became a third consumer
 ([ADR-0010](./adr/0010-registration-returns.md)).
@@ -339,8 +339,8 @@ off one attribute:
 | `--d` | the stagger, `calc(n * var(--reveal-stagger))`, groups of four |
 
 **The two reveals** are in `src/pages/index.astro`'s scoped block, unchanged by ADR-0010: a Plate's
-metadata band and the Masthead portrait's `About` label, each fading its scrim in over 440ms and
-rising its text 8px into it 60ms behind, out at 280ms
+metadata band and the Masthead portrait's `About` label, each fading its scrim in over 760ms and
+rising its text 8px into it 60ms behind, out at 480ms
 ([ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md),
 [ADR-0009](./adr/0009-the-two-reveals-are-timed.md)). The untimed `opacity` swap still sits outside
 the guard and is still the whole reveal under `reduce` and on a coarse pointer.
@@ -378,6 +378,37 @@ are recorded with their measurements in [docs/motion.md](./motion.md). **Read it
 
 The design this implements is the Motion section of [docs/design-direction.md](./design-direction.md),
 and the order is binding: **that document is amended first, then a mechanism is chosen to serve it.**
+
+## The h1 reserves its second line on phones
+
+**A layout-shift fix, and the shift it prevents is invisible at desktop widths.**
+
+`font-display: swap` means the display face paints in a fallback and then swaps, and Montserrat is
+much wider than the fallbacks in `--f-display`. Measured in a browser at the 38.4px this band clamps
+to: "Coulter Heiberger" is **348px in Montserrat against 303px in the fallback**, and the column is
+`vw - 55`. So between **360px and 402px the fallback fits on one line and Montserrat does not**. When
+the font landed the h1 went 36.86px to 73.72px and took the portrait and the whole Plate list down
+37px with it — CLS 0.0128, arriving in the middle of Registration's entrance.
+
+That band is 375, 390 and 393: iPhone, iPhone Pro Max, Pixel. `@media (max-width: 403px)` gives the
+h1 a `min-height` of two lines, so the box is the size it will end up being before the swap happens.
+Verified 0 CLS at 320, 360, 375, 390, 402, 412, 480, 768 and 1440 with the font delayed 1.2s.
+
+**The 403px is derived from a string, not chosen.** Change the name, the gutters, `--t-h1` or the
+Montserrat subset and it has to be re-measured; nothing in CI can, and the failure is silent and
+only on a phone.
+
+**Two font-layer fixes were tried first and both were rejected on evidence.** A metric-matched
+fallback (`size-adjust` + `ascent-override` on a `local()` face) is the textbook answer, and it needs
+one ratio per platform fallback — but a headless container has neither Arial nor Helvetica Neue and
+**silently measures the default sans while returning entirely plausible numbers**, so the ratios
+cannot be verified anywhere in this project's toolchain, and a wrong ratio reintroduces the shift
+while looking like a fix. `font-display: optional` was measured here and did not hold: Chrome applied
+the face at t=1551ms with the request delayed 1.5s. Reserving the box needs no font metrics at all.
+
+Neither of those is closed forever. If the display face is ever wanted guaranteed-on-first-paint, the
+route is a preload plus `optional` — and [docs/motion.md](./motion.md) and `src/styles/fonts.css`
+both carry the measurement that refused the preload, which would have to be re-taken first.
 
 ## The Plate link on `/`
 

@@ -41,7 +41,7 @@ scroll position.
 
 **Registration**:
 The one-time entrance of an element as it first comes into view: `opacity` 0 to 1 with an 8px
-`translateY`, 440ms `ease-out`, staggered 60ms apart in groups of four. It fires once, never
+`translateY`, 760ms `ease-out`, staggered 60ms apart in groups of four. It fires once, never
 re-triggers on scroll back, and covers the first screen as well as everything below it
 ([ADR-0010](./docs/adr/0010-registration-returns.md)). Gated on `prefers-reduced-motion:
 no-preference` only, never on `hover` — a phone scrolls. The first screen registers from a CSS
@@ -51,8 +51,8 @@ _Avoid_: reveal (that is the pointer device below), fade-in, scroll animation, e
 scroll reveal, AOS
 
 **The reveal** is the other one: on `/`, a Plate reveals its metadata and the Masthead portrait
-reveals its `About` label, on `:hover` and `:focus-within`. Each fades its scrim in over 440ms and
-rises its text 8px into it 60ms behind, out at 280ms, gated on `hover: hover` and
+reveals its `About` label, on `:hover` and `:focus-within`. Each fades its scrim in over 760ms and
+rises its text 8px into it 60ms behind, out at 480ms, gated on `hover: hover` and
 `prefers-reduced-motion: no-preference`
 ([ADR-0008](./docs/adr/0008-the-index-arrangement-and-one-spacing-atom.md),
 [ADR-0009](./docs/adr/0009-the-two-reveals-are-timed.md)). **The reveal is the device and the device
