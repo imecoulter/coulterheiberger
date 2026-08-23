@@ -16,7 +16,7 @@ The governing rule, applied throughout: **if no page renders a field, the field 
 
 | Route | What it is |
 | --- | --- |
-| `/` | **The Project index itself.** The Masthead, then every Project |
+| `/` | **The Project index itself.** Every Project. The Masthead is above it, and above every other page too — see ADR-0011 |
 | `/projects/<slug>/` | Project detail |
 | `/about/ime/` | Bio, experience, capabilities, location, contact — one page |
 | `/404` | Keeps its `noindex` |

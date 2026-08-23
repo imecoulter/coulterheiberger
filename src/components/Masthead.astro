@@ -1,0 +1,411 @@
+---
+/* THE MASTHEAD (CONTEXT.md), and it is now the site's furniture rather than the
+   index's first screen. See docs/adr/0011.
+
+   IT WAS HAND-COPIED INTO TWO FILES. index.astro and About.astro carried
+   near-identical markup and ~140 lines of restated CSS, and About.astro:143 said
+   why in as many words: a shared component was refused because the About band
+   reused the Plates' own `.ordinal` / `.title` / `.spec` rules, and lifting the
+   Masthead out of index.astro would either drag those with it or fork them —
+   "worth revisiting if a third page ever opens this way". Six Project pages and
+   a 404 are that third page, and Meta.astro is what resolves the blocker: the
+   band is its own component now, so both objects reference one set of rules.
+
+   ONE THING VARIES PER PAGE and it is the eyebrow. Everything else is identical
+   on every route by construction rather than by discipline.
+
+   IT IS NOT A PLATE, deliberately. The Plate contract is what makes six Projects
+   differ in subject rather than in status, and a person entered into it would be
+   exactly the status difference the contract removes. So this borrows the
+   Plate's left datum edge and its metadata width, and nothing else: no ordinal
+   on the header itself, no art-directed crop, and it sits outside the <ol>.
+
+   WHAT MAKES IT BELONG ANYWAY is the specification line below the name. The
+   datum is the specification line (docs/design-direction.md), so an element that
+   carries one is measured by the same reference as everything under it, without
+   being the same kind of object.
+
+   WHERE A <nav> GOES: inside this <header>, after `.masthead-text`, as a sibling
+   of it in the grid. It is not here yet because the site has no second-level
+   routes to list and inventing one would be a mark the design does not use. What
+   this file has already settled for it is the part that is expensive to change
+   later — the element is a <header> and a direct child of <body>, so it is a
+   `banner` landmark and a <nav> inside it is site navigation. A <nav> inside
+   <main>, which is where this markup used to live, is page content instead. */
+import { Picture } from 'astro:assets';
+import Meta from './Meta.astro';
+import portrait from '../assets/portrait.jpg';
+import { ABOUT_PATH, PRACTICE_LEDE, PRACTICE_SPEC } from '../site';
+import {
+  portraitSizes,
+  PORTRAIT_WIDTH,
+  PORTRAIT_WIDTHS,
+  FRAME_FORMATS,
+  FRAME_FALLBACK,
+} from '../layout';
+
+interface Props {
+  /** What the screen below this one is: `Selected work`, `About`, `Project`,
+      `Not found`. Required, with no default — a new page decides what it is the
+      same way it decides `noindex`, and a default here would let a route ship
+      silently mislabelled. Sentence case; `.t-label` uppercases it. */
+  eyebrow: string;
+}
+
+const { eyebrow } = Astro.props;
+
+/* THE BAND IS DERIVED, NOT PASSED, and that is the difference between a rule and
+   a convention. On /about/ime/ the About block would be a control leading to the
+   document it is already in, so it is suppressed there — and a prop would make
+   that every future page's job to remember. `ABOUT_PATH` carries the note about
+   why the trailing slash is load-bearing. */
+const about = Astro.url.pathname !== ABOUT_PATH;
+---
+
+{/* REGISTRATION, TIER A, AND NO --d. ADR-0010: an animation-delay on the LCP
+    element is added to LCP one for one, and on a phone this header IS roughly
+    the first screen — so whichever element inside it is largest, the delay would
+    land on the LCP element. Measured, that element is the portrait on most
+    routes and the positioning paragraph on /about/ime/; either way it is in
+    here. So this starts on the first frame on every route.
+
+    ONE data-anim ON THE WHOLE HEADER, not one per line. It is one screen
+    arriving, not five elements; the staggered version read as the page
+    assembling itself. */}
+<header class="masthead" data-anim="now">
+  <div class="masthead-text">
+    <span class="t-label eyebrow">{eyebrow}</span>
+
+    {/* THE SITE'S ONE h1, ON EVERY PAGE. tokens.css's rule is that h1 is the
+        site's name and h2 is a page's own title, and this is what makes that
+        rule true everywhere rather than only on `/`: a Project's heading and
+        /404's are h2 now, both already at --t-h2, so nothing moved except the
+        tag. */}
+    <h1>Coulter Heiberger</h1>
+
+    {/* ADR-0005: the display line is `Technical Artist`, unqualified. Not
+        "Technical Artist / Architectural Visualization", not a parenthetical.
+        Qualifiers go on the specification line below, where they read as scope
+        rather than as a job title that could not decide what it was. */}
+    <p class="t-label role">Technical Artist</p>
+
+    <p class="positioning">{PRACTICE_LEDE}</p>
+
+    <p class="t-spec spec">{PRACTICE_SPEC}</p>
+  </div>
+
+  <div class="masthead-aside">
+    {/* <Picture>, not the Plate's hand-assembled <picture>. That component
+        exists to switch COMPOSITION across the mode boundary, and a square
+        portrait has one composition — so the component that only switches format
+        is the correct one, which is the same call a Project's gallery makes for
+        a Frame.
+
+        AVIF WITH A WEBP FALLBACK, from the same two constants the gallery uses.
+        This element sits in the first viewport, so it is fetched immediately
+        whatever `loading` says, and the gallery's own measurement was a 53% cut
+        moving WebP q80 to AVIF q50. Keeping the formats in layout.ts is also
+        what stops CI's processed-image cache going stale on them.
+
+        EAGER, AND THAT IS A MEASUREMENT RATHER THAN A DEFAULT. This element was
+        `loading="lazy"` for as long as the Masthead was one page's header, on the
+        argument that a 320px square is never the LCP element. Putting the
+        Masthead on every route falsified that: measured under the budget's own
+        configuration, the portrait became the LCP element on ALL NINE pages, and
+        an LCP element that is lazy is the one thing ADR-0010 says never to ship.
+        Median LCP, mobile, devtools throttling, median of 3:
+
+                          lazy     eager
+          /               2002     1761
+          /about/ime/     1634     1511
+          /projects/...   1974     1954
+          /404            1585     1575
+
+        `loading="lazy"` was never holding it back in the first viewport anyway —
+        Chrome's lazy threshold widens as the connection slows — it was only
+        denying the preload scanner the chance to start it early.
+
+        STILL NOT `priority`, and that is the line that did not move. `priority`
+        would add `fetchpriority="high"`, and on a Project page that would put a
+        face in direct competition with the hero, which is the LCP element on a
+        landscape window and is the work. Eager buys back most of the regression
+        without claiming the slot; the remaining ~1.6s is the honest cost of
+        putting a face on every route, and every page clears the 2500ms gate.
+
+        /404 IS THE ONE THAT BARELY MOVED, and the reason is that it has almost
+        no other content: the portrait genuinely is the largest thing on it. 686ms
+        to 1575ms is what a 404 with a face costs. See ADR-0011.
+
+        IT IS THE ONE NEW BYTE ON EVERY PAGE'S LCP PATH. If a route regresses
+        under `npm run budget`, look here first. */}
+    <Picture
+      src={portrait}
+      alt="Coulter Heiberger, smiling, in glasses and a light blue collared shirt against a warm stucco wall."
+      width={PORTRAIT_WIDTH}
+      height={PORTRAIT_WIDTH}
+      widths={PORTRAIT_WIDTHS}
+      sizes={portraitSizes}
+      formats={FRAME_FORMATS}
+      fallbackFormat={FRAME_FALLBACK}
+      loading="eager"
+      decoding="async"
+    />
+
+    {/* THE PORTRAIT IS THE LINK, and this band is how it says so.
+
+        IT WAS AN ORDINARY BORDERED LINK SET UNDER THE FACE, on the argument that
+        "this element has two things in it a visitor might want and only one of
+        them is a link". Owner review overturned the premise: there are not two
+        things here, there is one offer — go read about him — and splitting it
+        across a face and a word underneath made the face inert and made the word
+        the only affordance on `/` drawn with a border rather than with the
+        datum.
+
+        SO IT IS A PLATE'S BAND, literally: the same component the six Projects
+        render, with the same four parts. `00` because the practice precedes the
+        work and the Plates start at 01; `Various` and `1999` because that is
+        what the About "project" is made of and when it started. */}
+    {about && (
+      <Meta ordinal={0} title="About" href={ABOUT_PATH} spec="Various" year={1999} />
+    )}
+  </div>
+</header>
+
+<style>
+  /* THE SHELL'S MEASURE IS IN base.css, shared with <main> and the footer — see
+     the rule on `body > header` there. Only the padding is this element's, and
+     it is open at the bottom because `.masthead` carries --rhythm as a margin
+     instead. Top of viewport -> masthead is --rhythm, masthead -> content is
+     --rhythm, which is what `/` and /about/ime/ measured before this component
+     existed. */
+  /* ---- the arrangement ----------------------------------------------------
+     Two columns, text then face, and the right-hand one is --plate-meta.
+
+     IT USED TO BE "the Plate's grid with the columns swapped", and the grid it
+     was swapping is gone: a Plate is one full-width band with no metadata column
+     beside it. What survives is the width and the shared left datum edge.
+     --plate-meta has exactly this one consumer, which is why the token's comment
+     says so rather than describing a column that no longer exists. */
+  .masthead {
+    display: grid;
+    gap: var(--s4);
+    padding: var(--rhythm) var(--gap) 0;
+    margin-bottom: var(--rhythm);
+  }
+
+  /* Same condition as the Plates, the crops, and tokens.css's --gap switch: a
+     SHAPE, not a width. See WIDE_MODE in src/layout.ts.
+
+     The portrait column is placed explicitly rather than reordered: DOM order is
+     the reading order, and `order` would make the visual arrangement contradict
+     it rather than place it. Here the text is first in both, so this is only a
+     placement. */
+  @media (min-aspect-ratio: 1 / 1) {
+    .masthead {
+      grid-template-columns: minmax(0, 1fr) var(--plate-meta);
+      gap: var(--gap);
+
+      /* `stretch`, not `start`. This is what gives the portrait column the text
+         block's height for the rule under `.masthead-aside` to fill. It is the
+         grid default, and it is written out because it is load-bearing here:
+         restoring `start` would silently collapse the face back to a square and
+         the change would look like nothing more than a shorter image. */
+      align-items: stretch;
+    }
+  }
+
+  .eyebrow {
+    display: block;
+    margin-bottom: var(--s3);
+  }
+
+  /* The only --t-h1 on the site. Tracking comes from base.css at -0.02em; this
+     rule used to restate it as -0.022em, a difference of two thousandths of an
+     em that no one could see and that made the site's largest heading the one
+     place the shared value did not apply. */
+  h1 {
+    font-size: var(--t-h1);
+    line-height: 0.96;
+  }
+
+  /* RESERVE THE SECOND LINE ON PHONES, AND IT IS A LAYOUT-SHIFT FIX RATHER THAN
+     A SPACING CHOICE.
+
+     `font-display: swap` on the display face means the name paints in a fallback
+     and then swaps, and Montserrat is much wider: measured in a browser at the
+     clamped 38.4px this band uses, "Coulter Heiberger" is 348px in Montserrat
+     against 303px in the fallback. The column is `vw - 55`, so between 360px and
+     402px THE FALLBACK FITS ON ONE LINE AND MONTSERRAT DOES NOT. When the
+     download landed the h1 went 36.86px -> 73.72px, taking the portrait and
+     everything below down 37px with it — a 0.0128 shift arriving in the middle
+     of Registration's entrance, which is what made the top of the page look like
+     it was snapping into place.
+
+     That band is 375, 390 and 393: iPhone, iPhone Pro Max and Pixel. It is
+     invisible at every desktop width, so this is a bug you cannot see where you
+     develop. Below 360 both faces wrap and this is a no-op; at 403 and up
+     neither wraps and the rule is off, which is why the query stops there rather
+     than at a round breakpoint.
+
+     WHY NOT FIX IT IN THE FONT LAYER. Two ways were tried and both were rejected
+     on evidence. A metric-matched fallback (size-adjust + ascent-override on a
+     local() face) is the textbook answer and needs one ratio per platform
+     fallback — but a headless container has neither Arial nor Helvetica Neue and
+     silently measures the default sans while returning entirely plausible
+     numbers, so the ratios cannot be verified anywhere in this project's
+     toolchain, and a wrong ratio reintroduces the shift while looking like a
+     fix. `font-display: optional` was measured here and did not hold: Chrome
+     applied the face at t=1551ms with the request delayed 1.5s. Reserving the
+     box needs no font metrics and no per-platform anything.
+
+     THE 403px IS DERIVED, NOT CHOSEN, and it is derived from a string in a
+     column of a given width. The column is now this header's padding rather than
+     <main>'s, and the two are the same --gap, so the number carries — but change
+     the name, the gutters, --t-h1, or the Montserrat subset and re-measure it:
+     nothing in CI can. The failure is silent and only on a phone. */
+  @media (max-width: 403px) {
+    h1 {
+      min-height: calc(2 * 0.96 * var(--t-h1));
+    }
+  }
+
+  /* THE ROLE IS A LABEL, and it says so. It was Montserrat at its own size,
+     which made it a fourth heading size on a page that already had two — and the
+     argument for it ("a title, not reading, in the same voice as the name") is
+     equally an argument for the mono datum voice, which is where the Social Card
+     has always set this exact string.
+
+     So the eyebrow and the role bracket the name in the same style: what the
+     page is above it, who the site is below it, and one very large name between.
+     Everything else here is furniture in the same 11-12px mono, which is the
+     whole point of a datum. */
+  .role {
+    margin: var(--s3) 0 0;
+  }
+
+  /* The positioning paragraph, and the reason the serif is above the fold at
+     all. No font-size: it is body prose and it is set like body prose, which is
+     the correction tokens.css records against the 15px summary size `/` used to
+     mint for itself.
+
+     --ink, WHICH IS THE INHERITED COLOUR AND THEREFORE NOT DECLARED. This read
+     --muted for a long time, on the argument that a lede is secondary to the
+     name above it. Overturned on owner review: it is the only prose on the first
+     screen and it is the sentence a visitor reads to find out what this is, so
+     it is primary text and takes the primary colour.
+
+     --body-col rather than the column's full width. The wide column runs to
+     ~1230px at the page cap, and 17px Georgia across that is far past any
+     reading measure. */
+  .positioning {
+    margin: var(--s3) 0 0;
+    max-width: var(--body-col);
+  }
+
+  /* NO COLOUR OVERRIDE. This was --ink for one draft, to give the practice's own
+     line more weight than the six below it. That is exactly the move base.css
+     refuses by name: a type style that reads one way in one place and another
+     way next to it is not a style, and it is how the footer address became the
+     site's tenth treatment. The specification line is one style, and the
+     Masthead's is a specification line. Margin only.
+
+     THE TWO BANDS DO OVERRIDE IT, and this rule is still right. The difference
+     is not that they were allowed a preference and this line was not: over an
+     image the text colour SETS THE SCRIM'S ALPHA FLOOR, so it stops being a
+     colour choice and becomes a legibility one — --muted would force 0.94 and
+     leave no fade. The derivation is on --scrim in Meta.astro. On the Ground
+     there is no such forcing function, which is why this line has nothing to
+     trade and keeps the shared colour.
+
+     IT IS A BARE `.spec` NOW, not `.masthead .spec`. The (0,2,0) was there to
+     beat the Plates' bare `.spec` inside this header, which was a real collision
+     while both lived in index.astro: it left the About band at the wide 20px
+     while the six Plates sat at 8px. Astro scopes every compound in a selector,
+     so the band's rules and this one no longer see each other and the weight has
+     nothing left to win against. */
+  .spec {
+    margin: var(--s3) 0 0;
+  }
+
+  /* ---- the portrait column ------------------------------------------------
+     THE CAP IS MIRRORED IN `portraitSizes` (src/layout.ts) so the width the CSS
+     draws and the width the browser fetches cannot drift.
+
+     200px BELOW THE MODE SWITCH AND NOT THE FULL CONTENT WIDTH. A face at 100vw
+     is the entire first screen on a phone, it would take the LCP element off the
+     work and onto the author, and it would push the content a screen and a half
+     down. The cap is the whole reason this reads as a masthead rather than as a
+     profile page.
+
+     WIDTH ON THE CONTAINER RATHER THAN A CAP ON THE IMAGE, because the band has
+     to be the width of the face and not the width of the column.
+
+     THE PORTRAIT AND ITS BAND SHARE ONE GRID CELL. Same stacking shape as a
+     Plate, and adopted for the same two reasons: the band can be revealed
+     without moving anything, and this element stays the positioned ancestor so
+     `.title a::after` resolves against the whole face instead of against the
+     band. Meta.astro's note records what getting that wrong costs, because it
+     had already shipped once.
+
+     `isolation: isolate` confines the band's z-index to this column. Without it
+     that `z-index: 1` competes in the root stacking context, because `position:
+     relative` with `z-index: auto` does not open one. */
+  .masthead-aside {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    width: 200px;
+  }
+
+  /* <picture> is inline by default, which puts a descender's worth of gap under
+     it. `:global()` because the element comes from a component. */
+  .masthead-aside :global(picture) {
+    display: block;
+    grid-area: 1 / 1;
+  }
+
+  .masthead-aside :global(img) {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+  }
+
+  /* THE FACE MATCHES THE HEIGHT OF THE PROSE BESIDE IT, asked for directly at
+     owner review: the two columns read as one object rather than as a square
+     parked next to a paragraph.
+
+     THE PORTRAIT IS TAKEN OUT OF FLOW TO DO IT, and that is the whole mechanism
+     rather than a detail. `align-items: stretch` alone does nothing: while the
+     <picture> is an in-flow grid item it is the TALLEST item in the row, so it
+     sizes the row and then "fills" a height it set itself. The first attempt
+     looked like it worked only because a 320px square and the prose beside it
+     happened to land within 17px of each other. Absolute breaks the circle — out
+     of flow it contributes nothing, the row is the TEXT's height, and the face
+     fills that. Ask for the face to drive the height again and this is the
+     declaration to remove, not `align-items`.
+
+     `height: 100%` has to beat base.css's `img { height: auto }`, and dropping
+     `aspect-ratio` is what lets it: with both set the ratio wins and the stretch
+     is silently ignored. `object-fit: cover` absorbs the difference.
+
+     BOTH CONDITIONS, not just the shape. The mode switch is an aspect ratio, so
+     an 844x390 landscape phone reaches the wide branch; stretching a face to a
+     text column there makes it the largest thing on screen. Below 1200px the
+     portrait keeps its square and the column simply has air in it — which is
+     also the boundary Meta.astro gates the band on, for the same reason. */
+  @media (min-aspect-ratio: 1 / 1) and (min-width: 1200px) {
+    .masthead-aside {
+      width: auto;
+    }
+
+    .masthead-aside :global(picture) {
+      position: absolute;
+      inset: 0;
+    }
+
+    .masthead-aside :global(img) {
+      height: 100%;
+      aspect-ratio: auto;
+    }
+  }
+</style>

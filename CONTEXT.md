@@ -50,7 +50,7 @@ and stops watching.
 _Avoid_: reveal (that is the pointer device below), fade-in, scroll animation, entrance effect,
 scroll reveal, AOS
 
-**The reveal** is the other one: on `/`, a Plate reveals its metadata and the Masthead portrait
+**The reveal** is the other one: a Plate reveals its metadata and the Masthead portrait
 reveals its `About` label, on `:hover` and `:focus-within`. Each fades its scrim in over 760ms and
 rises its text 8px into it 60ms behind, out at 480ms, gated on `hover: hover` and
 `prefers-reduced-motion: no-preference`
@@ -86,7 +86,7 @@ A single piece of work presented on the site: a real-time system, a rendered seq
 _Avoid_: work, piece, case study, entry
 
 **Masthead**:
-The site's own identity block, at the head of the index and above the first Plate: who the practice is, what it does, and the practice's own specification line. Deliberately **not** a Plate — it holds no Project and enters no metadata contract — but it is measured against the same datum, because a specification line is what the datum is. It is two columns, text then face, sharing the Plates' left datum edge without being the same kind of object.
+The site's own identity block, at the head of EVERY page: who the practice is, what it does, and the practice's own specification line. It was the index's opening header and became site furniture in [ADR-0011](./docs/adr/0011-the-masthead-is-site-furniture.md), rendered once by `Base.astro` above `<main>`; the one thing that varies per page is the eyebrow naming what is below it. It is the element the site's navigation will be built into. Deliberately **not** a Plate — it holds no Project and enters no metadata contract — but it is measured against the same datum, because a specification line is what the datum is. It is two columns, text then face, sharing the Plates' left datum edge without being the same kind of object.
 _Avoid_: about card, bio, hero, intro, banner, plate
 
 **Plate**:

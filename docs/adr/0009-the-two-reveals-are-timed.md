@@ -5,6 +5,14 @@ date: 2026-08-22
 
 # The two reveals are timed
 
+> **Amended by [ADR-0011](./0011-the-masthead-is-site-furniture.md) (2026-08-23).** The two
+> reveals are one COMPONENT now, `src/components/Meta.astro`, rendered by each Plate and by
+> the Masthead portrait — the terms below are single-sourced rather than kept in step by
+> hand. They are also no longer both on `/`: the Masthead is site furniture, so the
+> portrait's copy is on every route except `/about/ime/`. `--scrim` and its contrast
+> derivation moved into that component with it.
+
+
 `docs/design-direction.md` said **"The site does not move."** It no longer does. The two elements that
 reveal a label over an image on `/` — a Plate's metadata band and the Masthead portrait's `About`
 label — now **fade their scrim in over 220ms and rise their text 8px into it**, instead of swapping

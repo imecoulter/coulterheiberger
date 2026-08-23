@@ -3,23 +3,20 @@
 
    IT WRAPS Base.astro RATHER THAN REPLACING IT, and it is not a second layout
    mechanism. docs/content-architecture.md §5 puts the About page in MDX so its
-   content stays markdown; what MDX cannot carry is a <main> shell and a scoped
-   <style> block, and that is the entire contents of this file. A page that put
-   its structure in the .mdx would be JSX with prose in it, and the reason for
-   choosing the format would be gone.
+   content stays markdown; what MDX cannot carry is a scoped <style> block, and
+   that is very nearly the entire contents of this file.
 
-   No other page needs one: `/` and `/projects/<slug>/` are .astro and hold their
-   own. This exists because exactly one page on the site is markdown. */
-import { Picture } from 'astro:assets';
+   IT USED TO CARRY THE HERO TOO — a hand-copied duplicate of index.astro's
+   Masthead, markup and ~140 lines of restated CSS, with a note attached saying
+   the two were one arrangement and that if one number moved both had to move.
+   That note also recorded why a shared component had been refused, and named the
+   condition that would overturn it: "worth revisiting if a third page ever opens
+   this way". ADR-0011 is that revisit. The Masthead is Base.astro's now, this
+   page passes `About` as its eyebrow, and the duplicate is gone.
+
+   WHAT IS LEFT is the markdown styling below, which genuinely is this page's
+   own: it is the only route on the site whose body is authored prose. */
 import Base from './Base.astro';
-import portrait from '../assets/portrait.jpg';
-import {
-  portraitSizes,
-  PORTRAIT_WIDTH,
-  PORTRAIT_WIDTHS,
-  FRAME_FORMATS,
-  FRAME_FALLBACK,
-} from '../layout';
 
 /* THE FRONTMATTER ARRIVES UNDER `frontmatter`, NOT AS TOP-LEVEL PROPS, and the
    difference fails silently. A layout used by an .mdx page gets one object:
@@ -41,95 +38,36 @@ interface Props {
 
 /* The layout adds no metadata of its own — the Social Card, the canonical, and
    the robots tag are all Base.astro's, and a second place deciding any of them
-   is how two mechanisms start drifting. */
+   is how two mechanisms start drifting.
+
+   `About` WHERE `/` SAYS `Selected work`. Same type role, same job: it names
+   what the screen below it is. It is the one thing that differs between this
+   page's Masthead and any other's. */
 const { title, description } = Astro.props.frontmatter;
 ---
 
-<Base title={title} description={description}>
-  <main>
-    {/* h1 AT --t-h2, NOT --t-h1. tokens.css is explicit: h1 is the site's name
-        on `/` and appears once, h2 is a page's own title. `/projects/<slug>/`
-        resolves the same tension the same way, and this copies it rather than
-        inventing a second answer. The element is still an h1 because it is this
-        document's heading; only the size role differs. */}
-    <h1>Coulter Heiberger</h1>
-
-    {/* ADR-0005 again, and this is the page the ADR names: "the phrase any
-        future About page leads with". Unqualified. */}
-    <p class="t-label role">Technical Artist</p>
-
-    {/* NOT `priority`, and not eager. It sits below the heading, so on a phone
-        the h1 paints first and this is not the LCP element — which is the
-        text-LCP regime docs/precedents.md found every fast site in the
-        precedent set to be in. Verified under `npm run budget`, not assumed. */}
-    <Picture
-      class="portrait"
-      src={portrait}
-      alt="Coulter Heiberger, smiling, in glasses and a light blue collared shirt against a warm stucco wall."
-      width={PORTRAIT_WIDTH}
-      height={PORTRAIT_WIDTH}
-      widths={PORTRAIT_WIDTHS}
-      sizes={portraitSizes}
-      formats={FRAME_FORMATS}
-      fallbackFormat={FRAME_FALLBACK}
-      loading="lazy"
-      decoding="async"
-    />
-
-    <div class="prose">
-      <slot />
-    </div>
-  </main>
+<Base title={title} description={description} eyebrow="About">
+  {/* THE PORTRAIT HERE CARRIES NO ABOUT BAND, and Masthead.astro decides that
+      rather than this file: it compares `Astro.url.pathname` against ABOUT_PATH,
+      because a band here would be a control leading to the document it is
+      already in. Passing it as a prop would make suppression every future
+      page's job to remember. */}
+  <div class="prose" data-anim="scroll">
+    <slot />
+  </div>
 </Base>
 
 <style>
-  /* ONE DATUM EDGE, and one column. `/projects/<slug>/` argues this at length:
-     everything on the page starts on the same left edge and only the right
-     edges vary. That page has a full-shell hero above its column; this one has
-     no hero at all, so it is the column and nothing else. */
-  main {
-    max-width: var(--measure-page);
-    margin-inline: auto;
-    padding: var(--rhythm) var(--gap);
-  }
+  /* ONE DATUM EDGE, and one column AT THE FULL SHELL. `/projects/<slug>/`
+     argues this at length: everything on the page starts on the same left edge.
+     That page's body was widened from --body-col to the shell, and this one
+     follows it rather than keeping a second, narrower answer — two pages of
+     prose at two different measures is the drift, not the consistency.
 
-  h1 {
-    font-size: var(--t-h2);
-    line-height: 1.02;
-    max-width: var(--body-col);
-  }
-
-  .role {
-    margin: var(--s3) 0 0;
-  }
-
-  /* The same cap as the Masthead's, from the same token, fetched at the same
-     widths. Two presentations of one image at one size — see portraitSizes in
-     src/layout.ts for why there is one string rather than a pair. */
-  main :global(picture) {
-    display: block;
-    margin-top: var(--s5);
-  }
-
-  :global(.portrait) {
-    width: 200px;
-    aspect-ratio: 1;
-    object-fit: cover;
-  }
-
-  /* Both conditions, for the reason index.astro spells out on the Masthead's
-     copy of this rule: the mode switch is a shape, so a landscape phone reaches
-     the wide branch at 844 px wide and a 320 px face there is out of proportion
-     to the column beside it. Same boundary, same token. */
-  @media (min-aspect-ratio: 1 / 1) and (min-width: 1200px) {
-    :global(.portrait) {
-      width: var(--plate-meta);
-    }
-  }
-
+     The cap and the gutter are base.css's, on the rule that names every direct
+     child of <body>, so nothing here needs a max-width of its own. */
   .prose {
     margin-top: var(--rhythm);
-    max-width: var(--body-col);
   }
 
   /* ---- markdown, styled through :global() ---------------------------------
@@ -137,11 +75,17 @@ const { title, description } = Astro.props.frontmatter;
      component's attribute — the MDX renders in the page's scope, not the
      layout's. So every rule reaching the content is :global(), confined by the
      .prose ancestor. This is the same mechanism `/projects/<slug>/` uses for
-     the <Picture> elements inside its gallery links.
+     the <Picture> elements inside its gallery links, and the same one
+     Meta.astro uses to reach the two ancestors it does not own.
 
      NO NEW TYPE ROLE AND NO NEW SIZE. h2 takes --t-h3, which is the Plate
      title's size on `/`; everything else is the serif body default or one of
-     the two mono classes. Six styles, unchanged. */
+     the two mono classes. Six styles, unchanged.
+
+     THE h2 IS ALSO NOW CORRECT RATHER THAN CONVENIENT. tokens.css's rule is
+     that h1 is the site's name and h2 is a page's own title; the Masthead
+     carries the h1 on every route, so this page's headings start at h2 the way
+     a Project's and /404's do. Nothing about the size changed. */
   .prose :global(h2) {
     margin: var(--rhythm) 0 0;
     font-size: var(--t-h3);
@@ -208,9 +152,17 @@ const { title, description } = Astro.props.frontmatter;
     }
   }
 
+  /* --ink, INHERITED AND THEREFORE NOT DECLARED. The values under Capabilities
+     read --muted for one draft, on the argument that a <dt> label should lead
+     its <dd>. It is backwards: the label is the furniture and the tool list IS
+     the content — it is what a visitor scans this block for. The <dt>s keep
+     .t-label's --muted, so the pair still reads as label over value.
+
+     Same correction as the lede in the Masthead, made for the same reason: the
+     secondary colour belongs on the things around the content, not on the
+     content. */
   .prose :global(dd) {
     margin: var(--s1) 0 0;
-    color: var(--muted);
   }
 
   /* The location line, and the last thing on the page. Contact is deliberately

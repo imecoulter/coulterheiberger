@@ -230,9 +230,9 @@ rise, both `ease-out`, both at the same duration. There is nothing else.
 
 **Every substantial element enters once as it arrives.** Opacity 0 to 1 with a `translateY` of
 `--rise` (8px), over `--reveal-in` (760ms) `ease-out`, staggered `--reveal-stagger` (60ms) apart in
-groups of four. It fires once and never re-triggers on scroll back. On `/` that is the Masthead and
-each Plate; on a Project page it is the hero, the title, the summary, the facts, the body as one
-block, and each Frame in the gallery ([ADR-0010](./adr/0010-registration-returns.md)).
+groups of four. It fires once and never re-triggers on scroll back. The Masthead registers on every
+page as one header rather than five lines; on `/` each Plate follows it, and on a Project page the
+hero, the title, the summary, the facts, the body as one block, and each Frame in the gallery ([ADR-0010](./adr/0010-registration-returns.md)).
 
 **One pace serves both, and it is 760ms.** The entrance and the two reveals use the same duration,
 the same 60ms stagger and the same 8px, which is what makes this one device rather than two that
@@ -262,7 +262,7 @@ content arrives, and never again. A mark that re-fires on content already read i
 ### The two reveals
 
 **Two elements respond to a pointer, and they are the only two.** On `/`, a Plate reveals its
-metadata and the Masthead portrait reveals its `About` label, both under `:hover` and
+metadata and the Masthead portrait reveals its `About` label — one component since ADR-0011, and the portrait's copy is on every route but `/about/ime/` — both under `:hover` and
 `:focus-within` ([ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md)). **Each is
 timed** ([ADR-0009](./adr/0009-the-two-reveals-are-timed.md)): the scrim fades in over 760ms, the
 text rises 8px into it 60ms behind, both `ease-out`, and leaving is quicker than arriving at 480ms.

@@ -5,10 +5,16 @@ import '../styles/fonts.css';
 import '../styles/base.css';
 import socialCard from '../assets/social-card.jpg';
 import Footer from '../components/Footer.astro';
+import Masthead from '../components/Masthead.astro';
 
 interface Props {
   title: string;
   description: string;
+  /** What the Masthead's eyebrow says on this page — `Selected work`, `About`,
+      `Project`, `Not found`. It is the ONE thing that differs between one page's
+      Masthead and another's, which is why it is a required prop here rather than
+      a decision each page makes for itself. See docs/adr/0011. */
+  eyebrow: string;
   /** Opt a single page OUT of indexing. Defaults to false: the site is
       launched, so a new page is indexable unless it says otherwise. `/404`
       is the only page that sets it — see docs/content-architecture.md. */
@@ -27,7 +33,7 @@ interface Props {
   image?: { src: ImageMetadata; alt: string; framing?: string };
 }
 
-const { title, description, noindex = false, structuredData, image } = Astro.props;
+const { title, description, eyebrow, noindex = false, structuredData, image } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
@@ -160,7 +166,26 @@ const ogImageURL = new URL(ogImage.src, Astro.site);
     </noscript>
   </head>
   <body>
-    <slot />
+    {/* THE MASTHEAD IS THE SHELL'S, NOT A PAGE'S (docs/adr/0011). It was markup
+        in index.astro and again in About.astro, hand-kept in step; rendering it
+        here is what makes "a change to the staple lands on every page" true by
+        construction rather than by discipline.
+
+        OUTSIDE <main>, AND THAT IS THE LOAD-BEARING PART. Two reasons, and the
+        first is the one that is expensive to get wrong later: <header> maps to
+        the `banner` landmark only when it is not scoped to a sectioning element,
+        so inside <main> it would be an ordinary group — and the eventual <nav>
+        inside it would be page content rather than site navigation. The second
+        is that it keeps <main> meaning this page's own content, which is what
+        makes `/`'s <main> and `/404`'s comparable objects.
+
+        Nothing in lighthouserc.cjs can see this. Its ten named audits include no
+        landmark audit, which is the class of thing ADR-0003's "a green gate is
+        not a claim that the site is accessible" was written about. */}
+    <Masthead eyebrow={eyebrow} />
+    <main>
+      <slot />
+    </main>
     <Footer />
     <script>
       // THE ONE AUTHORED SCRIPT. Two behaviours live in it — warming the hero

@@ -5,13 +5,18 @@ import Base from '../layouts/Base.astro';
 <Base
   title="Not found | Coulter Heiberger"
   description="That page doesn't exist."
+  eyebrow="Not found"
   noindex
 >
-  <main>
-    <h1>404</h1>
-    <p>That page doesn't exist.</p>
-    <p><a href="/">Back to the start</a></p>
-  </main>
+  {/* NO CARVE-OUT FOR THIS ROUTE. lighthouserc.cjs's own header says there is
+      "one bar across all URLs, with no relaxation for 404.html", and the same
+      posture decides the layout: a route that opts out of the site's furniture
+      is the first crack in "the staple is on every page". So /404 carries the
+      Masthead, and it is the centring that gave way rather than the header —
+      see the note in the style block. */}
+  <h2>404</h2>
+  <p>That page doesn't exist.</p>
+  <p><a href="/">Back to the start</a></p>
 </Base>
 
 <style>
@@ -26,22 +31,41 @@ import Base from '../layouts/Base.astro';
      forbids outright: a component never hard-codes a value a token names, and
      never redefines a derived token. Nothing here paints a colour now. */
 
-  /* No min-height here. `body` is a flex column and `main` takes `flex: 1`
-     from base.css, so this fills everything the footer does not — a 100dvh
-     main plus a footer is one screen and a bit, which is a 404 you scroll. */
-  main {
-    display: grid;
-    place-items: center;
-    padding: var(--gap);
-    text-align: center;
-  }
+  /* THE CENTRING IS GONE, AND THAT IS WHAT MADE ROOM FOR THE MASTHEAD. This
+     page used to set `display: grid; place-items: center; text-align: center`
+     on <main>. Under a left-aligned Masthead that reads as two different pages
+     stacked: the site's one datum edge is its name (see the long note on
+     `/projects/<slug>/`), and a centred column under a header that starts at the
+     gutter breaks it on the one route where nobody would think to look.
+
+     So the header stayed and the centring went. There is no layout left to
+     declare — the measure, the gutter and `flex: 1` all come from base.css's
+     rule for the direct children of <body>, and `flex: 1` is still what puts the
+     footer on the bottom of the viewport on a short page.
+
+     THIS PAGE NOW OFFERS TWO WAYS OUT: the Masthead portrait's About band and
+     the link below. That is a change to what a 404 is and it was a conscious
+     yes, not a side effect.
+
+     AND IT SCROLLS NOW, WHICH IS THE COST TO KNOW ABOUT. The note on `body` in
+     base.css records that this page's own `min-height: 100dvh` was removed
+     because "a 100dvh main plus a footer is one screen and a bit, which is a 404
+     page you have to scroll" — and the Masthead has now done that anyway: 1092px
+     at 1440x900, so the footer is ~190px below the fold. A face, a name, a lede
+     and a specification line is most of a screen before the word 404 is reached.
+     `flex: 1` still does its job; there is simply more than one screen to fill.
+     ADR-0011 holds it as a known cost. */
 
   /* --t-h2, the same size a Project's title takes, because this is the same
      thing: the page's own heading. It used to be a third clamp and a third
      letter-spacing, both within a few hundredths of the shared pair and both
      invisible as a difference — a bespoke type size on the one page nobody
-     designs. */
-  h1 {
+     designs.
+
+     AN h2 FOR THE REASON A PROJECT'S TITLE IS ONE: the Masthead carries the
+     site's name as the h1 on every route now, and tokens.css's rule is that h2
+     is a page's own title. The size is unchanged. */
+  h2 {
     font-size: var(--t-h2);
   }
 

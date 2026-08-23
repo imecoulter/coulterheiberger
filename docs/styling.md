@@ -13,6 +13,9 @@ src/styles/base.css      reset, element defaults, type roles
 src/styles/fonts.css     @font-face only — two faces, nothing else
 src/layouts/Base.astro   imports the above once for every page; holds the only <script>
 src/components/*.astro   everything else, in a scoped <style> block
+                         Masthead.astro and Meta.astro are the site's furniture:
+                         one <header> on every page, and the revealed band that
+                         both a Plate and the Masthead portrait render
 ```
 
 That is the whole convention. **Do not invent a fourth location.** No `global.css`, no
@@ -65,7 +68,7 @@ px** and that is deliberate:
 | token | role |
 | --- | --- |
 | `--measure-page` | the page shell, 1600px — was hard-coded in two components before this |
-| `--plate-meta` | the Masthead's portrait column on `/` |
+| `--plate-meta` | the Masthead's portrait column, on every page |
 | `--body-col` | the whole body column on `/projects/<slug>/`: heading, summary, prose and every Frame |
 | `--gap` | the spacing atom: Plate to Plate, Plate to screen edge, column to column. 20px / 48px |
 
@@ -339,7 +342,7 @@ off one attribute:
 | `--d` | the stagger, `calc(n * var(--reveal-stagger))`, groups of four |
 
 **The two reveals** are in `src/pages/index.astro`'s scoped block, unchanged by ADR-0010: a Plate's
-metadata band and the Masthead portrait's `About` label, each fading its scrim in over 760ms and
+metadata band and the Masthead portrait's `About` label — one component since ADR-0011 — each fading its scrim in over 760ms and
 rising its text 8px into it 60ms behind, out at 480ms
 ([ADR-0008](./adr/0008-the-index-arrangement-and-one-spacing-atom.md),
 [ADR-0009](./adr/0009-the-two-reveals-are-timed.md)). The untimed `opacity` swap still sits outside

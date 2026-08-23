@@ -33,6 +33,14 @@ when the portrait absorbed the bordered link that used to sit under it. It is on
 objects, which is the only reason it is two rules rather than two decisions: same trigger pair, same
 reveal, same timing.
 
+Since [ADR-0011](./adr/0011-the-masthead-is-site-furniture.md) it is one COMPONENT as well as one
+device: `src/components/Meta.astro` is rendered by each Plate and by the Masthead portrait, so every
+term below is single-sourced rather than kept in step by hand. What is still written twice is the
+hovered selector — `.plate` against `.masthead-aside` — and the gate: a Plate's band needs only the
+wide mode, and the portrait's needs `min-width: 1200px` as well, because a 280px band over a 200px
+square is a black tile with a face behind it. The portrait's copy is now on every route except
+`/about/ime/`, where the band would be a control leading to the document it is already in.
+
 **[ADR-0009](./adr/0009-the-two-reveals-are-timed.md) timed them**, and this is the spec:
 
 | | |

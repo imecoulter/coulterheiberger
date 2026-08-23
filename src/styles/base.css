@@ -39,19 +39,45 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* `flex: 1` fills whatever the footer does not, which is what puts the footer
-   on the bottom of the viewport on a short page.
+/* THE PAGE'S MEASURE, STATED ONCE FOR ALL THREE BODY CHILDREN.
 
    `width: 100%` is NOT redundant with the flex container's default
    `align-items: stretch`. A cross-axis `margin-inline: auto` — which is how a
    page centres its own measure — beats `stretch` outright, so without an
-   explicit width <main> shrink-to-fits and the whole page collapses to the
+   explicit width the element shrink-to-fits and the whole page collapses to the
    width of its longest line. Verified in a browser: 827px instead of 1280px.
    With a definite 100%, max-width still caps the measure and the auto margins
-   still centre it. Any other direct child of <body> needs the same pair. */
+   still centre it.
+
+   THIS RULE IS THE SENTENCE THAT USED TO END THE PARAGRAPH ABOVE IT. It read
+   "Any other direct child of <body> needs the same pair" — a promise to the next
+   reader, kept by hand in four places: index.astro, About.astro, [slug].astro
+   and Footer.astro each restated the measure on its own shell. When the Masthead
+   became site furniture a fifth copy was due, so the promise is a rule now. A
+   new direct child of <body> is aligned by existing.
+
+   ONLY THE PADDING IS EACH ELEMENT'S OWN, because that is the one part that
+   genuinely differs: the header opens with --rhythm and is open at the bottom
+   (`.masthead` carries a --rhythm margin instead), <main> closes with --rhythm,
+   and the footer sits at half of it. Together those give one --rhythm between
+   every pair of neighbours, which is what the three pages measured before the
+   Masthead moved.
+
+   `flex: 1` ON <main> ALONE fills whatever the header and footer do not, which
+   is what puts the footer on the bottom of the viewport on a short page. /404 in
+   particular used to hold its own `min-height: 100dvh`; that plus a footer is
+   one screen PLUS the footer, i.e. a 404 you have to scroll. */
+body > header,
+main,
+body > footer {
+  width: 100%;
+  max-width: var(--measure-page);
+  margin-inline: auto;
+}
+
 main {
   flex: 1;
-  width: 100%;
+  padding: 0 var(--gap) var(--rhythm);
 }
 
 img {
@@ -115,8 +141,8 @@ h3 {
 
    `color` IS PART OF THE STYLE TOO, WITH ONE STATED EXCEPTION. Both mono styles
    are --muted everywhere they are painted ON THE GROUND, and a page wanting one
-   of them heavier is the drift this layer exists to stop — `/`'s own
-   `.masthead .spec` records that refusal and keeps it.
+   of them heavier is the drift this layer exists to stop — the Masthead's
+   own `.spec` records that refusal and keeps it.
 
    THE EXCEPTION IS TEXT OVER AN IMAGE, and it exists because there the colour is
    not a preference. The two revealed bands on `/` lift .t-spec and .t-label to
@@ -124,8 +150,8 @@ h3 {
    carry --muted at 4.5:1 over a worst-case pixel but only 0.595 to carry --ink,
    so the text colour is what decides whether the band can be a fade at all
    rather than an opaque slab over the work. The derivation is on --scrim in
-   src/pages/index.astro and in ADR-0008. Confined to those two bands; anything
-   on the Ground takes the colour above. */
+   src/components/Meta.astro and in ADR-0008. Confined to those two bands, which
+   are one component; anything on the Ground takes the colour above. */
 .t-label {
   font-family: var(--f-mono);
   font-size: var(--t-label);
@@ -150,8 +176,9 @@ h3 {
 
 /* ---- Registration ---------------------------------------------------------
    THE SITE'S ONE MOTION DEVICE, and this is one of its two homes. The other is
-   the scoped block of src/pages/index.astro, which carries the two pointer
-   reveals. Same move in both places on purpose (ADR-0009, ADR-0010): an opacity
+   src/components/Meta.astro, which carries the pointer reveal — one component
+   rendered by each Plate and by the Masthead portrait, so what used to be "the
+   two reveals" is now one set of declarations (ADR-0011). Same move in both places on purpose (ADR-0009, ADR-0010): an opacity
    change and an 8px rise, ease-out, over --reveal-in. That is what makes it one
    device seen twice rather than two systems sharing a page.
 
@@ -162,7 +189,7 @@ h3 {
 
    IN IS SLOWER THAN OUT, and --reveal-out is unused by Registration — nothing
    un-registers. It is here because it is one of the four and splitting the set
-   across two files is how one of them drifts. index.astro consumes it.
+   across two files is how one of them drifts. Meta.astro consumes it.
 
    --rise IS 8px BECAUSE THE REVEALS' BAND IS A GRADIENT. The travel has to stay
    inside the alpha that ADR-0008's contrast table was derived at. Registration
