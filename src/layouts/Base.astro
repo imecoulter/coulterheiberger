@@ -11,9 +11,10 @@ interface Props {
   title: string;
   description: string;
   /** What the Masthead's eyebrow says on this page — `Selected work`, `About`,
-      `Project`, `Not found`. It is the ONE thing that differs between one page's
-      Masthead and another's, which is why it is a required prop here rather than
-      a decision each page makes for itself. See docs/adr/0011. */
+      `Not found`, and on a Project route the Project's own name. It is the ONE
+      thing that differs between one page's Masthead and another's, which is why
+      it is a required prop here rather than a decision each page makes for
+      itself. See docs/adr/0011 and its amendment. */
   eyebrow: string;
   /** Opt a single page OUT of indexing. Defaults to false: the site is
       launched, so a new page is indexable unless it says otherwise. `/404`

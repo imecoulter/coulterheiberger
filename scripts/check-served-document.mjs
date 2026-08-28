@@ -21,6 +21,28 @@
  * was wrong. Strip the User-Agent or the Accept header and this check passes
  * vacuously, forever.
  *
+ * IT ALSO ASSERTS PAGE IDENTITY, and that half exists because the script
+ * inventory alone let a shipped bug through. `public/_redirects` once held
+ * `/projects/* / 301`; the splat matched every Project page, so all six 301'd to
+ * `/` and the section was unreachable in production. This check fetches with
+ * `redirect: 'follow'`, so it silently graded `/`'s document against each
+ * Project's built file — and since every page on this site carries the same one
+ * authored inline script plus the same beacon, the inventories MATCHED and the
+ * comparison passed. Nothing here asked whether a URL had served the document
+ * built for it.
+ *
+ * Now it does, by comparing the two `<link rel="canonical">` values. Canonical
+ * to canonical, NOT canonical to the requested path: `urlPathFor` yields
+ * `/projects/cecret` with no trailing slash and Cloudflare's
+ * `html_handling: "auto-trailing-slash"` 301s that to `/projects/cecret/`, so
+ * comparing against the request would need trailing-slash arithmetic and would
+ * fire on every directory route. Both canonicals come from the same generator
+ * (`Base.astro`, from `Astro.url.pathname`), so they are directly comparable,
+ * `/404` included.
+ *
+ * `redirect: 'follow'` STAYS for that same reason — `'manual'` would fail on the
+ * legitimate trailing-slash 301 on every page.
+ *
  * Usage: node scripts/check-served-document.mjs https://coulterheiberger.com
  */
 import { readFileSync } from 'node:fs';
@@ -73,6 +95,17 @@ function scriptInventory(html) {
   return { srcs: srcs.sort(), inline };
 }
 
+/**
+ * A document's canonical URL. Every page has one — Base.astro sets it on every
+ * route — so a missing one is itself a finding rather than a reason to skip the
+ * check, and is reported as such below.
+ */
+function canonicalOf(html) {
+  const link = html.match(/<link\b[^>]*\brel\s*=\s*["']canonical["'][^>]*>/i);
+  const href = link?.[0].match(/\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+  return href ? (href[1] ?? href[2] ?? href[3]).trim() : null;
+}
+
 /** index.html -> "/", 404.html -> "/404", a/index.html -> "/a" */
 function urlPathFor(file) {
   return '/' + file.replace(/\.html$/, '').replace(/(^|\/)index$/, '');
@@ -96,7 +129,8 @@ if (files.length === 0) {
 /** Compare one page's Served Document against its built file. */
 async function checkPage(file) {
   const urlPath = urlPathFor(file);
-  const built = scriptInventory(readFileSync(new URL(file, DIST), 'utf8'));
+  const builtHtml = readFileSync(new URL(file, DIST), 'utf8');
+  const built = scriptInventory(builtHtml);
   const failures = [];
   const notes = [];
 
@@ -106,7 +140,30 @@ async function checkPage(file) {
     return { urlPath, built, status: res.status, notes, failures: [`fetch returned ${res.status} ${res.statusText}`] };
   }
 
-  const served = scriptInventory(await res.text());
+  const servedHtml = await res.text();
+  const served = scriptInventory(servedHtml);
+
+  // PAGE IDENTITY, BEFORE THE SCRIPT DIFF. A page serving another page's
+  // document has already failed, and its script inventory is then a comparison
+  // between two unrelated pages that will usually agree on this site.
+  const builtCanonical = canonicalOf(builtHtml);
+  const servedCanonical = canonicalOf(servedHtml);
+
+  if (!builtCanonical || !servedCanonical) {
+    failures.push(
+      `no <link rel="canonical"> in the ${builtCanonical ? 'served' : 'built'} document.\n` +
+        `      Base.astro sets one on every route, so its absence is the finding.`,
+    );
+  } else if (builtCanonical !== servedCanonical) {
+    failures.push(
+      `this URL served another page's document.\n` +
+        `      built canonical:  ${builtCanonical}\n` +
+        `      served canonical: ${servedCanonical}\n` +
+        `      A redirect is swallowing the route, or the deploy is serving stale\n` +
+        `      content. Check public/_redirects for a wildcard first — its header\n` +
+        `      records what a /projects/* splat cost and why no local check saw it.`,
+    );
+  }
 
   for (const src of served.srcs.filter((s) => !built.srcs.includes(s))) {
     const accepted = ACCEPTED_EDGE_SCRIPTS.find((rule) => rule.test(src));

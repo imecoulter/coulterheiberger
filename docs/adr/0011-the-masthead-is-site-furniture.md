@@ -32,6 +32,10 @@ that will become the site's navigation. That is the third page, seven times over
 variation is the eyebrow, a required `eyebrow` prop on `Base`: `Selected work`, `About`, `Project`,
 `Not found`. A page cannot forget it — `astro check` fails.
 
+> **Amended 2026-08-28: on a Project route the eyebrow is the Project's name, not `Project`.** The
+> rule is untouched — one thing varies per route and it is this string — and what changed is what
+> the string says. See [the amendment below](#amendment-the-project-eyebrow-names-the-project).
+
 **Outside `<main>`, deliberately.** `<header>` maps to the `banner` landmark only when it is not
 scoped to a sectioning element, and a `<nav>` inside `<main>` is page content rather than site
 navigation. The old placement got this wrong on two pages; site-wide it would have been wrong on
@@ -186,3 +190,72 @@ work.
   the Plates would be styled by a component that does not render them.
 - **A condensed Masthead on Project pages.** Would have preserved image-LCP, and it makes the staple
   a different object per route, which is the thing the owner asked against.
+
+---
+
+## Amendment: the Project eyebrow names the Project
+
+**2026-08-28.** Recorded here rather than applied silently, because it edits the sentence above.
+
+The owner reported that tapping a Plate on a phone "just reloads the landing page". It does not:
+all six `/projects/<slug>/` URLs serve 200 with no `location`, and the Plate's hit area
+(`.title a::after`, `inset: 0` against `.plate`) hit-tests correctly at 390x844, 844x390 and
+1440x900 — `elementsFromPoint` at each image's centre returns the `<a>`, and
+`a.offsetParent === li.plate`.
+
+What is true is that **a successful navigation looks like a reload**, and this ADR is what made it
+so. Measured on the live `/projects/cecret/` at 390x844:
+
+| | |
+| --- | ---: |
+| Masthead height | 786px of an 844px screen (93%) |
+| Difference from `/`'s first screen | one 12px `--muted` eyebrow word, at y=60 |
+| `<h1>` on both | `Coulter Heiberger`, 38.4px |
+| First element under `<main>` | the hero — on `/`, the same file at the same crop |
+| `<h2>Cecret</h2>` first paints at | y=1331, **1.58 screens down** |
+
+"Everything else is identical on every route by construction" is the property this ADR was written
+to get, and on a phone it is close to the whole screen. The eyebrow was carrying the entire
+distinction in 12px of muted mono, and it was spending it on `Project` — the one fact the visitor
+had just established by tapping a Plate. The name was the fact they could not get.
+
+So `[slug].astro` passes `title` where it passed `"Project"`, and `.t-label` renders it `CECRET`.
+
+**This is not a second varying element.** The decision above stands as written: exactly one string
+differs between one route's Masthead and another's, `astro check` still enforces that a page
+supplies it, and no route grows a heading, a band or a rule the others do not have.
+
+**A condensed Masthead on Project routes is still rejected**, on the same grounds as in
+*Alternatives rejected* below. It is the stronger fix for the 93% — it would take the header to
+roughly 330px and put the work on the first screen — and it makes the staple a different object per
+route, which is what the owner asked against. The eyebrow was taken instead, in full knowledge that
+it treats the symptom at 12px. If the first screen is revisited, that alternative is the one to
+re-open, and this table is the measurement to re-open it with.
+
+### The site name links home
+
+Taken in the same pass and for the adjacent half of the same problem: a visitor who could not tell
+they had navigated also had no way back. Nothing on a Project page linked to `/` — the name was
+plain text, the eyebrow was plain text, and the portrait led to `/about/ime/`.
+
+`<h1>Coulter Heiberger</h1>` is now wrapped in `<a href={HOME_PATH}>` on every route but `/`,
+suppressed there by the same derived test that suppresses the About band on `/about/ime/` and for
+the same reason — a control leading to the document it is already in. `HOME_PATH` joins `ABOUT_PATH`
+in `src/site.ts` so the href and the suppression cannot disagree.
+
+The `banner` landmark gains a second link, deliberately. `Masthead.astro`'s own note parks a `<nav>`
+inside this `<header>` "when the site has second-level routes to list"; the name linking home is the
+first piece of it, and it needs no invented mark.
+
+`/404` gains a third way out, and it is the one people reach for.
+
+### Costs
+
+- The `_redirects` splat this diagnosis re-opened was fixed in `d66eb14`, but a 301 is cached
+  indefinitely by default and **nothing in this repository can expire one already held by a
+  browser**. Devices that saw the bug keep bouncing to `/` until their site data is cleared.
+  `scripts/check-served-document.mjs` was hardened in the same pass so a recurrence cannot reach
+  them: it now asserts that a URL served the document built for it, which the script-inventory
+  comparison alone did not do.
+- `RESIDENCE ONE` is the longest eyebrow. Nothing in CI measures it; re-check by hand if the type
+  scale, the gutters or the mono subset move.
