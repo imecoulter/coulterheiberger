@@ -24,12 +24,30 @@ export const LINKEDIN = 'https://www.linkedin.com/in/coulterheiberger/';
    and /about/ime/ simply grows a control leading to the document it is already
    in, which looks like a design choice. One string cannot disagree with itself.
 
-   THE TRAILING SLASH IS LOAD-BEARING. astro.config.mjs sets no `trailingSlash`
-   and no `build.format`, so the default 'directory' gives `/about/ime/` in dev,
-   in preview and in the built output, and `Astro.url.pathname` matches it
-   exactly. public/_redirects sends `/about` and `/about/` here. Drop the slash
-   and the suppression silently stops matching on every page. */
+   THE TRAILING SLASH IS LOAD-BEARING. astro.config.mjs sets `build.format:
+   'directory'` and no `trailingSlash`, so `/about/ime/` is the path in dev, in
+   preview and in the built output, and `Astro.url.pathname` matches it exactly.
+   public/_redirects sends `/about` and `/about/` here. Drop the slash and the
+   suppression silently stops matching on every page.
+
+   (This comment used to say the config sets NEITHER option and relied on
+   'directory' being Astro's default. The default is the same either way, so
+   nothing about the conclusion moves — but the file does set it, at
+   astro.config.mjs's `build` block, and a comment that misdescribes the config
+   is the kind that stops being checked.) */
 export const ABOUT_PATH = '/about/ime/';
+
+/* THE INDEX'S ROUTE, and it is a constant for exactly the reason ABOUT_PATH is:
+   two consumers in one file, Masthead.astro, where it is the site name's `href`
+   and the test that suppresses that link on the page it points at. Same silent
+   direction, too — get the comparison wrong and `/` grows a control leading to
+   the document it is already in, which looks like a design choice rather than a
+   bug.
+
+   IT IS THE BARE SLASH AND THERE IS NO SECOND SPELLING. `/about/` needed two
+   301s because a visitor can truncate to it; nobody truncates to something
+   shorter than this. */
+export const HOME_PATH = '/';
 
 /* THE PRACTICE'S OWN SPECIFICATION LINE.
 

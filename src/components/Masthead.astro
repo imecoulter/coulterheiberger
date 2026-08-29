@@ -35,7 +35,7 @@
 import { Picture } from 'astro:assets';
 import Meta from './Meta.astro';
 import portrait from '../assets/portrait.jpg';
-import { ABOUT_PATH, PRACTICE_LEDE, PRACTICE_SPEC } from '../site';
+import { ABOUT_PATH, HOME_PATH, PRACTICE_LEDE, PRACTICE_SPEC } from '../site';
 import {
   portraitSizes,
   PORTRAIT_WIDTH,
@@ -45,10 +45,20 @@ import {
 } from '../layout';
 
 interface Props {
-  /** What the screen below this one is: `Selected work`, `About`, `Project`,
-      `Not found`. Required, with no default — a new page decides what it is the
+  /** What is below this header, named: `Selected work` on `/`, `About`, `Not
+      found`, and on a Project route the PROJECT'S OWN NAME rather than the word
+      `Project`. Required, with no default — a new page decides what it is the
       same way it decides `noindex`, and a default here would let a route ship
-      silently mislabelled. Sentence case; `.t-label` uppercases it. */
+      silently mislabelled.
+
+      Sentence case as authored; `.t-label` uppercases it, and casing is part of
+      the type style rather than something a caller sets (tokens.css). A Project
+      passes `title` straight through, so this renders CECRET.
+
+      IT IS STILL THE ONE THING THAT VARIES PER ROUTE (ADR-0011). A Project
+      naming itself here rather than its category does not add a second varying
+      element; it changes what the one string says. The amendment on that ADR
+      carries the measurement behind it. */
   eyebrow: string;
 }
 
@@ -60,6 +70,18 @@ const { eyebrow } = Astro.props;
    that every future page's job to remember. `ABOUT_PATH` carries the note about
    why the trailing slash is load-bearing. */
 const about = Astro.url.pathname !== ABOUT_PATH;
+
+/* THE NAME LINKS HOME, and it is derived the same way and suppressed for the
+   same reason: on `/` it would be a control leading to the document it is
+   already in. Two consumers, one string, in one file — see HOME_PATH.
+
+   THIS IS THE FIRST PIECE OF THE <nav> THE NOTE AT THE TOP OF THIS FILE PARKS.
+   Until now the only way out of a Project page was the browser's back button:
+   the name was plain text, the eyebrow was plain text, and the portrait led to
+   /about/ime/. A visitor who could not tell they had navigated also could not
+   get back. /404 gains the way out people actually reach for — ADR-0011 records
+   that it "offers two ways out", and this is the third and the obvious one. */
+const home = Astro.url.pathname !== HOME_PATH;
 ---
 
 {/* REGISTRATION, TIER A, AND NO --d. ADR-0010: an animation-delay on the LCP
@@ -81,7 +103,7 @@ const about = Astro.url.pathname !== ABOUT_PATH;
         rule true everywhere rather than only on `/`: a Project's heading and
         /404's are h2 now, both already at --t-h2, so nothing moved except the
         tag. */}
-    <h1>Coulter Heiberger</h1>
+    <h1>{home ? <a href={HOME_PATH}>Coulter Heiberger</a> : 'Coulter Heiberger'}</h1>
 
     {/* ADR-0005: the display line is `Technical Artist`, unqualified. Not
         "Technical Artist / Architectural Visualization", not a parenthetical.
@@ -226,6 +248,25 @@ const about = Astro.url.pathname !== ABOUT_PATH;
   h1 {
     font-size: var(--t-h1);
     line-height: 0.96;
+  }
+
+  /* ONE DECLARATION, AND IT IS THE ONLY ONE THIS LINK NEEDS. base.css already
+     gives every <a> `color: inherit`, so the UA underline is all that is left to
+     remove — the same single fix `.title a` takes in Meta.astro. No colour, no
+     border, no hover: the site has one motion device in two places and this is
+     not a third (docs/motion.md).
+
+     THE ANCHOR IS INSIDE THE h1, NEVER AROUND IT. The `max-width: 403px` rule
+     below reserves the name's second line with `min-height` ON THIS ELEMENT, to
+     stop a 0.0128 shift when Montserrat swaps in; wrapping the heading would
+     take that rule off the box it measures. An inline child does not touch it.
+
+     AND IT NEVER TAKES A `transform`. Meta.astro records what a transform on an
+     ancestor of a stretched `::after` costs — this link has no `::after` and no
+     hit area to collapse, and that is exactly why the trap is worth naming here
+     rather than rediscovering it if one is ever added. */
+  h1 a {
+    text-decoration: none;
   }
 
   /* RESERVE THE SECOND LINE ON PHONES, AND IT IS A LAYOUT-SHIFT FIX RATHER THAN

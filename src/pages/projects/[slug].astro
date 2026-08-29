@@ -57,7 +57,25 @@ const expanded = await Promise.all(
 );
 ---
 
-<Base title={`${title} | Coulter Heiberger`} description={summary} eyebrow="Project" image={images[0]}>
+{/* THE EYEBROW IS THE PROJECT'S NAME, not the word `Project`, and the reason is
+    a measurement rather than a preference. On a 390x844 phone the Masthead is
+    786px of an 844px screen and it is IDENTICAL on every route but for this one
+    string, so a Project page's first screen was `/`'s first screen: same name,
+    same role, same lede, same specification line, same portrait, same About
+    band. Then the first thing under <main> is the hero, which on `/` is the same
+    file at the same crop. The page's own <h2> does not appear until y=1331,
+    1.58 screens down. Arriving here from a Plate read as the index reloading.
+
+    `Project` was the one fact a visitor could already infer — they had just
+    tapped a Plate — and the name was the one they could not. See the amendment
+    on docs/adr/0011.
+
+    IT STAYS THE EYEBROW rather than becoming a second heading. ADR-0011's rule
+    is that exactly one thing varies per route and it is this string; what
+    changed is what the string says, not how many things say it. `.t-label`
+    uppercases, and casing is part of the type style (tokens.css) — so this
+    renders CECRET, not Cecret, with no `text-transform` anywhere. */}
+<Base title={`${title} | Coulter Heiberger`} description={summary} eyebrow={title} image={images[0]}>
   {/* The hero leads the PAGE'S OWN CONTENT. This page IS the Plate in its
       second presentation, and putting the work first is the same argument
       content-architecture.md §1 makes for `/` not being a landing page.
