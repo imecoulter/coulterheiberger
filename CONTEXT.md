@@ -114,6 +114,10 @@ _Avoid_: caption, metadata, credits, tagline, subtitle, spec sheet
 The image a link to the site unfurls into when it is shared. Two kinds, and they are made differently: a Project's is a build-time crop of its own hero, and the site-wide default is a typographic card authored once and built by `scripts/dev/`.
 _Avoid_: OG image, preview image, thumbnail, share image
 
+**Identity Graph**:
+The connected set of assertions, across every page, that the site and everything on it belong to one named person. One node defines that person and every other page points at it rather than describing them again, so what a search engine reads is a single entity referenced many times instead of many pages that happen to share a name. Held together by [ADR-0012](./docs/adr/0012-the-identity-graph-has-one-anchor.md); its outward half is the pair of profile links the footer renders, which only assert anything while those profiles link back.
+_Avoid_: schema, JSON-LD, structured data, rich results, metadata, SEO
+
 **Credit**:
 A Project's provenance: where the work was done and for whom. Covers commissioned work made at a studio, work made for that studio's own client, and speculative work made for neither. Stated on every Project, without exception.
 _Avoid_: client, studio, attribution, credits

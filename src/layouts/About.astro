@@ -17,6 +17,7 @@
    WHAT IS LEFT is the markdown styling below, which genuinely is this page's
    own: it is the only route on the site whose body is authored prose. */
 import Base from './Base.astro';
+import { PERSON_ID } from '../site';
 
 /* THE FRONTMATTER ARRIVES UNDER `frontmatter`, NOT AS TOP-LEVEL PROPS, and the
    difference fails silently. A layout used by an .mdx page gets one object:
@@ -36,17 +37,41 @@ interface Props {
   };
 }
 
-/* The layout adds no metadata of its own — the Social Card, the canonical, and
-   the robots tag are all Base.astro's, and a second place deciding any of them
-   is how two mechanisms start drifting.
+/* The layout decides no metadata that Base.astro decides — the Social Card, the
+   canonical, and the robots tag are all Base.astro's, and a second place
+   deciding any of them is how two mechanisms start drifting.
 
    `About` WHERE `/` SAYS `Selected work`. Same type role, same job: it names
    what the screen below it is. It is the one thing that differs between this
    page's Masthead and any other's. */
 const { title, description } = Astro.props.frontmatter;
+
+/* WHAT KIND OF DOCUMENT THIS IS, and nothing else. See ADR-0012 and
+   docs/content-architecture.md §7.
+
+   THE PERSON IS NOT RESTATED HERE, and resisting that is the entire design.
+   This is the page whose prose actually describes the person, so re-asserting
+   `name`, `jobTitle` and `address` on it feels obviously right and is the exact
+   failure content-architecture.md warns about: a second description of the same
+   entity to keep in sync with the first. `mainEntity` says "the thing this page
+   is about is that node" and points at the one definition on `/`.
+
+   IT LIVES IN THE LAYOUT RATHER THAN THE .mdx, which is the one place this file
+   does carry metadata. The graph is a fact about what kind of page this is, and
+   the page is this layout; MDX frontmatter would make it a value the author
+   retypes, and there is exactly one author and exactly one page. Note the
+   layout-versus-page trap documented above — frontmatter arrives nested under
+   `frontmatter` — which is a second reason not to route a structured object
+   through it. */
+const profile = {
+  '@context': 'https://schema.org',
+  '@type': 'ProfilePage',
+  '@id': `${new URL(Astro.url.pathname, Astro.site)}#profile`,
+  mainEntity: { '@id': PERSON_ID },
+};
 ---
 
-<Base title={title} description={description} eyebrow="About">
+<Base title={title} description={description} eyebrow="About" structuredData={profile}>
   {/* THE PORTRAIT HERE CARRIES NO ABOUT BAND, and Masthead.astro decides that
       rather than this file: it compares `Astro.url.pathname` against ABOUT_PATH,
       because a band here would be a control leading to the document it is

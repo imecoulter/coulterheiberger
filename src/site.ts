@@ -1,8 +1,8 @@
-/* The two public contact endpoints. Here rather than inline because each is
+/* The three public contact endpoints. Here rather than inline because each is
    rendered twice, in different files:
 
    - the address by Footer.astro's `mailto:` and by the Person graph's `email`
-   - the profile URL by Footer.astro's `rel="me"` and by that graph's `sameAs`
+   - each profile URL by Footer.astro's `rel="me"` and by that graph's `sameAs`
 
    A `rel="me"` / `sameAs` pair is an identity assertion, and it only asserts
    anything while the two strings match exactly. Two literals in two files is
@@ -10,9 +10,50 @@
 
    The LinkedIn URL is LinkedIn's own canonical form. Do not normalise it, do
    not strip the trailing slash, and never paste a copied one with `?trk=`
-   params attached. */
+   params attached.
+
+   THE GITHUB URL IS THE PROFILE, NOT THE REPOSITORY, and the distinction is the
+   whole point of the field. `sameAs` means "another page about this same
+   entity"; github.com/imecoulter is a page about a person and
+   github.com/imecoulter/coulterheiberger is a page about a codebase. Pointing
+   the identity edge at the repo would assert that the person and the repository
+   are the same thing. The repo is one click from the profile, which is the right
+   place for a reader to find it and the wrong place for a crawler to be told to
+   look.
+
+   IT IS RECIPROCAL TODAY AND THAT IS WHAT MAKES IT WORTH HAVING. The account's
+   profile website field reads coulterheiberger.com, so the edge is asserted from
+   both ends. A `sameAs` to a profile that does not link back is a claim rather
+   than a corroboration, and search engines weight it accordingly — if that
+   profile field is ever cleared, this line quietly degrades to the weaker kind
+   and nothing here will report it. */
 export const EMAIL = 'ime@coulterheiberger.com';
 export const LINKEDIN = 'https://www.linkedin.com/in/coulterheiberger/';
+export const GITHUB = 'https://github.com/imecoulter';
+
+/* THE ENTITY ANCHOR. One URI naming the person the whole site is about, so that
+   every graph on every route points at ONE node instead of each page asserting
+   its own unconnected person.
+
+   IT IS A FRAGMENT ON `/`, DELIBERATELY. The Person graph itself lives on the
+   index (index.astro says why it stays there), and `#person` names the entity
+   WITHIN that document rather than the document itself — which is what keeps it
+   distinct from `url`, the page, and from the canonical, the address. A crawler
+   reading /projects/cecret/ finds `creator: { '@id': ... }` and resolves it to
+   the node defined on `/`; nothing is restated and there is one place to change
+   a fact about the person.
+
+   IT IS AN IDENTIFIER, NOT A LINK. Nothing fetches it, no route serves it, and
+   `#person` is not an element id anywhere in the markup. Do not add one to make
+   it "work" — it already does the only job it has.
+
+   THE STRING IS A CONTRACT THE MOMENT ANYTHING REFERENCES IT, and four files do:
+   this one defines it, index.astro defines the node, and [slug].astro and
+   About.astro reference it. Change it and every reference dangles — which is a
+   silent failure in JSON-LD, since a reference to an undefined node is
+   well-formed and simply means nothing. scripts/check-structured-data.mjs exists
+   to make that failure loud. */
+export const PERSON_ID = 'https://coulterheiberger.com/#person';
 
 /* THE ABOUT PAGE'S ROUTE, and it is a constant for a slightly different reason
    than the two above: both its consumers are in ONE file, Masthead.astro, where
