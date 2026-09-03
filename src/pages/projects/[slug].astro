@@ -11,6 +11,7 @@ import {
   FRAME_FORMATS,
   FRAME_FALLBACK,
 } from '../../layout';
+import { PERSON_ID } from '../../site';
 
 export const getStaticPaths = (async () => {
   const projects = await getCollection('projects');
@@ -55,6 +56,52 @@ const expanded = await Promise.all(
     }),
   ),
 );
+
+/* THE PROJECT AS AN ENTITY. See docs/content-architecture.md §7 and ADR-0012,
+   which records that this reverses a written refusal and what changed.
+
+   EVERY FIELD HERE IS RENDERED BY THIS PAGE. That is the whole licence for the
+   graph existing: content-architecture.md's governing rule is that a field no
+   page renders does not exist, and the refusal this replaces was correct while
+   no route rendered a Project. `title`, `summary` and `year` are all on screen
+   below, and the hero is the first thing on it.
+
+   `spec` AND `credit` ARE DELIBERATELY ABSENT, and their absence is the part
+   most likely to be "fixed" by someone later. Neither has an honest schema.org
+   field. The Specification Line is a toolchain, and nothing in the vocabulary
+   means that — `material` is about physical substance. The Credit is provenance
+   prose whose only plausible home is `sourceOrganization`, which asserts an
+   organization edge; ADR-0005 forbids that and check-structured-data.mjs now
+   enforces the neighbouring half of the same rule. A graph that carries only
+   what maps cleanly is the point, not a gap in it.
+
+   `creator` IS A REFERENCE, NEVER A NESTED PERSON. Six pages each embedding
+   their own copy of the person is six unconnected people to a crawler, and six
+   places to change one fact. The node is defined once on `/`.
+
+   `dateCreated` TAKES A BARE YEAR because `year` is an int and a bare year is
+   valid ISO 8601. Do not pad it to a January date to look more precise — the
+   schema holds a year because a year is what is known, and `2024-01-01` would
+   assert a day nobody stated.
+
+   `image` REUSES THE EXPANDED VIEW'S ENCODE rather than making its own. The
+   hero is `frames`' LAST entry (see the comment on `frames` above), so it is
+   `expanded.at(-1)` — an already-emitted 2000px webp. Calling getImage again
+   here with different arguments would add a seventh variant per Project to a
+   build that astro.config.mjs's comments describe as cost-dominated by variant
+   count, in exchange for an image no human ever sees. */
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const work = {
+  '@context': 'https://schema.org',
+  '@type': 'CreativeWork',
+  '@id': `${canonical}#work`,
+  name: title,
+  description: summary,
+  url: canonical.href,
+  dateCreated: String(year),
+  image: new URL(expanded.at(-1)!.src, Astro.site).href,
+  creator: { '@id': PERSON_ID },
+};
 ---
 
 {/* THE EYEBROW IS THE PROJECT'S NAME, not the word `Project`, and the reason is
@@ -75,7 +122,13 @@ const expanded = await Promise.all(
     changed is what the string says, not how many things say it. `.t-label`
     uppercases, and casing is part of the type style (tokens.css) — so this
     renders CECRET, not Cecret, with no `text-transform` anywhere. */}
-<Base title={`${title} | Coulter Heiberger`} description={summary} eyebrow={title} image={images[0]}>
+<Base
+  title={`${title} | Coulter Heiberger`}
+  description={summary}
+  eyebrow={title}
+  image={images[0]}
+  structuredData={work}
+>
   {/* The hero leads the PAGE'S OWN CONTENT. This page IS the Plate in its
       second presentation, and putting the work first is the same argument
       content-architecture.md §1 makes for `/` not being a landing page.

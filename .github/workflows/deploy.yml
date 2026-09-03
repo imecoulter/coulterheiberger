@@ -90,6 +90,12 @@ jobs:
       - name: Design rules
         run: npm run check:css
 
+      # Gates the Identity Graph's integrity and ADR-0005's organization-edge
+      # refusal. See docs/content-architecture.md §7 and ADR-0012. Runs on the
+      # built HTML, so it belongs after Build and not with the source checks.
+      - name: Identity Graph
+        run: npm run check:structured-data
+
       # Gates the deploy on the ADR-0002 budget and the ADR-0003 accessibility
       # bar. Config: lighthouserc.cjs — one Lighthouse run serves both.
       - name: Performance and accessibility budget

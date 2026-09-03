@@ -4,34 +4,47 @@ import Base from '../layouts/Base.astro';
 import Plate from '../components/Plate.astro';
 import Meta from '../components/Meta.astro';
 import { detailWideSizes } from '../layout';
-import { EMAIL, LINKEDIN } from '../site';
+import { EMAIL, LINKEDIN, GITHUB, PERSON_ID } from '../site';
 
-/* sameAs is legal here because the footer renders the link — the governing rule
-   in docs/content-architecture.md is that if no page renders a field, the field
-   does not exist.
+/* THE IDENTITY GRAPH'S ROOT. This page defines the person; every other route
+   references the node by `@id` and restates none of it. See
+   docs/content-architecture.md §7 and ADR-0012.
+
+   sameAs is legal here because the footer renders both links — the governing
+   rule in docs/content-architecture.md is that if no page renders a field, the
+   field does not exist.
 
    `address` NOW PASSES THAT TEST and is below. It used to be held out with the
    note "until /about/ lands"; /about/ime/ has landed and states the location in
    prose, so the field has the page it needed. It is still not a frontmatter
    field anywhere — one page says it once. */
 
-// `worksFor` and `affiliation` are NEVER added here. They are the obvious next
-// schema.org enrichment and they are wrong: this site describes an independent
-// practice, and an organization edge would assert something it does not claim.
-// See ADR-0005.
+// `worksFor` and `affiliation` are NEVER added here, or to any graph on any
+// route. They are the obvious next schema.org enrichment and they are wrong:
+// this site describes an independent practice, and an organization edge would
+// assert something it does not claim. See ADR-0005.
 //
-// There is deliberately no CreativeWork graph for the Projects below. No
-// document asks for one, and the rule at the top of content-architecture.md
-// cuts both ways: structured data nobody consumes is a second description of
-// the page to keep in sync with the first.
+// THIS IS NO LONGER ONLY A COMMENT. scripts/check-structured-data.mjs walks
+// every graph in dist/ and fails the build on either key, because AGENTS.md
+// calls violating this a defect and a sentence in a source file is the weakest
+// way to enforce one. check-css.mjs set that precedent for CSS refusals.
 //
 // IT STAYS ON THIS PAGE rather than moving to Base.astro with the Masthead. The
 // Masthead is now on every route, and a Person graph on every route is the same
 // claim asserted nine times — `url` says which page is the practice's, and it
-// says this one.
+// says this one. The `@id` is what lets the other eight routes point at this
+// claim instead of repeating it.
+//
+// THE REFUSAL THAT USED TO BE HERE — "there is deliberately no CreativeWork
+// graph for the Projects below" — IS REVERSED, and ADR-0012 records why rather
+// than leaving a future reader to find a graph next to a comment forbidding one.
+// The short version: that refusal was written when no route rendered a Project,
+// so a Project graph would have been invented from frontmatter no page showed.
+// Six routes now render every field such a graph would carry, which is exactly
+// the condition content-architecture.md's rule tests for.
 const person = {
-  '@context': 'https://schema.org',
   '@type': 'Person',
+  '@id': PERSON_ID,
   name: 'Coulter Heiberger',
   jobTitle: 'Technical Artist',
   url: 'https://coulterheiberger.com',
@@ -45,7 +58,43 @@ const person = {
     addressRegion: 'MN',
     addressCountry: 'US',
   },
-  sameAs: [LINKEDIN],
+  /* ORDER MATCHES THE FOOTER's, for the reason Footer.astro states: so the two
+     can be read against each other by eye. Every entry here must be a page
+     ABOUT this person that links back to this site — a one-way `sameAs` is a
+     claim rather than a corroboration. Both currently link back. */
+  sameAs: [LINKEDIN, GITHUB],
+};
+
+/* THE SITE ITSELF AS AN ENTITY, bound to the person by `publisher`. Four fields,
+   and it is the cheapest thing on this page that serves the one goal the graph
+   has: it connects domain, site name and person into a single component, so a
+   query for the name has a site attached to it rather than a page that happens
+   to mention it.
+
+   `name` IS THE PERSON'S NAME AND THAT IS NOT A DUPLICATION BUG. The site is
+   named after its author because that is what a portfolio is; this states the
+   site's name, `publisher` states whose it is, and they are different claims
+   that happen to share a string.
+
+   NO `potentialAction` / `SearchAction`. It is the standard companion to this
+   node and it would be a lie — there is no site search, and a declared search
+   endpoint is something Google will attempt to use. Do not add one before a
+   route exists to answer it. */
+const website = {
+  '@type': 'WebSite',
+  '@id': 'https://coulterheiberger.com/#website',
+  name: 'Coulter Heiberger',
+  url: 'https://coulterheiberger.com',
+  publisher: { '@id': PERSON_ID },
+};
+
+/* ONE SCRIPT, TWO NODES. `@graph` is how JSON-LD carries several entities in one
+   block with one `@context`; two sibling <script> tags would be the same bytes
+   saying the same thing less clearly, and Base.astro takes one object by design
+   for that reason. */
+const graph = {
+  '@context': 'https://schema.org',
+  '@graph': [person, website],
 };
 
 // `order` is curation, not chronology — see content-architecture.md §2. `year`
@@ -57,7 +106,7 @@ const projects = (await getCollection('projects')).sort((a, b) => a.data.order -
   title="Coulter Heiberger | Technical Artist"
   description="Real-time systems for spatial environments: terrain, architecture, simulation, and interactive experiences."
   eyebrow="Selected work"
-  structuredData={person}
+  structuredData={graph}
 >
   {/* THE MASTHEAD IS NOT HERE ANY MORE, and its absence is the change rather
       than an omission. It was this page's opening header for the whole life of

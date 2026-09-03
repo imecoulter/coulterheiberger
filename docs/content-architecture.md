@@ -457,6 +457,95 @@ Graph's vocabulary would mean deciding it with no page to check the answer again
 
 ---
 
+## 7. The Identity Graph
+
+Decided in [ADR-0012](./adr/0012-the-identity-graph-has-one-anchor.md), which carries the reasoning,
+the rejected alternatives, and the record of what this reversed. This section states the mechanism.
+
+It lives here rather than in a document of its own for the reason §6 gives about Social Cards: this
+is metadata substrate, and splitting "what a page's metadata says" across two files is the failure
+that section was written to avoid.
+
+### One node, defined once, referenced everywhere
+
+`PERSON_ID` in `src/site.ts` is `https://coulterheiberger.com/#person`. The `Person` node is defined
+on `/` and nowhere else. Every other graph references the id and restates none of its fields.
+
+| Route | Graph | Edge |
+| --- | --- | --- |
+| `/` | `Person` + `WebSite`, one `@graph`, one `<script>` | defines `#person`; `WebSite.publisher` → it |
+| `/projects/<slug>/` | `CreativeWork` | `creator` → it |
+| `/about/ime/` | `ProfilePage` | `mainEntity` → it |
+| `/404` | none | — |
+
+The fragment is an **identifier, not a link**. Nothing fetches it, no route serves it, and `#person`
+is not an element id in the markup. Do not add one to make it "work".
+
+`Base.astro` takes one optional `structuredData` object and serialises it. A page that needs two
+entities uses `@graph`, as `/` does — not two `<script>` tags.
+
+### What a Project's graph carries, and what it refuses
+
+`name` ← `title`, `description` ← `summary`, `url` ← canonical, `dateCreated` ← `year`,
+`image` ← the hero, `creator` ← a reference to `#person`.
+
+**Every one of those is rendered by the page.** That is the licence for the graph existing at all —
+the rule at the top of this document is that a field no page renders does not exist, and ADR-0012
+reopened a refusal specifically because six routes now render these.
+
+**`spec` and `credit` are deliberately absent.** Neither maps to schema.org honestly. The
+Specification Line is a toolchain and nothing in the vocabulary means that; the Credit's only
+plausible field is `sourceOrganization`, which is an organization edge that
+[ADR-0005](./adr/0005-the-site-presents-the-independent-practice.md) forbids. This is the part most
+likely to be "completed" by someone later.
+
+`dateCreated` takes a **bare year**, which is valid ISO 8601. Do not pad it to `2024-01-01` to look
+more precise — the schema holds a year because a year is what is known.
+
+`image` **reuses the Expanded View's existing encode** (`expanded.at(-1)` — the hero is `frames`' last
+entry). A fresh `getImage` call would add a variant per Project to a build `astro.config.mjs`
+describes as cost-dominated by variant count, for an image no human sees.
+
+### `sameAs` is only legal because the Footer renders the link
+
+LinkedIn and GitHub, in that order, matching the Footer's order so the two can be read against each
+other by eye. Both carry `rel="me"`; `src/site.ts` holds each URL once because a `rel="me"` /
+`sameAs` pair asserts nothing once the two strings drift.
+
+The GitHub URL is the **profile**, never the repository. `sameAs` means "another page about this same
+entity", and a repository is not a page about a person.
+
+An edge is only strong while it is **reciprocal**. Both profiles link back to this site today. If
+either profile's website field is cleared, the edge silently degrades and nothing here reports it.
+
+### The gate
+
+`npm run check:structured-data` reads `dist/` and asserts three things: every block parses; every
+`@id` reference resolves to a node defined somewhere in the build; no graph anywhere carries
+`worksFor` or `affiliation`.
+
+The middle one is why the script exists. A reference to an undefined node is well-formed JSON-LD that
+means nothing — rename the constant and every page still builds, still validates, still passes every
+other gate, while the graph is silently in nine pieces. The third makes ADR-0005's hard constraint
+real; it was a comment saying "never add these", and `check-css.mjs` had already established that
+this repo asserts refusals in CI.
+
+It does **not** validate against schema.org's vocabulary. That means a network fetch or a vendored
+copy to keep in step with, to catch field-name typos that Google's Rich Results Test reports on
+demand.
+
+### What this section does not cover
+
+- **`lastmod`** — refused, [ADR-0013](./adr/0013-the-sitemap-carries-no-lastmod.md).
+- **`robots.txt`** — open to all crawlers, including AI training crawlers. Considered in this pass
+  and left as it was.
+- **`og:type`** — unchanged, still `website` everywhere; §6 holds that.
+- **External account state** — which properties are verified, and how — is
+  [`docs/search-registration.md`](./search-registration.md). It is not in this repo's control and
+  does not belong in a document about the site's own structure.
+
+---
+
 ## Verified mechanics
 
 Built and run against this repo's real dependency graph — astro 7.2.0, @astrojs/mdx 7.0.5 — not read from

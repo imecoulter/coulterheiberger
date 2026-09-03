@@ -6,7 +6,7 @@
 
    This is the repo's first component, so it sets the precedent: scoped <style>
    in the file, no token hard-coded, no new type role. */
-import { EMAIL, LINKEDIN } from '../site';
+import { EMAIL, LINKEDIN, GITHUB } from '../site';
 ---
 
 {/* Nothing here enters, and two separate arguments say so should it ever be
@@ -17,8 +17,19 @@ import { EMAIL, LINKEDIN } from '../site';
   <a class="address" href={`mailto:${EMAIL}`}>{EMAIL}</a>
   {/* rel="me" pairs with the Person graph's sameAs on /. No target="_blank":
       it decides tab behaviour on the visitor's behalf and drags rel="noopener"
-      in behind it. */}
+      in behind it.
+
+      BOTH LINKS CARRY IT AND THAT IS THE POINT — `me` is what makes each one an
+      identity claim rather than a recommendation, and a footer where one profile
+      is `rel="me"` and the next is bare says the two are different kinds of
+      thing. They are not.
+
+      THE ORDER IS THE ORDER OF THE `sameAs` ARRAY on `/`. Nothing enforces it
+      and nothing breaks if it drifts; it is here so that the rendered footer and
+      the graph can be read against each other by eye, which is the check a
+      person actually performs when wondering whether the two agree. */}
   <a href={LINKEDIN} rel="me">LinkedIn</a>
+  <a href={GITHUB} rel="me">GitHub</a>
 </footer>
 
 <style>
