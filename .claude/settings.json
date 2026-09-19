@@ -1,0 +1,10 @@
+{
+  "extraKnownMarketplaces": {
+    "imecoulter-skills": {
+      "source": { "source": "github", "repo": "imecoulter/skills" }
+    }
+  },
+  "enabledPlugins": {
+    "imecoulter-skills@imecoulter-skills": true
+  }
+}
