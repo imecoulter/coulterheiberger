@@ -62,3 +62,7 @@ The five canonical roles, each label string equal to its name. See `docs/agents/
 ### Domain docs
 
 Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### Git workflow
+
+Every branch gets its own worktree under `.claude/worktrees/`; the primary checkout stays on a clean `main`. Every branch lands by PR and merges on green, where green is the local definition of done plus the `deploy.yml` PR job. See `docs/agents/git-workflow.md`.
