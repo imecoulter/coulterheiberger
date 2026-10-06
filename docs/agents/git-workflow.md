@@ -41,7 +41,7 @@ PRs run `.github/workflows/deploy.yml`, which repeats those and adds `npm run bu
 
 Two or more independent tickets run as one workflow (`/orchestrate`), each builder in its own worktree, stopping before merge; one `/close` lands the wave.
 
-- **Worktree setup:** `npm ci` before the definition of done will pass. The asset scripts find `.render-drop/` through git's common dir, so the asset ritual works from a worktree too.
+- **Worktree setup:** `npm ci` before the definition of done will pass, and copy `.astro-cache/` from the primary checkout — it is content-addressed and gitignored, and without it the first build re-encodes every image variant (minutes, not seconds). The asset scripts find `.render-drop/` through git's common dir, so the asset ritual works from a worktree too.
 - **Hotspots** — tickets that touch the same one go in different waves: `src/pages/index.astro`, `src/layouts/Base.astro` (the one authored `<script>`), `src/styles/base.css` and `src/styles/tokens.css`.
 - **Risky areas** (reviewed by an opus reviewer before landing): the gates themselves (`scripts/check-*.mjs`, `lighthouserc.cjs`, `deploy.yml`), because a weakened gate passes every later change, and the Identity Graph (`src/site.ts`, the `Person` node on `/`).
 
