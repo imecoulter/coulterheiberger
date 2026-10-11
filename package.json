@@ -16,6 +16,7 @@
     "check:assets": "node scripts/check-assets.mjs",
     "check:served": "node scripts/check-served-document.mjs",
     "check:structured-data": "node scripts/check-structured-data.mjs",
+    "gate": "npm run check:assets && npm run check && npm run build && npm run check:css && npm run check:structured-data",
     "assets": "node scripts/assets.mjs",
     "publish": "node scripts/publish.mjs",
     "budget": "lhci collect && node scripts/assert-lcp-path.mjs && lhci assert",
